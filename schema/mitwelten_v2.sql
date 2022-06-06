@@ -222,7 +222,7 @@ END;
 GRANT ALL ON ALL TABLES IN SCHEMA dev TO mitwelten_internal;
 GRANT UPDATE ON ALL SEQUENCES IN SCHEMA dev TO mitwelten_internal;
 
-GRANT ALL ON dev.files_audio, dev.files_image TO mitwelten_upload;
-GRANT UPDATE ON dev.files_audio_file_id_seq,  dev.files_image_file_id_seq TO mitwelten_upload;
+GRANT ALL ON dev.files_audio, dev.files_image, dev.nodes TO mitwelten_upload;
+GRANT UPDATE ON dev.files_audio_file_id_seq, dev.files_image_file_id_seq, dev.nodes_node_id_seq TO mitwelten_upload;
 
 GRANT SELECT ON ALL TABLES IN SCHEMA dev TO mitwelten_public;
