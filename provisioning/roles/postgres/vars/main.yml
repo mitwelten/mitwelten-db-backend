@@ -1,0 +1,11 @@
+---
+# vars file for postgresql
+
+debian_dependencies:
+  - apt-transport-https
+  - python3-pip
+  - gpg
+
+postgres_dependencies:
+  - postgresql-{{postgres_version}}
+  - postgresql-server-dev-{{postgres_version}}

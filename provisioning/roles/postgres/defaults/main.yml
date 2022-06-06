@@ -1,0 +1,4 @@
+---
+# defaults file for postgres
+
+postgres_version: 14

@@ -1,0 +1,61 @@
+---
+#
+# Install ubicomp database infrastructure
+#
+
+- hosts: db_fhnw
+  gather_facts: False
+  pre_tasks:
+    - name: Install python for Ansible
+      raw: test -e /usr/bin/python3 || (apt -y update && apt install -y python3-minimal)
+      changed_when: False
+      tags: setup
+
+    - name: Set timezone to Europe/Zurich
+      timezone:
+        name: Europe/Zurich
+      tags: setup
+
+    - name: update cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 86400
+      tags: maintenance
+
+    - name: list packages to upgrade (1/2)
+      shell: apt-get upgrade -s -V | awk '/=>/{print $1}'
+      args:
+        warn: no
+      register: updates
+      changed_when: False
+      check_mode: no
+      tags: maintenance
+
+    - name: list packages to upgrade (2/2)
+      debug: msg="{{ updates.stdout_lines | count }} packages to upgrade ({{ updates.stdout_lines | join(', ') }})"
+      when: (updates.stdout_lines)
+      check_mode: no
+      tags: maintenance
+
+    - name: upgrade packages
+      apt: upgrade=safe
+      when: (updates.stdout_lines)
+      tags: maintenance
+
+    - name: check what the new version is
+      shell: lsb_release -r | awk '{print $2}'
+      changed_when: False
+      register: new_release
+      tags: maintenance
+
+    - name: cache cleanup
+      apt:
+        autoclean: yes
+      tags: maintenance
+
+    - setup: # aka gather_facts
+      tags: always
+
+  roles:
+    - role: postgres
+      tags: postgres

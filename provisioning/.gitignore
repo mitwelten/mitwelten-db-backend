@@ -1,0 +1,2 @@
+.ansible/hosts
+host_vars/*.yml

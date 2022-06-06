@@ -1,0 +1,56 @@
+---
+# tasks file for postgresql
+
+- name: install OS dependencies
+  apt:
+    name: "{{ debian_dependencies }}"
+    state: present
+  tags: install
+
+- name: add GPG signing key
+  become: true
+  apt_key:
+    url: "https://www.postgresql.org/media/keys/ACCC4CF8.asc"
+    state: present
+    validate_certs: true
+  tags: install
+
+- name: add official repository
+  become: true
+  apt_repository:
+    repo: "deb http://apt.postgresql.org/pub/repos/apt/ bullseye-pgdg main"
+    state: present
+    filename: pgdg
+  register: postgresql_repo
+  tags: install
+
+- name: udpate apt cache
+  become: true
+  when: postgresql_repo.changed
+  apt:
+    update_cache: true
+  tags: install
+
+- name: establish dependencies
+  become: true
+  apt:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ postgres_dependencies }}"
+  tags: install
+
+- name: ensure the PostgreSQL service is running and enabled
+  become: true
+  service:
+    name: postgresql
+    state: started
+    enabled: true
+  tags:
+    - install
+    - configure
+
+- name: install psycopg2
+  pip:
+    name: psycopg2-binary
+    executable: pip3
+  tags: install
