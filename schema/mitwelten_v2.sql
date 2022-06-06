@@ -90,7 +90,8 @@ CREATE TABLE IF NOT EXISTS dev.birdnet_tasks
     scheduled_on timestamptz NOT NULL,
     pickup_on timestamptz,
     end_on timestamptz,
-    PRIMARY KEY (task_id)
+    PRIMARY KEY (task_id),
+    CONSTRAINT unique_task_in_batch UNIQUE (file_id, config_id, state, batch_id)
 );
 
 CREATE TABLE IF NOT EXISTS dev.locations
