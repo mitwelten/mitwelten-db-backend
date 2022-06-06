@@ -1,5 +1,8 @@
 BEGIN;
 
+CREATE SCHEMA IF NOT EXISTS dev
+    AUTHORIZATION mitwelten_admin;
+
 CREATE TABLE IF NOT EXISTS dev.birdnet_configs
 (
     config_id serial,
