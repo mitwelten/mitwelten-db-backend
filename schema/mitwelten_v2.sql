@@ -218,6 +218,11 @@ ALTER TABLE IF EXISTS dev.sensordata_pax
     ON DELETE NO ACTION
     NOT VALID;
 
+-- speed up delete queries in birdnet_tasks
+CREATE INDEX tasks_fk_index
+    ON dev.birdnet_results USING btree
+    (task_id ASC NULLS LAST);
+
 END;
 
 GRANT ALL ON ALL TABLES IN SCHEMA dev TO mitwelten_internal;
