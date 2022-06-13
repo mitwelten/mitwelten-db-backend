@@ -73,7 +73,7 @@ CREATE TABLE IF NOT EXISTS dev.birdnet_results
     PRIMARY KEY (result_id)
 );
 
-CREATE TABLE IF NOT EXISTS dev.species_occurrence
+CREATE TABLE IF NOT EXISTS dev.birdnet_species_occurrence
 (
     id serial,
     species character varying(255) NOT NULL,
