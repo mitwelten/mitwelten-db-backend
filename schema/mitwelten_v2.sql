@@ -141,6 +141,54 @@ CREATE TABLE IF NOT EXISTS dev.sensordata_pax
     voltage real
 );
 
+CREATE TABLE IF NOT EXISTS dev.entries
+(
+    entry_id serial,
+    location_id integer NOT NULL,
+    name character varying(255),
+    description text,
+    type character varying(255),
+    created_at timestamptz NOT NULL DEFAULT current_timestamp,
+    updated_at timestamptz NOT NULL DEFAULT current_timestamp,
+    PRIMARY KEY (entry_id)
+);
+
+CREATE TABLE IF NOT EXISTS dev.tags
+(
+    tag_id serial,
+    name character varying(255) NOT NULL,
+    created_at timestamptz DEFAULT current_timestamp,
+    updated_at timestamptz DEFAULT current_timestamp,
+    PRIMARY KEY (tag_id)
+);
+
+CREATE TABLE IF NOT EXISTS dev.mm_tags_entries
+(
+    tags_tag_id integer,
+    entries_entry_id integer,
+    PRIMARY KEY (tags_tag_id, entries_entry_id)
+);
+
+CREATE TABLE IF NOT EXISTS dev.mm_tags_nodes
+(
+    tags_tag_id integer,
+    nodes_node_id integer,
+    PRIMARY KEY (tags_tag_id, nodes_node_id)
+);
+
+CREATE TABLE IF NOT EXISTS dev.files_entry
+(
+    file_id serial,
+    entry_id integer NOT NULL,
+    object_name text NOT NULL,
+    name character varying(255) NOT NULL,
+    type character varying(128),
+    created_at timestamptz DEFAULT current_timestamp,
+    updated_at timestamptz DEFAULT current_timestamp,
+    PRIMARY KEY (file_id),
+    UNIQUE (object_name)
+);
+
 ALTER TABLE IF EXISTS dev.files_audio
     ADD FOREIGN KEY (location_id)
     REFERENCES dev.locations (location_id) MATCH SIMPLE
@@ -219,6 +267,48 @@ ALTER TABLE IF EXISTS dev.sensordata_pax
 ALTER TABLE IF EXISTS dev.sensordata_pax
     ADD FOREIGN KEY (location_id)
     REFERENCES dev.locations (location_id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE NO ACTION
+    NOT VALID;
+
+ALTER TABLE IF EXISTS dev.entries
+    ADD FOREIGN KEY (location_id)
+    REFERENCES dev.locations (location_id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE NO ACTION
+    NOT VALID;
+
+ALTER TABLE IF EXISTS dev.mm_tags_entries
+    ADD FOREIGN KEY (tags_tag_id)
+    REFERENCES dev.tags (tag_id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE NO ACTION
+    NOT VALID;
+
+ALTER TABLE IF EXISTS dev.mm_tags_entries
+    ADD FOREIGN KEY (entries_entry_id)
+    REFERENCES dev.entries (entry_id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE NO ACTION
+    NOT VALID;
+
+ALTER TABLE IF EXISTS dev.mm_tags_nodes
+    ADD FOREIGN KEY (tags_tag_id)
+    REFERENCES dev.tags (tag_id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE NO ACTION
+    NOT VALID;
+
+ALTER TABLE IF EXISTS dev.mm_tags_nodes
+    ADD FOREIGN KEY (nodes_node_id)
+    REFERENCES dev.nodes (node_id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE NO ACTION
+    NOT VALID;
+
+ALTER TABLE IF EXISTS dev.files_entry
+    ADD FOREIGN KEY (entry_id)
+    REFERENCES dev.entries (entry_id) MATCH SIMPLE
     ON UPDATE NO ACTION
     ON DELETE NO ACTION
     NOT VALID;
