@@ -37,7 +37,9 @@ CREATE TABLE IF NOT EXISTS dev.files_audio
     class character varying(32),
     created_at timestamptz NOT NULL,
     updated_at timestamptz NOT NULL,
-    PRIMARY KEY (file_id)
+    PRIMARY KEY (file_id),
+    UNIQUE (object_name),
+    UNIQUE (sha256)
 );
 
 CREATE TABLE IF NOT EXISTS dev.files_image
@@ -185,7 +187,7 @@ ALTER TABLE IF EXISTS dev.birdnet_tasks
     ON DELETE RESTRICT;
 
 ALTER TABLE IF EXISTS dev.birdnet_tasks
-    ADD CONSTRAINT tasks_file_id_fkey FOREIGN KEY (file_id)
+    ADD FOREIGN KEY (file_id)
     REFERENCES dev.files_audio (file_id) MATCH SIMPLE
     ON UPDATE NO ACTION
     ON DELETE RESTRICT;
@@ -218,10 +220,30 @@ ALTER TABLE IF EXISTS dev.sensordata_pax
     ON DELETE NO ACTION
     NOT VALID;
 
--- speed up delete queries in birdnet_tasks
-CREATE INDEX tasks_fk_index
+-- fast delete queries in birdnet_tasks
+CREATE INDEX IF NOT EXISTS birdnet_results_tasks_fk_index
     ON dev.birdnet_results USING btree
     (task_id ASC NULLS LAST);
+
+-- fast lookup of duplicates
+CREATE INDEX IF NOT EXISTS files_audio_object_name_idx
+    ON dev.files_audio USING btree
+    (object_name ASC NULLS LAST);
+
+-- fast lookup of duplicates
+CREATE INDEX IF NOT EXISTS files_audio_sha256_idx
+    ON dev.files_audio USING btree
+    (sha256 ASC NULLS LAST);
+
+-- fast lookup of duplicates
+CREATE INDEX IF NOT EXISTS files_image_object_name_idx
+    ON dev.files_image USING btree
+    (object_name ASC NULLS LAST);
+
+-- fast lookup of duplicates
+CREATE INDEX IF NOT EXISTS files_image_sha256_idx
+    ON dev.files_image USING btree
+    (sha256 ASC NULLS LAST);
 
 END;
 
