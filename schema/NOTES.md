@@ -32,13 +32,13 @@ values
 insert into dev.nodes(node_label, type)
 -- omit serial_number, as it doesn't align with device_id
 select distinct device_id, 'audiomoth'
-from files -- initial table used to import audiomoth files
+from public.files -- initial table used to import audiomoth files
 where device_id is not null
 order by device_id asc;
 
 insert into dev.nodes(node_label, type)
 select distinct node_id, 'cam'
-from files_image -- initial table used to import image files
+from public.files_image -- initial table used to import image files
 order by node_id asc;
 ```
 
@@ -69,8 +69,17 @@ sha256, time_start,
 (SELECT location_id FROM dev.locations dl WHERE dl.location ~= files.location),
 duration, serial_number, format, file_size, sample_rate,
 bit_depth, channels, battery, temperature, gain, filter, source, rec_end_status, comment, class, created_at, updated_at
-from files -- initial table used to import audiomoth files
+from public.files -- initial table used to import audiomoth files
 where state = 'uploaded';
+```
+
+### Insert images
+
+```sql
+insert into dev.files_image(file_id, object_name, sha256, time, node_id, file_size, resolution)
+select file_id, object_name, sha256, time, (select node_id from dev.nodes dn where dn.node_label = f.node_id), file_size, resolution
+from public.files_image f
+on conflict do nothing;
 ```
 
 ### Join tables (example)
