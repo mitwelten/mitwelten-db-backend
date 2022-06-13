@@ -363,6 +363,8 @@ CREATE OR REPLACE VIEW dev.entries_location
 
 END;
 
+GRANT USAGE ON SCHEMA dev TO  mitwelten_internal, mitwelten_rest, mitwelten_upload, mitwelten_public;
+
 GRANT ALL ON ALL TABLES IN SCHEMA dev TO mitwelten_internal;
 GRANT UPDATE ON ALL SEQUENCES IN SCHEMA dev TO mitwelten_internal;
 
