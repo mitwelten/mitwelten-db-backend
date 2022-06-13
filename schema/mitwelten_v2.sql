@@ -339,6 +339,28 @@ CREATE INDEX IF NOT EXISTS files_image_sha256_idx
     ON dev.files_image USING btree
     (sha256 ASC NULLS LAST);
 
+
+CREATE OR REPLACE VIEW dev.birdnet_input
+    AS
+    SELECT f.file_id,
+        f.object_name,
+        f.time,
+        f.file_size,
+        f.sample_rate,
+        n.node_label,
+        f.duration,
+        l.location
+      FROM dev.files_audio f
+        LEFT JOIN dev.nodes n ON f.node_id = n.node_id
+        LEFT JOIN dev.locations l ON f.location_id = l.location_id;
+
+
+CREATE OR REPLACE VIEW dev.entries_location
+    AS
+    SELECT e.*, l.location
+    FROM dev.entries e
+    LEFT JOIN dev.locations l ON e.location_id = l.location_id;
+
 END;
 
 GRANT ALL ON ALL TABLES IN SCHEMA dev TO mitwelten_internal;
