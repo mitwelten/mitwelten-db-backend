@@ -66,7 +66,6 @@ CREATE TABLE IF NOT EXISTS dev.birdnet_results
     result_id serial,
     task_id integer NOT NULL,
     file_id integer NOT NULL,
-    object_name text NOT NULL, -- remove?
     time_start real NOT NULL,
     time_end real NOT NULL,
     confidence real NOT NULL,
