@@ -91,6 +91,7 @@ CREATE TABLE IF NOT EXISTS dev.birdnet_tasks
     task_id serial,
     file_id integer NOT NULL,
     config_id integer NOT NULL,
+    batch_id integer NOT NULL,
     state integer NOT NULL,
     scheduled_on timestamptz NOT NULL,
     pickup_on timestamptz,
