@@ -8,6 +8,8 @@ CREATE TABLE IF NOT EXISTS dev.birdnet_configs
     config_id serial,
     config jsonb NOT NULL,
     comment text,
+    created_at timestamptz NOT NULL DEFAULT current_timestamp,
+    updated_at timestamptz NOT NULL DEFAULT current_timestamp,
     PRIMARY KEY (config_id),
     UNIQUE (config)
 );
@@ -35,8 +37,8 @@ CREATE TABLE IF NOT EXISTS dev.files_audio
     rec_end_status character varying(32),
     comment character varying(64),
     class character varying(32),
-    created_at timestamptz NOT NULL,
-    updated_at timestamptz NOT NULL,
+    created_at timestamptz NOT NULL DEFAULT current_timestamp,
+    updated_at timestamptz NOT NULL DEFAULT current_timestamp,
     PRIMARY KEY (file_id),
     UNIQUE (object_name),
     UNIQUE (sha256)
@@ -52,8 +54,8 @@ CREATE TABLE IF NOT EXISTS dev.files_image
     location_id integer,
     file_size integer NOT NULL,
     resolution integer[] NOT NULL,
-    created_at timestamptz NOT NULL,
-    updated_at timestamptz NOT NULL,
+    created_at timestamptz NOT NULL DEFAULT current_timestamp,
+    updated_at timestamptz NOT NULL DEFAULT current_timestamp,
     PRIMARY KEY (file_id),
     UNIQUE (object_name),
     UNIQUE (sha256)
@@ -79,6 +81,8 @@ CREATE TABLE IF NOT EXISTS dev.species_occurrence
     occurence integer,
     unlikely boolean,
     comment text,
+    created_at timestamptz NOT NULL DEFAULT current_timestamp,
+    updated_at timestamptz NOT NULL DEFAULT current_timestamp,
     PRIMARY KEY (id),
     UNIQUE (species)
 );
