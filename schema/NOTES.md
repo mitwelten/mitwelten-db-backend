@@ -152,9 +152,9 @@ interface locations {
 
 ## Theoretical Schema
 
-In theory, `nodes` are used at `locations` in a given time span. That would result in an ERD like the one below, where the relation `installation` is uniquely identified by `node`, `location` and `time_range`.
+In theory, `nodes` are used at `locations` in a given time span. That would result in an ERD like the one below, where the relation `deployment` is uniquely identified by `node`, `location` and `time_range`.
 
-The seems unnecessarily complicated to manage in development, the suggestion is to cut `installation` and store `node`, `location` and `timestamp` in every record.
+The seems unnecessarily complicated to manage in development, the suggestion is to cut `deployment` and store `node`, `location` and `timestamp` in every record.
 
 ```mermaid
 erDiagram
@@ -170,18 +170,18 @@ erDiagram
       string serial_number
       text description
     }
-    location ||--|{ installation : "installed for"
-    node     ||--|{ installation : "installed for"
-    installation {
+    deployment ||--|{ deployment : "deployed for"
+    node     ||--|{ deployment : "deployed for"
+    deployment {
       int node_id PK
       int location_id PK
       tstzrange time_range PK
       text description
     }
-    installation ||--o{ audio_file : "recorded"
-    installation ||--o{ image_file : "recorded"
-    installation ||--o{ pax_sensordata : "recorded"
-    installation ||--o{ env_sensordata : "recorded"
+    deployment ||--o{ audio_file : "recorded"
+    deployment ||--o{ image_file : "recorded"
+    deployment ||--o{ pax_sensordata : "recorded"
+    deployment ||--o{ env_sensordata : "recorded"
     image_file {
       int file_id PK
       string object_name
