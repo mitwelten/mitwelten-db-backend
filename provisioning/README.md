@@ -32,6 +32,8 @@ postgres_users:
     password: ***
   - username: mitwelten_upload   # write acccess to some
     password: ***
+  - username: mitwelten_rest     # write acccess to some
+    password: ***
   - username: mitwelten_public   # read only
     password: ***
 ```
