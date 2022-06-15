@@ -231,3 +231,23 @@ erDiagram
     }
 
 ```
+
+## Migration of table data to new VM
+
+First import the tables without FK constraints, then the one having constraints:
+
+```bash
+pg_dump --file "nodes.sql" --host "localhost" --username "mitwelten_admin" --verbose --format=p --data-only -t "dev.nodes" "mitwelten"
+pg_dump --file "locations.sql" --host "localhost" --username "mitwelten_admin" --verbose --format=p --data-only -t "dev.locations" "mitwelten"
+pg_dump --file "files_audio.sql" --host "localhost" --username "mitwelten_admin" --verbose --format=p --data-only -t "dev.files_audio" "mitwelten"
+pg_dump --file "files_image.sql" --host "localhost" --username "mitwelten_admin" --verbose --format=p --data-only -t "dev.files_image" "mitwelten"
+```
+
+Update the corresponding sequences
+
+```sql
+SELECT pg_catalog.setval('dev.nodes_node_id_seq', (SELECT node_id FROM dev.nodes ORDER BY node_id DESC LIMIT 1), true);
+SELECT pg_catalog.setval('dev.locations_location_id_seq', (SELECT location_id FROM dev.locations ORDER BY location_id DESC LIMIT 1), true);
+SELECT pg_catalog.setval('dev.files_audio_file_id_seq', (SELECT file_id FROM dev.files_audio ORDER BY file_id DESC LIMIT 1), true);
+SELECT pg_catalog.setval('dev.files_image_file_id_seq', (SELECT file_id FROM dev.files_image ORDER BY file_id DESC LIMIT 1), true);
+```
