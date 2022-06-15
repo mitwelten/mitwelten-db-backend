@@ -1,6 +1,14 @@
 ---
 # tasks file for postgresql
+# configure network access
 # add db, users to db and pg_hba.conf
+
+- name: network access | configure listening address to public
+  lineinfile:
+    path: /etc/postgresql/{{postgres_version}}/main/postgresql.conf
+    line: listen_addresses = '*'
+    insertafter: EOF
+    state: present
 
 - name: admin users | configure password for postgres superuser
   become: true
