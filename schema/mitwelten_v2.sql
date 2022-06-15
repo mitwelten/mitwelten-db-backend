@@ -368,9 +368,9 @@ GRANT USAGE ON SCHEMA dev TO  mitwelten_internal, mitwelten_rest, mitwelten_uplo
 GRANT ALL ON ALL TABLES IN SCHEMA dev TO mitwelten_internal;
 GRANT UPDATE ON ALL SEQUENCES IN SCHEMA dev TO mitwelten_internal;
 
-GRANT ALL ON mitwelten_rest dev.locations, dev.nodes, dev.sensordata_env, dev.sensordata_pax, dev.entries, dev.tags, dev.mm_tags_entries, dev.mm_tags_nodes, dev.files_entry TO mitwelten_rest;
+GRANT ALL ON dev.locations, dev.nodes, dev.sensordata_env, dev.sensordata_pax, dev.entries, dev.tags, dev.mm_tags_entries, dev.mm_tags_nodes, dev.files_entry TO mitwelten_rest;
 GRANT SELECT ON dev.birdnet_configs, dev.files_audio, dev.files_image, dev.birdnet_results, dev.birdnet_species_occurrence, dev.birdnet_tasks TO mitwelten_rest;
-GRANT UPDATE ON dev.entries_entry_id_seq, dev.files_entry_file_id_seq, dev.locations_location_id_seq, dev.nodes_node_id_seq, dev.tags_tag_id_seq IN SCHEMA dev TO mitwelten_rest;
+GRANT UPDATE ON dev.entries_entry_id_seq, dev.files_entry_file_id_seq, dev.locations_location_id_seq, dev.nodes_node_id_seq, dev.tags_tag_id_seq TO mitwelten_rest;
 
 GRANT ALL ON dev.files_audio, dev.files_image, dev.nodes TO mitwelten_upload;
 GRANT UPDATE ON dev.files_audio_file_id_seq, dev.files_image_file_id_seq, dev.nodes_node_id_seq TO mitwelten_upload;
