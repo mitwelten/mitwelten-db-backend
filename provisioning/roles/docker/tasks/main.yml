@@ -1,0 +1,6 @@
+---
+# docker specific tasks
+
+- import_tasks: 01_install.yml
+
+# - import_tasks: 02_configure.yml

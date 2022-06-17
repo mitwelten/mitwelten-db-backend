@@ -59,3 +59,5 @@
   roles:
     - role: postgres
       tags: postgres
+    - role: docker
+      tags: docker

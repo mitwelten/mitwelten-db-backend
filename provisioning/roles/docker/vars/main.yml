@@ -1,0 +1,14 @@
+---
+# vars file for docker
+
+debian_dependencies:
+  - apt-transport-https
+  - ca-certificates
+  - lsb-release
+  - gnupg
+
+docker_dependencies:
+  - docker
+  - docker.io
+  - docker-compose
+  - docker-registry
