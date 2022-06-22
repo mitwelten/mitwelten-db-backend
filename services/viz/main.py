@@ -16,7 +16,7 @@ from pydantic import conint, constr
 
 import databases
 from sqlalchemy.sql import select, insert, func, between # , and_, desc, all_
-from asyncpg.exceptions import UniqueViolationError, StringDataRightTruncationError
+from asyncpg.exceptions import UniqueViolationError, StringDataRightTruncationError, ForeignKeyViolationError
 
 from models import ApiResponse, DataNodeLabelGetResponse, Entry, PatchEntry, Node, Tag, ApiErrorResponse
 from tables import entry, location, tag, mm_tag_entry
@@ -498,8 +498,11 @@ async def delete_tag(id: int) -> None:
     '''
     Deletes a tag
     '''
-    return await database.execute(tag.delete().where(tag.c.tag_id == id))
-
+    try:
+        async with database.transaction():
+            await database.execute(tag.delete().where(tag.c.tag_id == id))
+    except ForeignKeyViolationError:
+        raise HTTPException(status_code=400, detail='Tag is referred to by one or more entries')
 
 @app.get('/tags', response_model=List[Tag], tags=['tag'])
 async def list_tags(
