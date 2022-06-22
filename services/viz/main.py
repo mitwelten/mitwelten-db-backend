@@ -418,6 +418,15 @@ async def list_nodes(
             where location_id is not null and (time + (duration || ' seconds')::interval) <= :time_to
         )'''
         values = { 'time_to': time_to }
+    else:
+        query = f'''
+        with node_locations as (
+            select distinct node_id, location_id from {crd.db.schema}.files_image
+            where location_id is not null
+            union
+            select distinct node_id, location_id from {crd.db.schema}.files_audio
+            where location_id is not null
+        )'''
 
     query += select_part
     result = await database.fetch_all(query=query, values=values)
