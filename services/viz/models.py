@@ -83,7 +83,7 @@ class Entry(BaseModel):
     This is a user generated "pin" on the map to which files entries can be associated
     '''
     id: Optional[int] = None
-    date: Optional[datetime]
+    date: Optional[datetime] = Field(None, example='2022-12-31T23:59:59.999Z')
     name: str = Field(..., example='interesting')
     description: Optional[str] = Field(
         None,
