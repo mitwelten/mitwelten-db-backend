@@ -105,7 +105,15 @@ async def list_entries(
     time_to: Optional[datetime] = Query(None, alias='to'),
 ) -> List[Entry]:
     '''
-    List all entries
+    ## List all entries
+
+    The entry selection can optionally be delimited by supplying either bounded
+    or unbounded ranges as a combination of `to` and `from` query parameters.
+
+    ### Locations
+
+    `locations` reside in a dedicated table, and are joined. The foreign key
+    is omitted in the response.
     '''
 
     query = select(entry, entry.c.entry_id.label('id'), entry.c.created_at.label('date'), location.c.location).\
@@ -125,7 +133,21 @@ async def list_entries(
 @app.post('/entry', response_model=Entry, tags=['entry'])
 async def add_entry(body: Entry) -> None:
     '''
-    Add a new entry to the map
+    ## Add a new entry to the map
+
+    ### Locations
+
+    `locations` reside in a dedicated table, new `entry` records are created
+    trying to find a `location` that is within a radius of ~1m. If such a
+    record is found, the closest one is referenced in the new `entry` record.
+    If no location is found, a new one is created, with `type` = 'user-created',
+    and referenced in the new `entry` record.
+
+    ### Timestamps
+
+    The internal attribute `created_at` is used as `date` defined by the model.
+    It is automatically set on creation of the record and can't be written to
+    by the user.
     '''
 
     transaction = await database.transaction()
@@ -146,7 +168,7 @@ async def add_entry(body: Entry) -> None:
         if result == None:
             loc_insert_query = f'''
             insert into {crd.db.schema}.locations(location, type)
-            values (point({body.location.lat},{body.location.lon}), 'user added')
+            values (point({body.location.lat},{body.location.lon}), 'user-added')
             returning location_id
             '''
             print(loc_insert_query)
