@@ -165,7 +165,7 @@ async def add_entry(body: Entry) -> None:
         thresh_1m = 0.0000115
         # thresh_1m = 0.02
         location_query = f'''
-        select location_id from dev.locations
+        select location_id from {crd.db.schema}.locations
         where location <-> {point} < {thresh_1m}
         order by location <-> {point}
         limit 1
@@ -236,7 +236,7 @@ async def update_entry(id: int, body: PatchEntry = ...) -> None:
             point = f'point({float(body.location.lat)}, {float(body.location.lon)})'
             thresh_1m = 0.0000115
             location_query = f'''
-            select location_id from dev.locations
+            select location_id from {crd.db.schema}.locations
             where location <-> {point} < {thresh_1m}
             order by location <-> {point}
             limit 1
