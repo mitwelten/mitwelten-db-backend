@@ -462,7 +462,7 @@ async def put_tag(body: Tag) -> None:
                 query = tag.update().where(tag.c.tag_id == body.id).\
                     values({tag.c.name: body.name.strip(), tag.c.updated_at: func.current_timestamp()})
                 await database.execute(query=query)
-                transaction.commit()
+                await transaction.commit()
                 return body
             else:
                 query = tag.insert().values(
@@ -471,18 +471,18 @@ async def put_tag(body: Tag) -> None:
                     updated_at=func.current_timestamp()
                 ).returning(tag.c.tag_id, tag.c.name)
                 result = await database.fetch_one(query=query)
-                transaction.commit()
+                await transaction.commit()
                 return { 'id': result.tag_id, 'name': result.name }
         else:
             raise HTTPException(status_code=400, detail='No tag name provided')
     except UniqueViolationError:
-        transaction.rollback()
+        await transaction.rollback()
         raise HTTPException(status_code=409, detail='Tag with same name already exists')
     except StringDataRightTruncationError as e:
-        transaction.rollback()
+        await transaction.rollback()
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        transaction.rollback()
+        await transaction.rollback()
         raise e
 
 
