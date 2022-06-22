@@ -77,7 +77,13 @@ tag = sqlalchemy.Table(
     schema=crd.db.schema
 )
 
-
+mm_tag_entry = sqlalchemy.Table(
+    'mm_tags_entries',
+    metadata,
+    sqlalchemy.Column('tags_tag_id',      None, ForeignKey(tag.c.tag_id)),
+    sqlalchemy.Column('entries_entry_id', None, ForeignKey(entry.c.entry_id)),
+    schema=crd.db.schema
+)
 
 
 

@@ -19,7 +19,7 @@ from sqlalchemy.sql import select, insert, func, between # , and_, desc, all_
 from asyncpg.exceptions import UniqueViolationError, StringDataRightTruncationError
 
 from models import ApiResponse, DataNodeLabelGetResponse, Entry, PatchEntry, Node, Tag, ApiErrorResponse
-from tables import entry, location, tag
+from tables import entry, location, tag, mm_tag_entry
 
 sys.path.append('../../')
 import credentials as crd
@@ -280,14 +280,69 @@ async def delete_entry(id: int) -> None:
     return await database.execute(entry.delete().where(entry.c.entry_id == id))
 
 
-@app.post('/entry/{id}/tag', response_model=Entry, tags=['entry', 'tag'])
-def add_tag_to_entry(id: int, body: Tag = None) -> Entry:
+@app.post('/entry/{id}/tag',tags=['entry', 'tag'], response_model=None, responses={'404': {"model": ApiErrorResponse}})
+async def add_tag_to_entry(id: int, body: Tag) -> None:
     '''
     Adds a tag for an entry
-
-    **Not Implemented**
     '''
-    pass
+
+    transaction = await database.transaction()
+
+    try:
+        check = await database.fetch_one(entry.select().where(entry.c.entry_id == id))
+        if check == None:
+            return JSONResponse(status_code=404, content={'message':  'Entry not found'})
+
+        existing_by_id = None
+        existing_by_name = None
+        insert_tag = None
+
+        if body.id:
+            existing_by_id = await database.fetch_one(tag.select().where(tag.c.tag_id == body.id))
+
+        if body.name:
+            existing_by_name = await database.fetch_one(tag.select().where(tag.c.name == body.name))
+
+        if existing_by_id == None and existing_by_name == None:
+            if body.name:
+                insert_tag = await database.fetch_one(tag.insert().values({tag.c.name: body.name.strip()}).returning(tag.c.tag_id))
+            else:
+                return JSONResponse(status_code=404, content={'message':  'Tag not found'})
+        elif existing_by_id:
+            insert_tag = existing_by_id
+        elif existing_by_name:
+            insert_tag = existing_by_name
+
+        query = mm_tag_entry.insert().values({mm_tag_entry.c.tags_tag_id: insert_tag.tag_id, mm_tag_entry.c.entries_entry_id: id})
+        await database.execute(query=query)
+
+    except UniqueViolationError:
+        await transaction.rollback()
+        return JSONResponse(status_code=200, content={'message':  'Tag is already assigned to this entry'})
+    except:
+        await transaction.rollback()
+    else:
+        await transaction.commit()
+
+
+@app.delete('/entry/{id}/tag',tags=['entry', 'tag'], response_model=None)
+async def delete_tag_from_entry(id: int, body: Tag) -> None:
+    '''
+    Deletes a tag from an entry
+    '''
+    delete_id = None
+    if body.name:
+        existing = await database.fetch_one(tag.select().where(tag.c.name == body.name))
+        if existing == None:
+            return
+        else:
+            delete_id = existing.tag_id
+
+    if body.id:
+        delete_id = body.id
+
+    await database.execute(mm_tag_entry.delete().where(
+        and_(mm_tag_entry.c.tags_tag_id == delete_id, mm_tag_entry.c.entries_entry_id == id)))
 
 
 @app.post('/entry/{id}/file', response_model=ApiResponse, tags=['entry', 'file'])
