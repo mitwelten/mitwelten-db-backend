@@ -455,22 +455,18 @@ async def put_tag(body: Tag) -> None:
 
     try:
         if body.name:
-            tagname = body.name.strip()
-            if len(tagname) == 0:
-                raise HTTPException(status_code=400, detail='Name is too short')
-
             if body.id:
                 check = await database.execute(tag.select().where(tag.c.tag_id == body.id))
                 if check == None:
                     raise HTTPException(status_code=404, detail='Tag not found')
                 query = tag.update().where(tag.c.tag_id == body.id).\
-                    values({tag.c.name: tagname, tag.c.updated_at: func.current_timestamp()})
+                    values({tag.c.name: body.name.strip(), tag.c.updated_at: func.current_timestamp()})
                 await database.execute(query=query)
                 transaction.commit()
                 return body
             else:
                 query = tag.insert().values(
-                    name=tagname,
+                    name=body.name.strip(),
                     created_at=func.current_timestamp(),
                     updated_at=func.current_timestamp()
                 ).returning(tag.c.tag_id, tag.c.name)

@@ -13,7 +13,7 @@ from pydantic import BaseModel, Field, constr
 
 class Tag(BaseModel):
     id: Optional[int] = None
-    name: Optional[str] = None
+    name: Optional[constr(regex=r'\w+')] = None
 
 
 class Type(Enum):
