@@ -96,8 +96,8 @@ async def shutdown():
 @app.get('/data/{node_label}', response_model=DataNodeLabelGetResponse, tags=['datum'])
 def list_data(
     node_label: constr(regex=r'\d{4}-\d{4}'),
-    time_from: Optional[datetime] = Query(None, alias='timeFrom'),
-    time_to: Optional[datetime] = Query(None, alias='timeTo'),
+    time_from: Optional[datetime] = Query(None, alias='from', example='2022-06-22T18:00:00.000Z'),
+    time_to: Optional[datetime] = Query(None, alias='to', example='2022-06-22T20:00:00.000Z'),
     limit: Optional[conint(ge=1, le=65536)] = 32768,
 ) -> DataNodeLabelGetResponse:
     '''
@@ -109,8 +109,8 @@ def list_data(
 
 @app.get('/entries', response_model=List[Entry], tags=['entry'])
 async def list_entries(
-    time_from: Optional[datetime] = Query(None, alias='from'),
-    time_to: Optional[datetime] = Query(None, alias='to'),
+    time_from: Optional[datetime] = Query(None, alias='from', example='2022-06-22T18:00:00.000Z'),
+    time_to: Optional[datetime] = Query(None, alias='to', example='2022-06-22T20:00:00.000Z'),
 ) -> List[Entry]:
     '''
     ## List all entries
@@ -302,8 +302,8 @@ def upload_file(id: int) -> ApiResponse:
 
 @app.get('/nodes', response_model=List[Node], tags=['node'])
 async def list_nodes(
-    time_from: Optional[datetime] = Query(None, alias='from'),
-    time_to: Optional[datetime] = Query(None, alias='to'),
+    time_from: Optional[datetime] = Query(None, alias='from', example='2022-06-22T18:00:00.000Z'),
+    time_to: Optional[datetime] = Query(None, alias='to', example='2022-06-22T20:00:00.000Z'),
 ) -> List[Node]:
     '''
     List all nodes
