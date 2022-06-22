@@ -386,22 +386,27 @@ async def put_tag(body: Tag) -> None:
     '''
 
     try:
-        if body.id and body.name:
-            check = await database.execute(tag.select().where(tag.c.tag_id == body.id))
-            if check == None:
-                return JSONResponse(status_code=404, content={'message':  'Tag not found'})
-            query = tag.update().where(tag.c.tag_id == body.id).\
-                values({tag.c.name: body.name, tag.c.updated_at: func.current_timestamp()})
-            await database.execute(query=query)
-            return body
-        elif body.name:
-            query = tag.insert().values(
-                name=body.name,
-                created_at=func.current_timestamp(),
-                updated_at=func.current_timestamp()
-            ).returning(tag.c.tag_id, tag.c.name)
-            result = await database.fetch_one(query=query)
-            return { 'id': result.tag_id, 'name': result.name }
+        if body.name:
+            tagname = body.name.strip()
+            if len(tagname) == 0:
+                return JSONResponse(status_code=400, content={'message': 'Name is too short'})
+
+            if body.id:
+                check = await database.execute(tag.select().where(tag.c.tag_id == body.id))
+                if check == None:
+                    return JSONResponse(status_code=404, content={'message':  'Tag not found'})
+                query = tag.update().where(tag.c.tag_id == body.id).\
+                    values({tag.c.name: tagname, tag.c.updated_at: func.current_timestamp()})
+                await database.execute(query=query)
+                return body
+            else:
+                query = tag.insert().values(
+                    name=tagname,
+                    created_at=func.current_timestamp(),
+                    updated_at=func.current_timestamp()
+                ).returning(tag.c.tag_id, tag.c.name)
+                result = await database.fetch_one(query=query)
+                return { 'id': result.tag_id, 'name': result.name }
     except UniqueViolationError:
         return JSONResponse(status_code=409, content={'message':  'Tag with same name already exists'})
     except StringDataRightTruncationError as e:
