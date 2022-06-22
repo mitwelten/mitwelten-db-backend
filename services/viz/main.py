@@ -30,8 +30,8 @@ import credentials as crd
 DATABASE_URL = f'postgresql://{crd.db.user}:{crd.db.password}@{crd.db.host}/{crd.db.database}'
 
 origins = [
-    'http://localhost:4200',
-    'http://localhost:8080',
+    'https://viz.mitwelten.org',
+    'http://localhost',
 ]
 
 database = databases.Database(DATABASE_URL)
