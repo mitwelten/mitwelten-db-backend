@@ -69,7 +69,7 @@ app = FastAPI(
     contact={'email': 'mitwelten.technik@fhnw.ch'},
     version='1.0.0',
     servers=[
-        {'url': 'https://data.mitwelten.org/v1', 'description': 'Production environment'},
+        {'url': 'https://data.mitwelten.org', 'description': 'Production environment'},
         {'url': 'http://localhost:8000', 'description': 'Development environment'}
     ],
     openapi_tags=tags_metadata
