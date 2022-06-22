@@ -413,34 +413,42 @@ async def put_tag(body: Tag) -> None:
         return JSONResponse(status_code=400, content={'message':  str(e)})
 
 
-@app.get('/tag/{id}', response_model=Tag, tags=['tag'])
-def get_tag_by_id(id: int) -> Tag:
+@app.get('/tag/{id}', response_model=Tag, tags=['tag'], responses={404: {"model": ApiErrorResponse}})
+async def get_tag_by_id(id: int) -> Tag:
     '''
     Find tag by ID
-
-    **Not Implemented**
     '''
-    pass
+    result = await database.fetch_one(tag.select().where(tag.c.tag_id == id))
+    if result == None:
+        return JSONResponse(status_code=404, content={'message':  'Tag not found'})
+    else:
+        return { 'id': result.tag_id, 'name': result.name }
 
 
 @app.delete('/tag/{id}', response_model=None, tags=['tag'])
-def delete_tag(id: int) -> None:
+async def delete_tag(id: int) -> None:
     '''
     Deletes a tag
-
-    **Not Implemented**
     '''
-    pass
+    return await database.execute(tag.delete().where(tag.c.tag_id == id))
 
 
 @app.get('/tags', response_model=List[Tag], tags=['tag'])
-def list_tags(
-    time_from: Optional[datetime] = Query(None, alias='timeFrom'),
-    time_to: Optional[datetime] = Query(None, alias='timeTo'),
+async def list_tags(
+    time_from: Optional[datetime] = Query(None, alias='from', example='2022-06-22T18:00:00.000Z'),
+    time_to: Optional[datetime] = Query(None, alias='to', example='2022-06-22T20:00:00.000Z'),
 ) -> List[Tag]:
     '''
     List all tags
-
-    **Not Implemented**
     '''
-    pass
+
+    query = select(tag.c.tag_id.label('id'), tag.c.name)
+
+    if time_from and time_to:
+        query = query.where(between(tag.c.created_at, time_from, time_to))
+    elif time_from:
+        query = query.where(tag.c.created_at >= time_from)
+    elif time_to:
+        query = query.where(tag.c.created_at < time_to)
+
+    return await database.fetch_all(query)
