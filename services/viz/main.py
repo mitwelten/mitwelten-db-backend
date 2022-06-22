@@ -194,8 +194,9 @@ async def add_entry(body: Entry) -> None:
         ).returning(entry.c.entry_id, entry.c.created_at)
         result = await database.fetch_one(query)
 
-    except:
+    except Exception as e:
         await transaction.rollback()
+        raise e
     else:
         await transaction.commit()
         return  { **body.dict(), 'id': result.entry_id, 'date': result.created_at }
@@ -262,8 +263,8 @@ async def update_entry(id: int, body: PatchEntry = ...) -> None:
         result = await database.execute(query)
 
     except Exception as e:
-        print(e)
         await transaction.rollback()
+        raise e
     else:
         await transaction.commit()
         return result
@@ -319,8 +320,9 @@ async def add_tag_to_entry(id: int, body: Tag) -> None:
     except UniqueViolationError:
         await transaction.rollback()
         return JSONResponse(status_code=200, content={'message':  'Tag is already assigned to this entry'})
-    except:
+    except Exception as e:
         await transaction.rollback()
+        raise e
     else:
         await transaction.commit()
 
