@@ -54,7 +54,7 @@ tags_metadata = [
         'description': 'Tags',
     },
     {
-        'name': 'data',
+        'name': 'datum',
         'description': 'Sensor / Capture Data',
     },
 ]
@@ -88,7 +88,7 @@ async def shutdown():
     await database.disconnect()
 
 
-@app.get('/data/{node_label}', response_model=DataNodeLabelGetResponse, tags=['data'])
+@app.get('/data/{node_label}', response_model=DataNodeLabelGetResponse, tags=['datum'])
 def list_data(
     node_label: constr(regex=r'\d{4}-\d{4}'),
     time_from: Optional[datetime] = Query(None, alias='timeFrom'),
