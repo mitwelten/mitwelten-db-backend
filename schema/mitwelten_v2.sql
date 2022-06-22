@@ -152,6 +152,7 @@ CREATE TABLE IF NOT EXISTS dev.entries
     created_at timestamptz NOT NULL DEFAULT current_timestamp,
     updated_at timestamptz NOT NULL DEFAULT current_timestamp,
     PRIMARY KEY (entry_id)
+    -- UNIQUE (entry_id, location_id, name)
 );
 
 CREATE TABLE IF NOT EXISTS dev.tags
