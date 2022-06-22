@@ -99,6 +99,13 @@ class Entry(BaseModel):
     comments: Optional[List[Comment]] = None
     fileUrls: Optional[List[str]] = None
 
+class PatchEntry(Entry):
+    '''
+    This is a copy of `Entry` with all fields optional
+    for patching existing records.
+    '''
+    name: Optional[str] = Field(None, example='interesting')
+    location: Optional[Point]
 
 class Location(BaseModel):
     id: Optional[int] = None

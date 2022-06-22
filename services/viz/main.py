@@ -18,7 +18,7 @@ import databases
 from sqlalchemy.sql import select, insert, func, between # , and_, desc, all_
 
 
-from models import ApiResponse, DataNodeLabelGetResponse, Entry, Node, Tag, ApiErrorResponse
+from models import ApiResponse, DataNodeLabelGetResponse, Entry, PatchEntry, Node, Tag, ApiErrorResponse
 from tables import entry, location
 
 sys.path.append('../../')
@@ -215,13 +215,58 @@ async def get_entry_by_id(id: int) -> Entry:
         return result
 
 @app.patch('/entry/{id}', response_model=None, tags=['entry'])
-def update_entry(id: int, body: Entry = ...) -> None:
+async def update_entry(id: int, body: PatchEntry = ...) -> None:
     '''
-    Updates an entry
+    ## Updates an entry
 
-    **Not Implemented**
+    Patching not implemented for `tags`
+
+    ### Locations
+
+    The record is updated with the closest `location` in a radius of ~1m. If
+    no `location` is found, a new one is created and referenced.
     '''
-    pass
+    update_data = body.dict(exclude_unset=True)
+
+    transaction = await database.transaction()
+
+    try:
+        location_id = None
+        if 'location' in update_data:
+            point = f'point({float(body.location.lat)}, {float(body.location.lon)})'
+            thresh_1m = 0.0000115
+            location_query = f'''
+            select location_id from dev.locations
+            where location <-> {point} < {thresh_1m}
+            order by location <-> {point}
+            limit 1
+            '''
+            result = await database.fetch_one(query=location_query)
+
+            if result == None:
+                loc_insert_query = f'''
+                insert into {crd.db.schema}.locations(location, type)
+                values (point({body.location.lat},{body.location.lon}), 'user-added')
+                returning location_id
+                '''
+                print(loc_insert_query)
+                location_id = await database.execute(loc_insert_query)
+            else:
+                location_id = result.location_id
+            update_data['location_id'] = location_id
+            del update_data['location']
+
+        query = entry.update().where(entry.c.entry_id == id).\
+            values({**update_data, entry.c.updated_at: func.current_timestamp()})
+
+        result = await database.execute(query)
+
+    except Exception as e:
+        print(e)
+        await transaction.rollback()
+    else:
+        await transaction.commit()
+        return result
 
 
 @app.delete('/entry/{id}', response_model=None, tags=['entry'])
