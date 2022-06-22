@@ -11,6 +11,9 @@ externalDocs:
 
 servers:
 - url: https://data.mitwelten.org/v1
+  description: Production environment
+- url: http://localhost:8000
+  description: Development environment
 
 tags:
 - name: entry
