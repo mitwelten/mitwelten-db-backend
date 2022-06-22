@@ -57,6 +57,10 @@ tags_metadata = [
         'name': 'datum',
         'description': 'Sensor / Capture Data',
     },
+    {
+        'name': 'file',
+        'description': 'Files uploaded for / added to entries',
+    },
 ]
 
 app = FastAPI(
@@ -225,7 +229,7 @@ def delete_entry(id: int) -> None:
     pass
 
 
-@app.post('/entry/{id}/addTag', response_model=Entry, tags=['entry'])
+@app.post('/entry/{id}/tag', response_model=Entry, tags=['entry', 'tag'])
 def add_tag_to_entry(id: int, body: Tag = None) -> Entry:
     '''
     Adds a tag for an entry
@@ -235,7 +239,7 @@ def add_tag_to_entry(id: int, body: Tag = None) -> Entry:
     pass
 
 
-@app.post('/entry/{id}/uploadFile', response_model=ApiResponse, tags=['entry'])
+@app.post('/entry/{id}/file', response_model=ApiResponse, tags=['entry', 'file'])
 def upload_file(id: int) -> ApiResponse:
     '''
     Uploads a file

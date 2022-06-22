@@ -24,6 +24,8 @@ tags:
   description: Tags
 - name: data
   description: Sensor / Capture Data
+- name: file
+  description: Files uploaded for / added to entries
 
 paths:
 
@@ -170,11 +172,12 @@ paths:
       security:
       - mitwelten_auth: []
 
-  /entry/{id}/uploadFile: # todo, same like this: add comment, add tag
+  /entry/{id}/file:
     post:
       tags:
       - entry
-      summary: uploads a file
+      - file
+      summary: Uploads a file for an entry
       operationId: uploadFile
       parameters:
       - name: id
@@ -215,10 +218,11 @@ paths:
       security:
       - mitwelten_auth: []
 
-  /entry/{id}/addTag:
+  /entry/{id}/tag:
     post:
       tags:
       - entry
+      - tag
       summary: Adds a tag for an entry
       operationId: addTagToEntry
       parameters:
