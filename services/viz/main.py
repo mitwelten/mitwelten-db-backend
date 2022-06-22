@@ -9,7 +9,7 @@ from datetime import datetime
 from datetime import datetime
 from typing import List, Optional
 
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Query, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import conint, constr
@@ -211,7 +211,7 @@ async def get_entry_by_id(id: int) -> Entry:
     result = await database.fetch_one(query=query)
 
     if result == None:
-        return JSONResponse(status_code=404, content={'message':  'Entry not found'})
+        raise HTTPException(status_code=404, detail='Entry not found')
     else:
         return result
 
@@ -292,7 +292,7 @@ async def add_tag_to_entry(id: int, body: Tag) -> None:
     try:
         check = await database.fetch_one(entry.select().where(entry.c.entry_id == id))
         if check == None:
-            return JSONResponse(status_code=404, content={'message':  'Entry not found'})
+            raise HTTPException(status_code=404, detail='Entry not found')
 
         existing_by_id = None
         existing_by_name = None
@@ -308,7 +308,7 @@ async def add_tag_to_entry(id: int, body: Tag) -> None:
             if body.name:
                 insert_tag = await database.fetch_one(tag.insert().values({tag.c.name: body.name.strip()}).returning(tag.c.tag_id))
             else:
-                return JSONResponse(status_code=404, content={'message':  'Tag not found'})
+                raise HTTPException(status_code=404, detail='Tag not found')
         elif existing_by_id:
             insert_tag = existing_by_id
         elif existing_by_name:
@@ -319,7 +319,7 @@ async def add_tag_to_entry(id: int, body: Tag) -> None:
 
     except UniqueViolationError:
         await transaction.rollback()
-        return JSONResponse(status_code=200, content={'message':  'Tag is already assigned to this entry'})
+        raise HTTPException(status_code=200, detail='Tag is already assigned to this entry')
     except Exception as e:
         await transaction.rollback()
         raise e
@@ -446,12 +446,12 @@ async def put_tag(body: Tag) -> None:
         if body.name:
             tagname = body.name.strip()
             if len(tagname) == 0:
-                return JSONResponse(status_code=400, content={'message': 'Name is too short'})
+                raise HTTPException(status_code=400, detail='Name is too short')
 
             if body.id:
                 check = await database.execute(tag.select().where(tag.c.tag_id == body.id))
                 if check == None:
-                    return JSONResponse(status_code=404, content={'message':  'Tag not found'})
+                    raise HTTPException(status_code=404, detail='Tag not found')
                 query = tag.update().where(tag.c.tag_id == body.id).\
                     values({tag.c.name: tagname, tag.c.updated_at: func.current_timestamp()})
                 await database.execute(query=query)
@@ -464,10 +464,12 @@ async def put_tag(body: Tag) -> None:
                 ).returning(tag.c.tag_id, tag.c.name)
                 result = await database.fetch_one(query=query)
                 return { 'id': result.tag_id, 'name': result.name }
+        else:
+            raise HTTPException(status_code=400, detail='No tag name provided')
     except UniqueViolationError:
-        return JSONResponse(status_code=409, content={'message':  'Tag with same name already exists'})
+        raise HTTPException(status_code=409, detail='Tag with same name already exists')
     except StringDataRightTruncationError as e:
-        return JSONResponse(status_code=400, content={'message':  str(e)})
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @app.get('/tag/{id}', response_model=Tag, tags=['tag'], responses={404: {"model": ApiErrorResponse}})
@@ -477,7 +479,7 @@ async def get_tag_by_id(id: int) -> Tag:
     '''
     result = await database.fetch_one(tag.select().where(tag.c.tag_id == id))
     if result == None:
-        return JSONResponse(status_code=404, content={'message':  'Tag not found'})
+        raise HTTPException(status_code=404, detail='Tag not found')
     else:
         return { 'id': result.tag_id, 'name': result.name }
 

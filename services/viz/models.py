@@ -68,7 +68,7 @@ class ApiResponse(BaseModel):
 
 
 class ApiErrorResponse(BaseModel):
-    message: Optional[str] = None
+    detail: Optional[str] = None
 
 
 class EntryIdFilePostRequest(BaseModel):
