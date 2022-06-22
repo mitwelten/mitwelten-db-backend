@@ -301,16 +301,79 @@ def upload_file(id: int) -> ApiResponse:
 
 
 @app.get('/nodes', response_model=List[Node], tags=['node'])
-def list_nodes(
-    time_from: Optional[datetime] = Query(None, alias='timeFrom'),
-    time_to: Optional[datetime] = Query(None, alias='timeTo'),
+async def list_nodes(
+    time_from: Optional[datetime] = Query(None, alias='from'),
+    time_to: Optional[datetime] = Query(None, alias='to'),
 ) -> List[Node]:
     '''
     List all nodes
 
-    **Not Implemented**
+    This is a temporary, hacky, but working implementation. It becomes obvious
+    that the database schema requires an abstraction of `deployment`.
     '''
-    pass
+
+    select_part = f'''
+    select nl.node_id, node_label, n.type as node_type, n.description as node_description,
+    nl.location_id, location, name as location_name, l.description as location_description, l.type as location_type
+    from node_locations nl
+    left join {crd.db.schema}.nodes n on n.node_id = nl.node_id
+    left join {crd.db.schema}.locations l on l.location_id = nl.location_id
+    '''
+    query = ''
+    values = {}
+
+    if time_from and time_to:
+        query = f'''
+        with node_locations as (
+            select distinct node_id, location_id from {crd.db.schema}.files_image
+            where location_id is not null and time between :time_from and :time_to
+            union
+            select distinct node_id, location_id from {crd.db.schema}.files_audio
+            where location_id is not null and (time + (duration || ' seconds')::interval) > :time_from and time < :time_to
+        )'''
+        values = { 'time_from': time_from, 'time_to': time_to }
+    elif time_from:
+        query = f'''
+        with node_locations as (
+            select distinct node_id, location_id from {crd.db.schema}.files_image
+            where location_id is not null and time >= :time_from
+            union
+            select distinct node_id, location_id from {crd.db.schema}.files_audio
+            where location_id is not null and (time + (duration || ' seconds')::interval) > :time_from
+        )'''
+        values = { 'time_from': time_from }
+    elif time_to:
+        query = f'''
+        with node_locations as (
+            select distinct node_id, location_id from {crd.db.schema}.files_image
+            where location_id is not null and time < :time_to
+            union
+            select distinct node_id, location_id from {crd.db.schema}.files_audio
+            where location_id is not null and (time + (duration || ' seconds')::interval) <= :time_to
+        )'''
+        values = { 'time_to': time_to }
+
+    query += select_part
+    result = await database.fetch_all(query=query, values=values)
+    transform = []
+    for record in result:
+        transform.append({
+            'id': record.node_id,
+            'name': record.node_label,
+            'description': record.node_description,
+            'type': record.node_type,
+            'location': {
+                'id': record.location_id,
+                'location': {
+                    'lat': record.location[0],
+                    'lon': record.location[1]
+                },
+                'type': record.location_type,
+                'name': record.location_name,
+                'description': record.location_description
+            }
+        })
+    return transform
 
 
 @app.put('/tag', response_model=None, tags=['tag'])
