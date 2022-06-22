@@ -368,8 +368,8 @@ def upload_file(id: int) -> ApiResponse:
 
 @app.get('/nodes', response_model=List[Node], tags=['node'])
 async def list_nodes(
-    time_from: Optional[datetime] = Query(None, alias='from', example='2022-06-22T18:00:00.000Z'),
-    time_to: Optional[datetime] = Query(None, alias='to', example='2022-06-22T20:00:00.000Z'),
+    time_from: Optional[datetime] = Query(None, alias='from', example='2021-09-01T00:00:00.000Z'),
+    time_to: Optional[datetime] = Query(None, alias='to', example='2022-08-31T23:59:59.999Z'),
 ) -> List[Node]:
     '''
     List all nodes
