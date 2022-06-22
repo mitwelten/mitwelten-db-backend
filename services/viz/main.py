@@ -10,6 +10,7 @@ from datetime import datetime
 from typing import List, Optional
 
 from fastapi import FastAPI, Query
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import conint, constr
 
@@ -17,7 +18,7 @@ import databases
 from sqlalchemy.sql import select, insert, func, between # , and_, desc, all_
 
 
-from models import ApiResponse, DataNodeLabelGetResponse, Entry, Node, Tag
+from models import ApiResponse, DataNodeLabelGetResponse, Entry, Node, Tag, ApiErrorResponse
 from tables import entry, location
 
 sys.path.append('../../')
@@ -199,15 +200,19 @@ async def add_entry(body: Entry) -> None:
         await transaction.commit()
         return  { **body.dict(), 'id': result.entry_id, 'date': result.created_at }
 
-@app.get('/entry/{id}', response_model=Entry, tags=['entry'])
-def get_entry_by_id(id: int) -> Entry:
+@app.get('/entry/{id}', response_model=Entry, tags=['entry'], responses={404: {"model": ApiErrorResponse}})
+async def get_entry_by_id(id: int) -> Entry:
     '''
     Find entry by ID
-
-    **Not Implemented**
     '''
-    pass
+    query = select(entry, entry.c.entry_id.label('id'), entry.c.created_at.label('date'), location.c.location).\
+        select_from(entry.outerjoin(location)).where(entry.c.entry_id == id)
+    result = await database.fetch_one(query=query)
 
+    if result == None:
+        return JSONResponse(status_code=404, content={'message':  'Entry not found'})
+    else:
+        return result
 
 @app.patch('/entry/{id}', response_model=None, tags=['entry'])
 def update_entry(id: int, body: Entry = ...) -> None:

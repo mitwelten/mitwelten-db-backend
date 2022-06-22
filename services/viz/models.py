@@ -67,6 +67,10 @@ class ApiResponse(BaseModel):
     message: Optional[str] = None
 
 
+class ApiErrorResponse(BaseModel):
+    message: Optional[str] = None
+
+
 class EntryIdFilePostRequest(BaseModel):
     additionalMetadata: Optional[str] = Field(
         None, description='Additional data to pass to server'
