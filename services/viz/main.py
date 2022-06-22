@@ -278,7 +278,17 @@ async def delete_entry(id: int) -> None:
     __potential for optimisation__: remove related records when record to be
     deleted is the last referring one.
     '''
-    return await database.execute(entry.delete().where(entry.c.entry_id == id))
+
+    transaction = await database.transaction()
+
+    try:
+        await database.execute(mm_tag_entry.delete().where(mm_tag_entry.c.entries_entry_id == id))
+        await database.execute(entry.delete().where(entry.c.entry_id == id))
+    except Exception as e:
+        await transaction.rollback()
+        raise e
+    else:
+        await transaction.commit()
 
 
 @app.post('/entry/{id}/tag',tags=['entry', 'tag'], response_model=None, responses={'404': {"model": ApiErrorResponse}})
