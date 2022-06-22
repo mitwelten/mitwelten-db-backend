@@ -270,13 +270,14 @@ async def update_entry(id: int, body: PatchEntry = ...) -> None:
 
 
 @app.delete('/entry/{id}', response_model=None, tags=['entry'])
-def delete_entry(id: int) -> None:
+async def delete_entry(id: int) -> None:
     '''
-    Deletes an entry
+    ## Deletes an entry
 
-    **Not Implemented**
+    __potential for optimisation__: remove related records when record to be
+    deleted is the last referring one.
     '''
-    pass
+    return await database.execute(entry.delete().where(entry.c.entry_id == id))
 
 
 @app.post('/entry/{id}/tag', response_model=Entry, tags=['entry', 'tag'])
