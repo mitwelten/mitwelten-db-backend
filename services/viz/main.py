@@ -30,16 +30,16 @@ import credentials as crd
 
 DATABASE_URL = f'postgresql://{crd.db.user}:{crd.db.password}@{crd.db.host}/{crd.db.database}'
 
-origins = [
-    'https://viz.mitwelten.org',
-    'http://localhost',
-]
-
 database = databases.Database(DATABASE_URL)
 
 #
 # Set up FastAPI
 #
+
+origins = [
+    'https://viz.mitwelten.org',
+    'http://localhost',
+]
 
 tags_metadata = [
     {
