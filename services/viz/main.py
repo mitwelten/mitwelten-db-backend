@@ -10,12 +10,11 @@ from datetime import datetime
 from typing import List, Optional
 
 from fastapi import FastAPI, Query, HTTPException
-from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import conint, constr
 
 import databases
-from sqlalchemy.sql import select, insert, func, between # , and_, desc, all_
+from sqlalchemy.sql import select, func, between, and_
 from asyncpg.exceptions import UniqueViolationError, StringDataRightTruncationError, ForeignKeyViolationError
 
 from models import ApiResponse, DataNodeLabelGetResponse, Entry, PatchEntry, Node, Tag, ApiErrorResponse
