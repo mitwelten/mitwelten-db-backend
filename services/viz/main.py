@@ -16,10 +16,10 @@ from pydantic import conint, constr
 
 import databases
 from sqlalchemy.sql import select, insert, func, between # , and_, desc, all_
-
+from asyncpg.exceptions import UniqueViolationError, StringDataRightTruncationError
 
 from models import ApiResponse, DataNodeLabelGetResponse, Entry, PatchEntry, Node, Tag, ApiErrorResponse
-from tables import entry, location
+from tables import entry, location, tag
 
 sys.path.append('../../')
 import credentials as crd
@@ -376,14 +376,36 @@ async def list_nodes(
     return transform
 
 
-@app.put('/tag', response_model=None, tags=['tag'])
-def put_tag(body: Tag) -> None:
+@app.put('/tag', response_model=None, tags=['tag'], responses={
+        400: {"model": ApiErrorResponse},
+        404: {"model": ApiErrorResponse},
+        409: {"model": ApiErrorResponse}})
+async def put_tag(body: Tag) -> None:
     '''
     Add a new tag or update an existing one
-
-    **Not Implemented**
     '''
-    pass
+
+    try:
+        if body.id and body.name:
+            check = await database.execute(tag.select().where(tag.c.tag_id == body.id))
+            if check == None:
+                return JSONResponse(status_code=404, content={'message':  'Tag not found'})
+            query = tag.update().where(tag.c.tag_id == body.id).\
+                values({tag.c.name: body.name, tag.c.updated_at: func.current_timestamp()})
+            await database.execute(query=query)
+            return body
+        elif body.name:
+            query = tag.insert().values(
+                name=body.name,
+                created_at=func.current_timestamp(),
+                updated_at=func.current_timestamp()
+            ).returning(tag.c.tag_id, tag.c.name)
+            result = await database.fetch_one(query=query)
+            return { 'id': result.tag_id, 'name': result.name }
+    except UniqueViolationError:
+        return JSONResponse(status_code=409, content={'message':  'Tag with same name already exists'})
+    except StringDataRightTruncationError as e:
+        return JSONResponse(status_code=400, content={'message':  str(e)})
 
 
 @app.get('/tag/{id}', response_model=Tag, tags=['tag'])

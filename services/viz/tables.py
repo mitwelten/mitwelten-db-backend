@@ -67,6 +67,16 @@ entry = sqlalchemy.Table(
     schema=crd.db.schema
 )
 
+tag = sqlalchemy.Table(
+    'tags',
+    metadata,
+    sqlalchemy.Column('tag_id',      sqlalchemy.Integer,     primary_key=True),
+    sqlalchemy.Column('name',        sqlalchemy.String(255), nullable=False),
+    sqlalchemy.Column('created_at',  sqlalchemy.TIMESTAMP,   nullable=False),
+    sqlalchemy.Column('updated_at',  sqlalchemy.TIMESTAMP,   nullable=False),
+    schema=crd.db.schema
+)
+
 
 
 
