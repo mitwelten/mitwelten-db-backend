@@ -71,16 +71,16 @@ class EnvDatum(BaseModel):
     voltage: Optional[float] = Field(None, example=4.8)
     voltageUnit: Optional[str] = Field(None, example='V')
     temperature: Optional[float] = Field(None, example=7.82)
-    temperatureUnit: Optional[str] = Field(None, example='°C')
+    temperatureUnit: Optional[str] = Field('°C', example='°C')
     humidity: Optional[float] = Field(None, example=93.78)
-    humidityUnit: Optional[str] = Field(None, example='%')
+    humidityUnit: Optional[str] = Field('%', example='%')
     moisture: Optional[float] = Field(None, example=2.6)
-    moistureUnit: Optional[str] = Field(None, example='g/m³')
+    moistureUnit: Optional[str] = Field('g/m³', example='g/m³')
 
 
 class PaxDatum(BaseModel):
     '''
-    Datum of a measurement by an PAX sensor
+    Datum of a measurement by a PAX sensor
     '''
     type: Literal['pax', 'Pax']
     time: Optional[datetime] = None
@@ -108,7 +108,7 @@ class EntryIdFilePostRequest(BaseModel):
     file: Optional[bytes] = Field(None, description='File to upload')
 
 
-class DataNodeLabelGetResponse(BaseModel):
+class DatumResponse(BaseModel):
     __root__: Union[List[PaxDatum], List[EnvDatum]] = Field(..., discriminator='type')
 
 
