@@ -130,7 +130,7 @@ class Entry(BaseModel):
         description='Details for this entry'
     )
     location: Point
-    type: Optional[str] = Field(None, example='env')
+    type: Optional[str] = Field(None, example='A walk in the park')
     tags: Optional[List[Tag]] = None
     comments: Optional[List[Comment]] = None
     fileUrls: Optional[List[str]] = None
