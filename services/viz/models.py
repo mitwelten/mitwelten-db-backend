@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import Enum
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Literal
 
 from pydantic import BaseModel, Field, constr
 
@@ -65,6 +65,7 @@ class EnvDatum(BaseModel):
     '''
     Datum of a measurement by an environmental sensor
     '''
+    type: Literal['env', 'HumiTemp', 'HumiTempMoisture', 'Moisture']
     time: Optional[datetime] = None
     nodeLabel: Optional[constr(regex=r'\d{4}-\d{4}')] = None
     voltage: Optional[float] = Field(None, example=4.8)
@@ -81,10 +82,11 @@ class PaxDatum(BaseModel):
     '''
     Datum of a measurement by an PAX sensor
     '''
+    type: Literal['pax', 'Pax']
     time: Optional[datetime] = None
     nodeLabel: Optional[constr(regex=r'\d{4}-\d{4}')] = None
     voltage: Optional[float] = Field(None, example=4.8)
-    voltageUnit: Optional[str] = Field(None, example='V')
+    voltageUnit: Optional[str] = Field('V', example='V')
     pax: Optional[int] = Field(None, example=17)
     paxUnit: Optional[str] = Field(None, example='')
 
@@ -107,7 +109,7 @@ class EntryIdFilePostRequest(BaseModel):
 
 
 class DataNodeLabelGetResponse(BaseModel):
-    __root__: Union[List[PaxDatum], List[EnvDatum]]
+    __root__: Union[List[PaxDatum], List[EnvDatum]] = Field(..., discriminator='type')
 
 
 class Entry(BaseModel):

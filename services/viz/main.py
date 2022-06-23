@@ -3,7 +3,7 @@
 #   timestamp: 2022-06-21T16:49:25+00:00
 
 import sys
-from typing import List
+from typing import List, Union
 from datetime import datetime
 
 from datetime import datetime
@@ -17,8 +17,8 @@ import databases
 from sqlalchemy.sql import select, func, between, and_
 from asyncpg.exceptions import UniqueViolationError, StringDataRightTruncationError, ForeignKeyViolationError
 
-from models import ApiResponse, DataNodeLabelGetResponse, Entry, PatchEntry, Node, Tag, ApiErrorResponse
-from tables import entry, location, tag, mm_tag_entry
+from models import ApiResponse, DataNodeLabelGetResponse, Entry, PatchEntry, Node, Tag, ApiErrorResponse, PaxDatum, EnvDatum
+from tables import entry, location, tag, mm_tag_entry, node, datum_pax, datum_env
 
 import pprint
 
@@ -94,8 +94,8 @@ async def shutdown():
     await database.disconnect()
 
 
-@app.get('/data/{node_label}', response_model=DataNodeLabelGetResponse, tags=['datum'])
-def list_data(
+@app.get('/data/{node_label}', response_model=Union[List[EnvDatum], List[PaxDatum]], tags=['datum'])
+async def list_data(
     node_label: constr(regex=r'\d{4}-\d{4}'),
     time_from: Optional[datetime] = Query(None, alias='from', example='2022-06-22T18:00:00.000Z'),
     time_to: Optional[datetime] = Query(None, alias='to', example='2022-06-22T20:00:00.000Z'),
@@ -103,10 +103,43 @@ def list_data(
 ) -> DataNodeLabelGetResponse:
     '''
     List sensor / capture data in timestamp ascending order
-
-    **Not Implemented**
     '''
-    pass
+    typecheck = await database.fetch_one(select(node.c.node_id, node.c.type).where(node.c.node_label == node_label))
+    if typecheck == None:
+        raise HTTPException(status_code=404, detail='Node not found')
+
+    # select the target table
+    target = None
+    if typecheck['type'] in ['pax', 'Pax']:
+        target = datum_pax
+        typeclass = PaxDatum
+    elif typecheck['type'] in ['env', 'HumiTemp', 'HumiTempMoisture', 'Moisture']:
+        target = datum_env
+        typeclass = EnvDatum
+    else:
+        raise HTTPException(status_code=400, detail='Invalid node type')
+
+    # define the join
+    query = select(target, node.c.node_label.label('nodeLabel')).\
+        select_from(target.outerjoin(node)) # .outerjoin(location) # not required atm
+
+    node_selection = target.c.node_id == typecheck['node_id']
+
+    # define time range criteria
+    if time_from and time_to:
+        query = query.where(node_selection, between(target.c.time, time_from, time_to))
+    elif time_from:
+        query = query.where(node_selection, target.c.time >= time_from)
+    elif time_to:
+        query = query.where(node_selection, target.c.time < time_to)
+    else:
+        query = query.where(node_selection)
+
+    result = await database.fetch_all(query=query.order_by(target.c.time))
+    typed_result = []
+    for datum in result:
+        typed_result.append(typeclass(type=typecheck['type'], **datum))
+    return typed_result
 
 @app.get('/entries', response_model=List[Entry], tags=['entry'])
 async def list_entries(
@@ -129,7 +162,6 @@ async def list_entries(
         select_from(entry.outerjoin(location).outerjoin(mm_tag_entry).outerjoin(tag))
 
     if time_from and time_to:
-        print('time_from and time_to', between(entry.c.created_at, time_from, time_to))
         query = query.where(between(entry.c.created_at, time_from, time_to))
     elif time_from:
         query = query.where(entry.c.created_at >= time_from)
