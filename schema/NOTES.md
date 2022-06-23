@@ -336,3 +336,28 @@ from dev.files_audio f
 group by location_id, node_id, class --, serial_number
 order by min(time)
 ```
+
+## Import sensordata from postgrest
+
+```sql
+-- along https://stackoverflow.com/a/39224859
+create unlogged table sensorimport(doc json);
+
+-- in psql
+\copy sensorimport from '../sensordata.json' -- no linebreaks!
+
+
+create temporary table import_env(
+   node_id varchar(32),
+    voltage real,
+    temperature real,
+    humidity real,
+    moisture real,
+    time timestamptz
+);
+
+insert into dev.sensordata_env(node_id, voltage, temperature, humidity, moisture, time)
+select (select node_id from dev.nodes where node_label = p.node_id), p.voltage, p.temperature, p.humidity, p.moisture, p.time
+from sensorimport
+cross join lateral json_populate_recordset(null::import_env, doc) as p
+```
