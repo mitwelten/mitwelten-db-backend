@@ -12,11 +12,17 @@ from pydantic import BaseModel, Field, constr
 
 
 class Tag(BaseModel):
+    '''
+    Annotation
+    '''
     id: Optional[int] = None
     name: Optional[constr(regex=r'\w+')] = None
 
 
 class Type(Enum):
+    '''
+    Node type enumeration as defined in the database
+    '''
     env = 'env'
     cam = 'cam'
     pax = 'pax'
@@ -33,19 +39,32 @@ class Type(Enum):
 
 
 class Comment(BaseModel):
+    '''
+    User-created comment in form of a __marker__ or __range label__
+    '''
     id: Optional[int] = None
-    comment: str = Field(..., example='interesting')
-    timeStart: datetime
-    timeEnd: Optional[datetime] = None
+    comment: str = Field(..., example='We have observed this as well.')
+    timeStart: datetime = Field(
+        ...,
+        example='2022-03-06T12:23:42.777Z',
+        description='Point in time the comment is referring to. If `timeEnd` is given, `timeStart` indicates the beginning of a range.'
+    )
+    timeEnd: Optional[datetime] = Field(None, example='2022-03-06T12:42:23.777Z', description='End of the time range the comment is referring to')
     author: Optional[str] = None
 
 
 class Point(BaseModel):
-    lat: float = Field(..., example=47.53484943172696)
-    lon: float = Field(..., example=7.612519197679952)
+    '''
+    Coordinate in WGS84 format
+    '''
+    lat: float = Field(..., example=47.53484943172696, title="Latitude (WGS84)")
+    lon: float = Field(..., example=7.612519197679952, title="Longitude (WGS84)")
 
 
 class EnvDatum(BaseModel):
+    '''
+    Datum of a measurement by an environmental sensor
+    '''
     time: Optional[datetime] = None
     nodeLabel: Optional[constr(regex=r'\d{4}-\d{4}')] = None
     voltage: Optional[float] = Field(None, example=4.8)
@@ -59,6 +78,9 @@ class EnvDatum(BaseModel):
 
 
 class PaxDatum(BaseModel):
+    '''
+    Datum of a measurement by an PAX sensor
+    '''
     time: Optional[datetime] = None
     nodeLabel: Optional[constr(regex=r'\d{4}-\d{4}')] = None
     voltage: Optional[float] = Field(None, example=4.8)
@@ -81,7 +103,7 @@ class EntryIdFilePostRequest(BaseModel):
     additionalMetadata: Optional[str] = Field(
         None, description='Additional data to pass to server'
     )
-    file: Optional[bytes] = Field(None, description='file to upload')
+    file: Optional[bytes] = Field(None, description='File to upload')
 
 
 class DataNodeLabelGetResponse(BaseModel):
@@ -90,14 +112,17 @@ class DataNodeLabelGetResponse(BaseModel):
 
 class Entry(BaseModel):
     '''
-    This is a user generated "pin" on the map to which files entries can be associated
+    A user generated "pin" on the map to which `files`, `tags` and `comments` can be associated
     '''
     id: Optional[int] = None
-    date: Optional[datetime] = Field(None, example='2022-12-31T23:59:59.999Z')
-    name: str = Field(..., example='interesting')
+    date: Optional[datetime] = Field(None, example='2022-12-31T23:59:59.999Z', description='Date of creation')
+    name: str = Field(
+        ..., example='Interesting Observation', description='Title of this entry'
+    )
     description: Optional[str] = Field(
         None,
         example='I discovered an correlation between air humidity level and visitor count',
+        description='Details for this entry'
     )
     location: Point
     type: Optional[str] = Field(None, example='env')
@@ -110,10 +135,15 @@ class PatchEntry(Entry):
     This is a copy of `Entry` with all fields optional
     for patching existing records.
     '''
-    name: Optional[str] = Field(None, example='interesting')
+    name: Optional[str] = Field(
+        None, example='Interesting Observation', description='Title of this entry'
+    )
     location: Optional[Point]
 
 class Location(BaseModel):
+    '''
+    A location record, describing metadata of a coordinate
+    '''
     id: Optional[int] = None
     location: Point
     type: Optional[str] = None
@@ -126,11 +156,18 @@ class Datum(BaseModel):
 
 
 class Node(BaseModel):
+    '''
+    A device deployed in the field, commondly collecting and/or processing data
+    '''
     id: Optional[int] = None
-    name: constr(regex=r'\d{4}-\d{4}') = Field(..., example='2323-4242')
+    name: constr(regex=r'\d{4}-\d{4}') = Field(
+        ...,
+        example='2323-4242',
+        description='Identifyer, a.k.a _Node ID_, _Node Label_, or _Label_'
+    )
     location: Location
-    type: Type = Field(..., example='env')
-    platform: Optional[str]
+    type: Type = Field(..., example='Audio', description='Desription of function')
+    platform: Optional[str] = Field(None, example='Audiomoth', description='Hardware platform')
     description: Optional[str] = Field(
         None,
         example='Environmental sensor to record humidity, temperature and athmospheric pressure',
