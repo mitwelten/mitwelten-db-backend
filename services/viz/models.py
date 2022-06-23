@@ -91,6 +91,13 @@ class PaxDatum(BaseModel):
     paxUnit: Optional[str] = Field(None, example='')
 
 
+class DatumResponse(BaseModel):
+    '''
+    Response containing one of a selection of sensor data types
+    '''
+    __root__: Union[List[PaxDatum], List[EnvDatum]] = Field(..., discriminator='type')
+
+
 class ApiResponse(BaseModel):
     code: Optional[int] = None
     type: Optional[str] = None
@@ -106,10 +113,6 @@ class EntryIdFilePostRequest(BaseModel):
         None, description='Additional data to pass to server'
     )
     file: Optional[bytes] = Field(None, description='File to upload')
-
-
-class DatumResponse(BaseModel):
-    __root__: Union[List[PaxDatum], List[EnvDatum]] = Field(..., discriminator='type')
 
 
 class Entry(BaseModel):
