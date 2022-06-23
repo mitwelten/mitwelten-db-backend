@@ -20,6 +20,8 @@ from asyncpg.exceptions import UniqueViolationError, StringDataRightTruncationEr
 from models import ApiResponse, DataNodeLabelGetResponse, Entry, PatchEntry, Node, Tag, ApiErrorResponse
 from tables import entry, location, tag, mm_tag_entry
 
+import pprint
+
 sys.path.append('../../')
 import credentials as crd
 
@@ -123,8 +125,8 @@ async def list_entries(
     is omitted in the response.
     '''
 
-    query = select(entry, entry.c.entry_id.label('id'), entry.c.created_at.label('date'), location.c.location).\
-        select_from(entry.outerjoin(location))
+    query = select(entry, entry.c.entry_id.label('id'), entry.c.created_at.label('date'), location.c.location, tag.c.tag_id, tag.c.name.label('tag_name')).\
+        select_from(entry.outerjoin(location).outerjoin(mm_tag_entry).outerjoin(tag))
 
     if time_from and time_to:
         print('time_from and time_to', between(entry.c.created_at, time_from, time_to))
@@ -134,7 +136,20 @@ async def list_entries(
     elif time_to:
         query = query.where(entry.c.created_at < time_to)
 
-    return await database.fetch_all(query=query)
+    result = await database.fetch_all(query=query)
+    entry_map = {}
+    for item in result:
+        if item['id'] in entry_map:
+            # add tags to array
+            d = {**item._mapping}
+            entry_map[item['id']]['tags'].append({'id':d['tag_id'], 'name':d['tag_name']})
+        else:
+            d = {**item._mapping}
+            d['location'] = item['location']
+            if d['tag_id'] != None:
+                d['tags'] = [{'id':d['tag_id'], 'name':d['tag_name']}]
+            entry_map[item['id']] = d
+    return list(entry_map.values())
 
 
 @app.post('/entries', response_model=Entry, tags=['entry'])
