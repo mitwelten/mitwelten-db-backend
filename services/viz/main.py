@@ -220,14 +220,24 @@ async def get_entry_by_id(id: int) -> Entry:
     '''
     Find entry by ID
     '''
-    query = select(entry, entry.c.entry_id.label('id'), entry.c.created_at.label('date'), location.c.location).\
-        select_from(entry.outerjoin(location)).where(entry.c.entry_id == id)
-    result = await database.fetch_one(query=query)
+    query = select(entry, entry.c.entry_id.label('id'), entry.c.created_at.label('date'), location.c.location, tag.c.tag_id, tag.c.name.label('tag_name')).\
+        select_from(entry.outerjoin(location).outerjoin(mm_tag_entry).outerjoin(tag)).where(entry.c.entry_id == id)
+    result = await database.fetch_all(query=query)
 
     if result == None:
         raise HTTPException(status_code=404, detail='Entry not found')
     else:
-        return result
+        entry_map = None
+        for item in result:
+            if entry_map:
+                # add tags to array
+                entry_map['tags'].append({'id':item['tag_id'], 'name':item['tag_name']})
+            else:
+                entry_map = {**item._mapping}
+                entry_map['location'] = item['location']
+                if item['tag_id'] != None:
+                    entry_map['tags'] = [{'id':item['tag_id'], 'name':item['tag_name']}]
+        return entry_map
 
 @app.patch('/entry/{id}', response_model=None, tags=['entry'])
 async def update_entry(id: int, body: PatchEntry = ...) -> None:
