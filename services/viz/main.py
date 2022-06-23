@@ -137,7 +137,7 @@ async def list_entries(
     return await database.fetch_all(query=query)
 
 
-@app.post('/entry', response_model=Entry, tags=['entry'])
+@app.post('/entries', response_model=Entry, tags=['entry'])
 async def add_entry(body: Entry) -> None:
     '''
     ## Add a new entry to the map
