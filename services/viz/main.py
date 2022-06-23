@@ -16,8 +16,6 @@ from asyncpg.exceptions import UniqueViolationError, StringDataRightTruncationEr
 from models import ApiResponse, DatumResponse, Entry, PatchEntry, Node, Tag, ApiErrorResponse, PaxDatum, EnvDatum
 from tables import entry, location, tag, mm_tag_entry, node, datum_pax, datum_env
 
-import pprint
-
 sys.path.append('../../')
 import credentials as crd
 
@@ -62,7 +60,7 @@ tags_metadata = [
 ]
 
 app = FastAPI(
-    title='Mitwelten Dashboard',
+    title='Mitwelten REST API',
     description='This service provides REST endpoints to exchange data from [Mitwelten](https://mitwelten.org) for the purpose of visualisation and map plotting.',
     contact={'email': 'mitwelten.technik@fhnw.ch'},
     version='1.0.0',
@@ -89,6 +87,9 @@ async def startup():
 async def shutdown():
     await database.disconnect()
 
+#
+# Endpoint Implementations
+#
 
 @app.get('/data/{node_label}', response_model=DatumResponse, tags=['datum'])
 async def list_data(
