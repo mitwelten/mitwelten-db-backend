@@ -379,7 +379,7 @@ async def list_nodes(
     '''
 
     select_part = f'''
-    select nl.node_id, node_label, n.type as node_type, n.description as node_description,
+    select nl.node_id, node_label, n.type as node_type, n.description as node_description, platform,
     nl.location_id, location, name as location_name, l.description as location_description, l.type as location_type
     from node_locations nl
     left join {crd.db.schema}.nodes n on n.node_id = nl.node_id
@@ -436,6 +436,7 @@ async def list_nodes(
             'id': record.node_id,
             'name': record.node_label,
             'description': record.node_description,
+            'platform': record.platform,
             'type': record.node_type,
             'location': {
                 'id': record.location_id,

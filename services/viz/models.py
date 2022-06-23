@@ -21,9 +21,15 @@ class Type(Enum):
     cam = 'cam'
     pax = 'pax'
     audiomoth = 'audiomoth'
-    accesspoint = 'accesspoint'
     appliance = 'appliance'
     air = 'air'
+    audio = 'Audio'
+    accesspoint = 'Access Point'
+    humitemp = 'HumiTemp'
+    humitempmoisture = 'HumiTempMoisture'
+    moisture = 'Moisture'
+    optical = 'Optical'
+    photo = 'Photo'
 
 
 class Comment(BaseModel):
@@ -124,6 +130,7 @@ class Node(BaseModel):
     name: constr(regex=r'\d{4}-\d{4}') = Field(..., example='2323-4242')
     location: Location
     type: Type = Field(..., example='env')
+    platform: Optional[str]
     description: Optional[str] = Field(
         None,
         example='Environmental sensor to record humidity, temperature and athmospheric pressure',
