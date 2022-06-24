@@ -1,90 +1,33 @@
 import sys
 from typing import List
-from datetime import datetime
 
 import databases
+
 import sqlalchemy
 from sqlalchemy.sql import select, func, and_, desc
-from fastapi import FastAPI
+
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+
+from asyncpg.exceptions import ExclusionViolationError
+
+from tables import nodes, locations, deployments, results, tasks, species, species_day
+from models import Deployment, Result, Species
 
 sys.path.append('../../')
 import credentials as crd
 
 DATABASE_URL = f'postgresql://{crd.db.user}:{crd.db.password}@{crd.db.host}/{crd.db.database}'
-
-origins = [
-    'http://localhost:4200',
-    'http://localhost:8080',
-]
-
 database = databases.Database(DATABASE_URL)
-metadata = sqlalchemy.MetaData(schema=crd.db.schema)
-
-results = sqlalchemy.Table(
-    'birdnet_results',
-    metadata,
-    sqlalchemy.Column('result_id',    sqlalchemy.Integer    , primary_key=True),
-    sqlalchemy.Column('file_id',      sqlalchemy.Integer    , nullable=False),
-    sqlalchemy.Column('time_start',   sqlalchemy.REAL       , nullable=False),
-    sqlalchemy.Column('time_end',     sqlalchemy.REAL       , nullable=False),
-    sqlalchemy.Column('confidence',   sqlalchemy.REAL       , nullable=False),
-    sqlalchemy.Column('species',      sqlalchemy.String(255), nullable=False)
-)
-
-species = sqlalchemy.Table(
-    'birdnet_inferred_species',
-    metadata,
-    sqlalchemy.Column('species',    sqlalchemy.String(255)),
-    sqlalchemy.Column('confidence', sqlalchemy.REAL),
-    sqlalchemy.Column('time_start', sqlalchemy.TIMESTAMP)
-)
-
-species_day = sqlalchemy.Table(
-    'birdnet_inferred_species_day',
-    metadata,
-    sqlalchemy.Column('species',    sqlalchemy.String(255)),
-    sqlalchemy.Column('confidence', sqlalchemy.REAL),
-    sqlalchemy.Column('date',       sqlalchemy.String)
-)
-
-tasks = sqlalchemy.Table(
-    'birdnet_tasks',
-    metadata,
-    sqlalchemy.Column('task_id',        sqlalchemy.Integer    , primary_key=True),
-    sqlalchemy.Column('file_id',        sqlalchemy.Integer    , nullable=False),
-    sqlalchemy.Column('config_id',      sqlalchemy.Integer    , nullable=False),
-    sqlalchemy.Column('state',          sqlalchemy.Integer    , nullable=False),
-    sqlalchemy.Column('scheduled_on',   sqlalchemy.TIMESTAMP  , nullable=False),
-    sqlalchemy.Column('pickup_on',      sqlalchemy.TIMESTAMP  , nullable=False),
-    sqlalchemy.Column('end_on',         sqlalchemy.TIMESTAMP  , nullable=False),
-    sqlalchemy.Column('batch_id',       sqlalchemy.Integer,     nullable=False),
-    schema=crd.db.schema
-)
-
-engine = sqlalchemy.create_engine(
-    DATABASE_URL
-)
-metadata.create_all(engine)
-
-class Result(BaseModel):
-    result_id: int
-    file_id: int
-    time_start: float
-    time_end: float
-    confidence: float
-    species: str
-
-class Species(BaseModel):
-    species: str
-    confidence: float
-    time_start: datetime
+engine = sqlalchemy.create_engine(DATABASE_URL)
 
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=[
+        'http://localhost:4200',
+        'http://localhost:8080',
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -97,6 +40,7 @@ async def startup():
 @app.on_event('shutdown')
 async def shutdown():
     await database.disconnect()
+
 
 @app.get('/results/', response_model=List[Result])
 async def read_notes():
@@ -160,6 +104,25 @@ async def read_input():
     # for row in result:
     #     print(row)
     return result
+
+@app.get('/nodes')
+async def read_nodes():
+    return await database.fetch_all(select(nodes))
+
+@app.get('/deployments', response_model=List[Deployment])
+async def read_nodes():
+    return await database.fetch_all(select(deployments).select_from(deployments.outerjoin(nodes).outerjoin(locations)))
+
+@app.post('/deployments', response_model=None)
+async def add_node(body: Deployment) -> None:
+    try:
+        await database.fetch_one(deployments.insert().values({
+            deployments.c.node_id: body.node_id,
+            deployments.c.location_id: body.location_id,
+            deployments.c.period: body.period,
+        }))
+    except ExclusionViolationError as e:
+        raise HTTPException(status_code=409, detail=str(e))
 
 @app.get('/')
 async def root():
