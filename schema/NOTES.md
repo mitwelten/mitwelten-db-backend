@@ -179,7 +179,7 @@ erDiagram
       string serial_number
       text description
     }
-    deployment ||--|{ deployment : "deployed for"
+    location ||--|{ deployment : "deployed for"
     node     ||--|{ deployment : "deployed for"
     deployment {
       int node_id PK
