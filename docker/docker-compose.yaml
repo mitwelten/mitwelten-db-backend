@@ -24,7 +24,7 @@ services:
     volumes:
       - "/etc/letsencrypt:/letsencrypt"
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
-    labels:
+    #labels:
     #  - "traefik.http.middlewares.https_redirect.redirectscheme.scheme=https"
     #  - "traefik.http.middlewares.https_redirect.redirectscheme.permanent=true"
     restart: always
