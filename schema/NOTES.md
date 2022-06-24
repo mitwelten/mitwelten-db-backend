@@ -336,3 +336,67 @@ from dev.files_audio f
 group by location_id, node_id, class --, serial_number
 order by min(time)
 ```
+
+## Figuring out overlap in audio recordings
+
+6431-2987 and 3164-8729 once were the same. Still it bears the question if there were overlapping recordings, and
+for what purpose.
+
+```sql
+select
+    ta.day as "6431-2987_day", ta.sample_rate as "6431-2987_sr", ta.serial_number as "6431-2987_sn",
+    tb.day as "3164-8729_day", tb.sample_rate as "3164-8729_sr", tb.serial_number as "3164-8729_sn"
+from (select distinct to_char(date_trunc('day', time) , 'YYYY.mm.DD') as day, sample_rate, serial_number
+    from dev.files_audio
+    where node_id = (select node_id from dev.nodes where node_label='6431-2987') order by day) ta
+full outer join (select distinct to_char(date_trunc('day', time) , 'YYYY.mm.DD') as day, sample_rate, serial_number
+    from dev.files_audio
+    where node_id = (select node_id from dev.nodes where node_label='3164-8729') order by day) tb
+on tb.day = ta.day
+```
+
+| 6431-2987  | SR    | SN               | 3164-8729  | SR    | SN               | * |
+| ---------- | ----- | ---------------- | ---------- | ----- | ---------------- | - |
+| 2021.09.05 | 48000 | 24E144036037E72E |            |       |                  |   |
+| 2021.09.05 | 48000 | 24E144036037E72E |            |       |                  |   |
+| 2021.09.06 | 48000 | 24E144036037E72E |            |       |                  |   |
+| 2021.09.07 | 48000 | 24E144036037E72E |            |       |                  |   |
+| 2021.09.08 | 48000 | 24E144036037E72E |            |       |                  |   |
+| 2021.09.09 | 48000 | 24E144036037E72E |            |       |                  |   |
+| 2021.09.10 | 48000 | 24E144036037E72E |            |       |                  |   |
+| 2021.09.12 | 48000 | 24E144036037E72E | 2021.09.12 | 96000 | 24A04F085FDF2793 |   |
+| 2021.09.13 | 48000 | 24E144036037E72E | 2021.09.13 | 96000 | 24A04F085FDF2793 |   |
+| 2021.09.14 | 48000 | 24E144036037E72E | 2021.09.14 | 96000 | 24A04F085FDF2793 |   |
+| 2021.09.15 | 48000 | 24E144036037E72E | 2021.09.15 | 96000 | 24A04F085FDF2793 |   |
+| 2021.09.16 | 48000 | 24E144036037E72E | 2021.09.16 | 96000 | 24A04F085FDF2793 |   |
+| 2021.09.17 | 48000 | 24E144036037E72E | 2021.09.17 | 96000 | 24A04F085FDF2793 |   |
+| 2021.09.18 | 48000 | 24E144036037E72E | 2021.09.18 | 96000 | 24A04F085FDF2793 |   |
+|            |       |                  | 2021.09.19 | 96000 | 24A04F085FDF2793 |   |
+|            |       |                  | 2021.09.21 | 96000 | 24A04F085FDF2793 |   |
+|            |       |                  | 2021.09.22 | 96000 | 24A04F085FDF2793 |   |
+|            |       |                  | 2021.09.23 | 96000 | 24A04F085FDF2793 |   |
+|            |       |                  | 2021.09.24 | 96000 | 24A04F085FDF2793 |   |
+|            |       |                  | 2021.09.25 | 96000 | 24A04F085FDF2793 |   |
+|            |       |                  | 2021.09.26 | 96000 | 24A04F085FDF2793 |   |
+|            |       |                  | 2021.09.27 | 96000 | 24A04F085FDF2793 |   |
+|            |       |                  | 2021.09.28 | 96000 | 24A04F085FDF2793 |   |
+| 2021.10.02 | 48000 | 24E144036037E72E | 2021.10.02 | 96000 | 24A04F085FDF2793 |   |
+| 2021.10.03 | 48000 | 24E144036037E72E | 2021.10.03 | 96000 | 24A04F085FDF2793 |   |
+| 2021.10.04 | 48000 | 24E144036037E72E | 2021.10.04 | 96000 | 24A04F085FDF2793 |   |
+|            |       |                  | 2021.10.05 | 96000 | 24A04F085FDF2793 |   |
+|            |       |                  | 2021.10.06 | 96000 | 24A04F085FDF2793 |   |
+|            |       |                  | 2021.10.07 | 96000 | 24A04F085FDF2793 | v |
+|            |       |                  | 2021.10.07 | 96000 | 24A04F085FDF2787 | ^ |
+|            |       |                  | 2021.10.08 | 96000 | 24A04F085FDF2787 |   |
+|            |       |                  | 2021.10.09 | 96000 | 24A04F085FDF2787 |   |
+|            |       |                  | 2021.10.10 | 96000 | 24A04F085FDF2787 |   |
+| 2021.10.17 | 48000 | 24E144036037E72E |            |       |                  |   |
+| 2021.10.18 | 48000 | 24E144036037E72E |            |       |                  |   |
+| 2021.10.19 | 48000 | 24E144036037E72E |            |       |                  |   |
+| 2021.10.20 | 48000 | 24E144036037E72E |            |       |                  |   |
+| 2021.10.21 | 48000 | 24E144036037E72E |            |       |                  |   |
+| 2021.10.22 | 48000 | 24E144036037E72E |            |       |                  |   |
+| 2021.10.23 | 48000 | 24E144036037E72E |            |       |                  |   |
+
+The recordings don't overlap and serve dedicated purpose:
+6431-2987 for birds 3164-8729 for bats.
