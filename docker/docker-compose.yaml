@@ -48,8 +48,8 @@ services:
       - "traefik.http.routers.viz_api.tls.certresolver=ssl"
       - "traefik.http.services.viz_api.loadbalancer.server.port=80"
 
-      - "traefik.http.middlewares.add-prefix-viz-v1.addprefix.prefix=/viz/v1"
-      - "traefik.http.routers.viz_api.middlewares=add-prefix-viz-v1@docker"
+     # - "traefik.http.middlewares.add-prefix-viz-v1.addprefix.prefix=/viz/v1"
+     # - "traefik.http.routers.viz_api.middlewares=add-prefix-viz-v1@docker"
 
      # - "traefik.http.middlewares.viz-api-stripprefix.stripprefix.prefixes=/viz/v1/"
      # - "traefik.http.routers.viz_api.middlewares=viz-api-stripprefix"
