@@ -117,6 +117,11 @@ CREATE TABLE IF NOT EXISTS dev.nodes
     node_label character varying(32) NOT NULL,
     type character varying(128) NOT NULL,
     serial_number character varying(128),
+    platform character varying(128);
+    connectivity character varying(128);
+    power character varying(128);
+    hardware_version character varying(128);
+    software_version character varying(128);
     description text,
     PRIMARY KEY (node_id),
     UNIQUE (node_label)
