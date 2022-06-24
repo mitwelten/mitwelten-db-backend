@@ -93,7 +93,7 @@ CREATE TABLE IF NOT EXISTS dev.birdnet_tasks
     task_id serial,
     file_id integer NOT NULL,
     config_id integer NOT NULL,
-    batch_id integer NOT NULL,
+    batch_id integer NOT NULL DEFAULT current_timestamp,
     state integer NOT NULL,
     scheduled_on timestamptz NOT NULL,
     pickup_on timestamptz,
@@ -124,7 +124,10 @@ CREATE TABLE IF NOT EXISTS dev.nodes
     power character varying(128);
     hardware_version character varying(128);
     software_version character varying(128);
+    firmware_version character varying(128);
     description text,
+    created_at timestamptz NOT NULL DEFAULT current_timestamp,
+    updated_at timestamptz NOT NULL DEFAULT current_timestamp,
     PRIMARY KEY (node_id),
     UNIQUE (node_label)
 );
