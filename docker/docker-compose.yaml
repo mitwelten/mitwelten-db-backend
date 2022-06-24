@@ -33,7 +33,7 @@ services:
     image: mitwelten-viz:latest
     container_name: "mitwelten-viz-api"
     volumes:
-      - "/home/zedcat/mitwelten/mitwelten-db-backend/services/viz:/app"
+      - "/opt/mitwelten-db-backend/services/viz:/app"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.viz_api_insecure.rule=Host(`data.mitwelten.org`)"
