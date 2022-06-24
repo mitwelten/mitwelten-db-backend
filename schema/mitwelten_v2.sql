@@ -167,6 +167,7 @@ CREATE TABLE IF NOT EXISTS dev.tags
     created_at timestamptz DEFAULT current_timestamp,
     updated_at timestamptz DEFAULT current_timestamp,
     PRIMARY KEY (tag_id)
+    UNIQUE (name)
 );
 
 CREATE TABLE IF NOT EXISTS dev.mm_tags_entries
