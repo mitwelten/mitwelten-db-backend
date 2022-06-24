@@ -3,6 +3,8 @@ BEGIN;
 CREATE SCHEMA IF NOT EXISTS dev
     AUTHORIZATION mitwelten_admin;
 
+CREATE EXTENSION btree_gist;
+
 CREATE TABLE IF NOT EXISTS dev.birdnet_configs
 (
     config_id serial,
@@ -91,7 +93,7 @@ CREATE TABLE IF NOT EXISTS dev.birdnet_tasks
     task_id serial,
     file_id integer NOT NULL,
     config_id integer NOT NULL,
-    batch_id integer NOT NULL,
+    batch_id integer NOT NULL DEFAULT current_timestamp,
     state integer NOT NULL,
     scheduled_on timestamptz NOT NULL,
     pickup_on timestamptz,
@@ -122,9 +124,22 @@ CREATE TABLE IF NOT EXISTS dev.nodes
     power character varying(128);
     hardware_version character varying(128);
     software_version character varying(128);
+    firmware_version character varying(128);
     description text,
+    created_at timestamptz NOT NULL DEFAULT current_timestamp,
+    updated_at timestamptz NOT NULL DEFAULT current_timestamp,
     PRIMARY KEY (node_id),
     UNIQUE (node_label)
+);
+
+CREATE TABLE IF NOT EXISTS dev.deployments
+(
+    deployment_id serial,
+    node_id integer NOT NULL,
+    location_id integer NOT NULL,
+    period tstzrange NOT NULL DEFAULT tstzrange('-infinity', 'infinity'),
+    PRIMARY KEY (deployment_id),
+    EXCLUDE USING GIST (node_id WITH =, location_id WITH =, period WITH &&)
 );
 
 CREATE TABLE IF NOT EXISTS dev.sensordata_env
@@ -248,6 +263,18 @@ ALTER TABLE IF EXISTS dev.birdnet_tasks
 ALTER TABLE IF EXISTS dev.birdnet_tasks
     ADD FOREIGN KEY (file_id)
     REFERENCES dev.files_audio (file_id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE RESTRICT;
+
+ALTER TABLE IF EXISTS dev.deployments
+    ADD FOREIGN KEY (node_id)
+    REFERENCES dev.nodes (node_id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE RESTRICT;
+
+ALTER TABLE IF EXISTS dev.deployments
+    ADD FOREIGN KEY (location_id)
+    REFERENCES dev.locations (location_id) MATCH SIMPLE
     ON UPDATE NO ACTION
     ON DELETE RESTRICT;
 
