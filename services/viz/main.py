@@ -32,8 +32,9 @@ database = databases.Database(DATABASE_URL)
 #
 
 origins = [
-    'https://viz.mitwelten.org',
-    'http://localhost',
+    'https://viz.mitwelten.org',    # production environment
+    'http://localhost',             # dev environment
+    'http://localhost:4200',        # angular dev environment
 ]
 
 tags_metadata = [
@@ -68,6 +69,8 @@ app = FastAPI(
         {'url': 'https://data.mitwelten.org', 'description': 'Production environment'},
         {'url': 'http://localhost:8000', 'description': 'Development environment'}
     ],
+    root_path='/viz/v1',
+    root_path_in_servers=False,
     openapi_tags=tags_metadata
 )
 
