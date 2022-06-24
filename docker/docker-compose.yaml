@@ -1,0 +1,10 @@
+version: '3.3'
+
+services:
+  viz-api:
+    image: mitwelten-viz:latest
+    container_name: "mitwelten-viz-api"
+    volumes:
+      - "/home/zedcat/mitwelten/mitwelten-db-backend/services/viz:/app"
+    ports:
+      - "8000:80"
