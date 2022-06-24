@@ -69,6 +69,8 @@ app = FastAPI(
         {'url': 'https://data.mitwelten.org', 'description': 'Production environment'},
         {'url': 'http://localhost:8000', 'description': 'Development environment'}
     ],
+    root_path='/viz/v1',
+    root_path_in_servers=False,
     openapi_tags=tags_metadata
 )
 
