@@ -7,4 +7,4 @@ services:
     volumes:
       - "/home/zedcat/mitwelten/mitwelten-db-backend/services/viz:/app"
     ports:
-      - "8000:80"
+      - "8000:0.0.0.0:80"
