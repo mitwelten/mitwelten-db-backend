@@ -275,6 +275,35 @@ group by location_id, node_id, class --, serial_number
 order by min(time)
 ```
 
+Finally, after having all locations assigned, generate a list of start end times, and round these times to days, then
+insert into deployments
+
+```sql
+select (select n.node_label from dev.nodes n where n.node_id = f.node_id),
+  node_id, location_id, min(time) as begin, max(time) as end
+from dev.files_audio f group by node_id, location_id order by begin;
+
+insert into dev.deployments(node_id, location_id, period) values
+(36, 27, tstzrange('2021-03-16 00:00:00+01','2021-04-22 00:00:00+02')),
+(37, 28, tstzrange('2021-03-16 00:00:00+01','2021-04-22 00:00:00+02')),
+(24, 29, tstzrange('2021-05-10 00:00:00+02','2021-10-23 00:00:00+02')),
+(23, 31, tstzrange('2021-05-10 00:00:00+02','2021-10-28 00:00:00+02')),
+(30, 32, tstzrange('2021-05-10 00:00:00+02','2021-10-28 00:00:00+02')),
+(27, 30, tstzrange('2021-05-10 00:00:00+02','2021-09-04 00:00:00+02')),
+(29, 33, tstzrange('2021-05-10 00:00:00+02','2021-10-22 00:00:00+02')),
+(25, 36, tstzrange('2021-05-21 00:00:00+02','2021-10-15 00:00:00+02')),
+(28, 46, tstzrange('2021-09-03 00:00:00+02','2021-09-08 00:00:00+02')),
+(22, 47, tstzrange('2021-09-03 00:00:00+02','2021-09-08 00:00:00+02')),
+(33, 48, tstzrange('2021-09-03 00:00:00+02','2021-09-08 00:00:00+02')),
+(34, 45, tstzrange('2021-09-03 00:00:00+02','2021-09-08 00:00:00+02')),
+(31, 35, tstzrange('2021-09-05 00:00:00+02','2021-10-24 00:00:00+02')),
+(35, 44, tstzrange('2021-09-06 00:00:00+02','2021-11-16 00:00:00+01')),
+(32, 34, tstzrange('2021-09-12 00:00:00+02','2021-10-15 00:00:00+02')),
+(26, 35, tstzrange('2021-09-12 00:00:00+02','2021-10-11 00:00:00+02')),
+(21, 25, tstzrange('2021-10-13 00:00:00+02','2021-10-29 00:00:00+02')),
+(33, 26, tstzrange('2021-10-13 00:00:00+02','2021-10-29 00:00:00+02'));
+```
+
 ## Figuring out overlap in audio recordings
 
 6431-2987 and 3164-8729 once were the same. Still it bears the question if there were overlapping recordings, and
