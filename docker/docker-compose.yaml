@@ -5,7 +5,7 @@ services:
     image: "traefik:v2.7"
     container_name: "traefik"
     command:
-      #- "--log.level=DEBUG"
+      - "--log.level=DEBUG"
       - "--api.insecure=true"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
@@ -51,6 +51,9 @@ services:
       - "traefik.http.routers.viz_api.entrypoints=https"
       - "traefik.http.routers.viz_api.tls.certresolver=ssl"
 
+      # chain middlewares
+      - "traefik.http.middlewares.viz_api.chain.middlewares=viz-api-stripprefix,viz-api-basic-auth"
+
       # strip prefix /viz/v1
       - "traefik.http.middlewares.viz-api-stripprefix.stripprefix.prefixes=/viz/v1"
 
@@ -59,9 +62,8 @@ services:
 
      # - "traefik.http.routers.viz_api.middlewares=viz-api-stripprefix"
      # - "traefik.http.routers.viz_api.middlewares=viz-api-basic-auth"
-     
-      # chain middlewares
-      - "traefik.http.middlewares.viz_api.chain.middlewares=viz-api-stripprefix,viz-api-basic-auth"
+
+
 
     restart: always
 
