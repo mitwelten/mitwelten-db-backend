@@ -32,8 +32,9 @@ database = databases.Database(DATABASE_URL)
 #
 
 origins = [
-    'https://viz.mitwelten.org',
-    'http://localhost',
+    'https://viz.mitwelten.org',    # production environment
+    'http://localhost',             # dev environment
+    'http://localhost:4200',        # angular dev environment
 ]
 
 tags_metadata = [
