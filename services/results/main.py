@@ -162,7 +162,7 @@ async def read_deployment(id: int) -> DeploymentResponse:
     return d
 
 @app.post('/deployments', response_model=None)
-async def add_node(body: Deployment) -> None:
+async def add_deployment(body: Deployment) -> None:
     try:
         await database.fetch_one(deployments.insert().values({
             deployments.c.node_id: body.node_id,
@@ -173,7 +173,7 @@ async def add_node(body: Deployment) -> None:
         raise HTTPException(status_code=409, detail=str(e))
 
 @app.put('/deployments', response_model=None)
-async def update_node(body: DeploymentRequest) -> None:
+async def upsert_deployment(body: DeploymentRequest) -> None:
     transaction = await database.transaction()
     # TODO: put all except the except block into one function to be used in multiple occasions
     try:
@@ -191,7 +191,6 @@ async def update_node(body: DeploymentRequest) -> None:
         location_id = None
         if result == None:
             # insert new location
-            print('adding location...')
             loc_insert_query = f'''
             insert into {crd.db.schema}.locations(location, type)
             values (point({body.location.lat},{body.location.lon}), 'user-added')
@@ -199,14 +198,11 @@ async def update_node(body: DeploymentRequest) -> None:
             '''
             location_id = await database.execute(loc_insert_query)
         else:
-            print('using existing location...')
             location_id = result.location_id
 
         if hasattr(body, 'deployment_id') and body.deployment_id != None:
             # this is an update
             # update the record to see if it conflicts
-            print('updating...')
-            pprint(dict(body))
             await database.execute(deployments.update().\
                 where(deployments.c.deployment_id == body.deployment_id).\
                 values({
@@ -217,7 +213,6 @@ async def update_node(body: DeploymentRequest) -> None:
             ))
         else:
             # this is a new record, try to insert
-            print('inserting...')
             await database.execute(deployments.insert().\
                 values({
                     deployments.c.node_id: body.node_id,
@@ -232,11 +227,10 @@ async def update_node(body: DeploymentRequest) -> None:
         await transaction.rollback()
         raise HTTPException(status_code=400, detail=str(e))
     else:
-        print('inserted/updated, no overlap')
         await transaction.commit()
 
-@app.put('/validate/deployment')
-async def validate_node(body: DeploymentRequest) -> None:
+@app.put('/validate/deployment', response_model=ValidationResult)
+async def validate_deployment(body: DeploymentRequest) -> None:
     transaction = await database.transaction()
     try:
         # check if the location exists
@@ -283,15 +277,12 @@ async def validate_node(body: DeploymentRequest) -> None:
                 }
             ))
     except ExclusionViolationError as e:
-        print('validator', e)
         await transaction.rollback()
         return True
     except Exception as e:
-        print('validator', e)
         await transaction.rollback()
         return True
     else:
-        print('validator: no overlap')
         await transaction.rollback()
         return False
 
