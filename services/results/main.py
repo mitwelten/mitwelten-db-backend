@@ -1,9 +1,9 @@
 import sys
-from typing import List
+from typing import List, Optional
 import databases
 
 import sqlalchemy
-from sqlalchemy.sql import insert, update, select, func, and_, desc, text, LABEL_STYLE_TABLENAME_PLUS_COL
+from sqlalchemy.sql import insert, update, select, func, and_, desc, text, distinct, LABEL_STYLE_TABLENAME_PLUS_COL
 from sqlalchemy.sql.functions import current_timestamp
 
 from fastapi import FastAPI, Request, status, HTTPException
@@ -127,6 +127,42 @@ async def upsert_node(body: Node) -> None:
     else:
         return await database.execute(insert(nodes).values(body.dict(exclude_none=True)).\
             returning(nodes.c.node_id))
+
+@app.get('/node/type_options')
+@app.get('/node/type_options/{search_term}')
+async def get_node_type(search_term: Optional[str] = None) -> List[str]:
+    q = select(distinct(nodes.c.type))
+    if search_term != None:
+        q = q.where(nodes.c.type.ilike(f'{search_term}%'))
+    r = await database.fetch_all(q.order_by(nodes.c.type))
+    return [v[nodes.c.type] for v in r if v[nodes.c.type] != None]
+
+@app.get('/node/platform_options')
+@app.get('/node/platform_options/{search_term}')
+async def get_node_platform(search_term: Optional[str] = None) -> List[str]:
+    q = select(distinct(nodes.c.platform))
+    if search_term != None:
+        q = q.where(nodes.c.platform.ilike(f'{search_term}%'))
+    r = await database.fetch_all(q.order_by(nodes.c.platform))
+    return [v[nodes.c.platform] for v in r if v[nodes.c.platform] != None]
+
+@app.get('/node/connectivity_options')
+@app.get('/node/connectivity_options/{search_term}')
+async def get_node_connectivity(search_term: Optional[str] = None) -> List[str]:
+    q = select(distinct(nodes.c.connectivity))
+    if search_term != None:
+        q = q.where(nodes.c.connectivity.ilike(f'{search_term}%'))
+    r = await database.fetch_all(q.order_by(nodes.c.connectivity))
+    return [v[nodes.c.connectivity] for v in r if v[nodes.c.connectivity] != None]
+
+@app.get('/node/power_options')
+@app.get('/node/power_options/{search_term}')
+async def get_node_power(search_term: Optional[str] = None) -> List[str]:
+    q = select(distinct(nodes.c.power))
+    if search_term != None:
+        q = q.where(nodes.c.power.ilike(f'{search_term}%'))
+    r = await database.fetch_all(q.order_by(nodes.c.power))
+    return [v[nodes.c.power] for v in r if v[nodes.c.power] != None]
 
 @app.get('/node/{id}', response_model=Node)
 async def read_node(id: int) -> Node:
