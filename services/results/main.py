@@ -3,7 +3,8 @@ from typing import List
 import databases
 
 import sqlalchemy
-from sqlalchemy.sql import select, func, and_, desc, text, LABEL_STYLE_TABLENAME_PLUS_COL
+from sqlalchemy.sql import insert, update, select, func, and_, desc, text, LABEL_STYLE_TABLENAME_PLUS_COL
+from sqlalchemy.sql.functions import current_timestamp
 
 from fastapi import FastAPI, Request, status, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -13,7 +14,7 @@ from fastapi.responses import JSONResponse
 from asyncpg.exceptions import ExclusionViolationError
 
 from tables import nodes, locations, deployments, results, tasks, species, species_day
-from models import Deployment, Result, Species, DeploymentResponse, DeploymentRequest, Node
+from models import Deployment, Result, Species, DeploymentResponse, DeploymentRequest, Node, ValidationResult, NodeValidationRequest
 
 sys.path.append('../../')
 import credentials as crd
@@ -116,6 +117,16 @@ async def read_input():
 @app.get('/nodes')
 async def read_nodes():
     return await database.fetch_all(select(nodes))
+
+@app.put('/nodes')
+async def upsert_node(body: Node) -> None:
+    if hasattr(body, 'node_id') and body.node_id != None:
+        return await database.execute(update(nodes).where(nodes.c.node_id == body.node_id).\
+            values({**body.dict(exclude_none=True), nodes.c.updated_at: current_timestamp()}).\
+            returning(nodes.c.node_id))
+    else:
+        return await database.execute(insert(nodes).values(body.dict(exclude_none=True)).\
+            returning(nodes.c.node_id))
 
 @app.get('/node/{id}', response_model=Node)
 async def read_node(id: int) -> Node:
@@ -283,6 +294,16 @@ async def validate_node(body: DeploymentRequest) -> None:
         print('validator: no overlap')
         await transaction.rollback()
         return False
+
+@app.put('/validate/node', response_model=ValidationResult)
+async def validate_node(body: NodeValidationRequest) -> ValidationResult:
+    r = None
+    if hasattr(body, 'node_id') and body.node_id != None:
+        r = await database.fetch_one(select(nodes).\
+            where(nodes.c.node_label == body.node_label, nodes.c.node_id != body.node_id))
+    else:
+        r = await database.fetch_one(select(nodes).where(nodes.c.node_label == body.node_label))
+    return True if r == None else False
 
 @app.get('/')
 async def root():

@@ -27,6 +27,13 @@ class TimeStampRange(TSTZRANGE):
                 upper = datetime.fromisoformat(cls.stripz(val['end']))
             return Range(lower=lower, upper=upper)
 
+class ValidationResult(BaseModel):
+    __root__: bool
+
+class NodeValidationRequest(BaseModel):
+    node_id: Optional[int]
+    node_label: str
+
 class Result(BaseModel):
     result_id: int
     file_id: int
