@@ -306,7 +306,6 @@ async def update_entry(id: int, body: PatchEntry = ...) -> None:
                 values (point({body.location.lat},{body.location.lon}), 'user-added')
                 returning location_id
                 '''
-                print(loc_insert_query)
                 location_id = await database.execute(loc_insert_query)
             else:
                 location_id = result.location_id
