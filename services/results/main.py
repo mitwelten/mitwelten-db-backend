@@ -3,7 +3,7 @@ from typing import List, Optional
 import databases
 
 import sqlalchemy
-from sqlalchemy.sql import insert, update, select, func, and_, desc, text, distinct, LABEL_STYLE_TABLENAME_PLUS_COL
+from sqlalchemy.sql import insert, update, select, delete, func, and_, desc, text, distinct, LABEL_STYLE_TABLENAME_PLUS_COL
 from sqlalchemy.sql.functions import current_timestamp
 
 from fastapi import FastAPI, Request, status, HTTPException
@@ -11,7 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
-from asyncpg.exceptions import ExclusionViolationError
+from asyncpg.exceptions import ExclusionViolationError, ForeignKeyViolationError
 
 from tables import nodes, locations, deployments, results, tasks, species, species_day
 from models import Deployment, Result, Species, DeploymentResponse, DeploymentRequest, Node, ValidationResult, NodeValidationRequest
@@ -167,6 +167,15 @@ async def get_node_power(search_term: Optional[str] = None) -> List[str]:
 @app.get('/node/{id}', response_model=Node)
 async def read_node(id: int) -> Node:
     return await database.fetch_one(select(nodes).where(nodes.c.node_id == id))
+
+@app.delete('/node/{id}', response_model=None)
+async def delete_node(id: int) -> None:
+    try:
+        await database.fetch_one(delete(nodes).where(nodes.c.node_id == id))
+    except ForeignKeyViolationError as e:
+        raise HTTPException(status_code=409, detail=str(e))
+    else:
+        return True
 
 @app.get('/deployments', response_model=List[DeploymentResponse])
 async def read_deployments() -> List[DeploymentResponse]:
