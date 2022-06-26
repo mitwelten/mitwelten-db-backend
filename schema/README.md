@@ -43,7 +43,7 @@ The _time period_ in which a _node_ has been or is installed at a specific _loca
 - Has foreign keys to _nodes_ and _locations_
 - Has a time _period_
 
-The combination of node, location and period is constrained to be unique and non-overlapping.
+The combination of node and period is constrained to be unique and non-overlapping.
 
 ### sensordata
 

@@ -139,7 +139,7 @@ CREATE TABLE IF NOT EXISTS dev.deployments
     location_id integer NOT NULL,
     period tstzrange NOT NULL DEFAULT tstzrange('-infinity', 'infinity'),
     PRIMARY KEY (deployment_id),
-    EXCLUDE USING GIST (node_id WITH =, location_id WITH =, period WITH &&)
+    EXCLUDE USING GIST (node_id WITH =, period WITH &&)
 );
 
 CREATE TABLE IF NOT EXISTS dev.sensordata_env
