@@ -119,7 +119,7 @@ async def read_input():
 
 @app.get('/nodes')
 async def read_nodes():
-    return await database.fetch_all(select(nodes))
+    return await database.fetch_all(select(nodes).order_by(nodes.c.node_label))
 
 @app.put('/nodes')
 async def upsert_node(body: Node) -> None:
