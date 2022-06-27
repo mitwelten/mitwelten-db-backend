@@ -35,7 +35,7 @@ app = FastAPI(
         {'url': 'https://data.mitwelten.org/manager/v1', 'description': 'Production environment'},
         {'url': 'http://localhost:8000', 'description': 'Development environment'}
     ],
-    root_path='/viz/v1',
+    root_path='/manager/v1',
     root_path_in_servers=False
 )
 app.add_middleware(
