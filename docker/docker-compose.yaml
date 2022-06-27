@@ -34,7 +34,7 @@ services:
     container_name: "mitwelten-viz-api"
     volumes:
       - "/opt/mitwelten-db-backend/services/viz:/app"
-      - "/opt/mitwelten-db-backend/credentials.py:/app/credentials.py" 
+      - "/opt/mitwelten-db-backend/credentials.py:/app/credentials.py"
     labels:
       - "traefik.enable=true"
       - "traefik.http.services.viz_api.loadbalancer.server.port=80"
@@ -45,7 +45,7 @@ services:
       # redirect to https
       - "traefik.http.middlewares.viz-api-https.redirectscheme.scheme=https"
       - "traefik.http.routers.viz_api_insecure.middlewares=viz-api-https"
-      
+
       # for https
       - "traefik.http.routers.viz_api.rule=Host(`data.mitwelten.org`)&&PathPrefix(`/viz/v1/`)"
       - "traefik.http.routers.viz_api.entrypoints=https"
@@ -62,6 +62,37 @@ services:
 
      # - "traefik.http.routers.viz_api.middlewares=viz-api-stripprefix"
      # - "traefik.http.routers.viz_api.middlewares=viz-api-basic-auth"
+
+  manager-api:
+    image: mitwelten-manager:0.1
+    container_name: "mitwelten-manager-api"
+    volumes:
+      - "/opt/mitwelten-db-backend/services/manager:/app"
+      - "/opt/mitwelten-db-backend/credentials.py:/app/credentials.py"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.services.manager_api.loadbalancer.server.port=80"
+
+      # for https
+      - "traefik.http.routers.manager_api_insecure.rule=Host(`data.mitwelten.org`)&&PathPrefix(`/manager/v1/`)"
+      - "traefik.http.routers.manager_api_insecure.entrypoints=http"
+      # redirect to https
+      - "traefik.http.middlewares.manager-api-https.redirectscheme.scheme=https"
+      - "traefik.http.routers.manager_api_insecure.middlewares=manager-api-https"
+
+      # for https
+      - "traefik.http.routers.manager_api.rule=Host(`data.mitwelten.org`)&&PathPrefix(`/manager/v1/`)"
+      - "traefik.http.routers.manager_api.entrypoints=https"
+      - "traefik.http.routers.manager_api.tls.certresolver=ssl"
+
+      #  middlewares for https
+      - "traefik.http.routers.manager_api.middlewares=manager-api-stripprefix,manager-api-basic-auth"
+
+      # strip prefix /manager/v1
+      - "traefik.http.middlewares.manager-api-stripprefix.stripprefix.prefixes=/manager/v1"
+
+      # basic auth
+      - "traefik.http.middlewares.manager-api-basic-auth.basicauth.users=${manager_API_BASIC_AUTH_USER_PW}"
 
 
 
