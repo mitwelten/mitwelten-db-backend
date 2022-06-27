@@ -323,7 +323,7 @@ async def upsert_deployment(body: DeploymentRequest) -> None:
     else:
         await transaction.commit()
 
-@app.put('/validate/deployment', response_model=ValidationResult, dependencies=[Depends(check_authentication)])
+@app.put('/validate/deployment', response_model=ValidationResult)
 async def validate_deployment(body: DeploymentRequest) -> None:
     transaction = await database.transaction()
     try:
@@ -380,7 +380,7 @@ async def validate_deployment(body: DeploymentRequest) -> None:
         await transaction.rollback()
         return False
 
-@app.put('/validate/node', response_model=ValidationResult, dependencies=[Depends(check_authentication)])
+@app.put('/validate/node', response_model=ValidationResult)
 async def validate_node(body: NodeValidationRequest) -> ValidationResult:
     r = None
     if hasattr(body, 'node_id') and body.node_id != None:
