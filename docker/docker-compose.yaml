@@ -86,13 +86,14 @@ services:
       - "traefik.http.routers.manager_api.tls.certresolver=ssl"
 
       #  middlewares for https
-      - "traefik.http.routers.manager_api.middlewares=manager-api-stripprefix,manager-api-basic-auth"
+      # - "traefik.http.routers.manager_api.middlewares=manager-api-stripprefix,manager-api-basic-auth"
+      - "traefik.http.routers.manager_api.middlewares=manager-api-stripprefix"
 
       # strip prefix /manager/v1
       - "traefik.http.middlewares.manager-api-stripprefix.stripprefix.prefixes=/manager/v1"
 
       # basic auth
-      - "traefik.http.middlewares.manager-api-basic-auth.basicauth.users=${MANAGER_API_BASIC_AUTH_USER_PW}"
+      #- "traefik.http.middlewares.manager-api-basic-auth.basicauth.users=${MANAGER_API_BASIC_AUTH_USER_PW}"
 
 
 

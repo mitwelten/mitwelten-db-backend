@@ -1,4 +1,5 @@
 import sys
+import secrets
 from typing import List, Optional
 import databases
 
@@ -6,7 +7,8 @@ import sqlalchemy
 from sqlalchemy.sql import insert, update, select, delete, exists, func, and_, not_, desc, text, distinct, LABEL_STYLE_TABLENAME_PLUS_COL
 from sqlalchemy.sql.functions import current_timestamp
 
-from fastapi import FastAPI, Request, status, HTTPException
+from fastapi import FastAPI, Request, status, HTTPException, Depends, Header
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
@@ -35,16 +37,30 @@ app = FastAPI(
         {'url': 'https://data.mitwelten.org/manager/v1', 'description': 'Production environment'},
         {'url': 'http://localhost:8000', 'description': 'Development environment'}
     ],
-    root_path='/manager/v1',
-    root_path_in_servers=False
+    # root_path='/manager/v1',
+    # root_path_in_servers=False
 )
 app.add_middleware(
     CORSMiddleware,
     allow_origins=['*'],
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=['*'],
+    allow_headers=['*'],
 )
+
+security = HTTPBasic()
+
+def check_authentication(credentials: HTTPBasicCredentials = Depends(security), authorization: Optional[str] = Header(None)):
+    correct_username = secrets.compare_digest(credentials.username, crd.ba.username)
+    correct_password = secrets.compare_digest(credentials.password, crd.ba.password)
+    print('checking credentials')
+    if not (correct_username and correct_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail='Incorrect username or password',
+            headers={'WWW-Authenticate': 'Basic'},
+        )
+    return True
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
@@ -129,7 +145,7 @@ async def read_input():
 async def read_nodes():
     return await database.fetch_all(select(nodes).order_by(nodes.c.node_label))
 
-@app.put('/nodes')
+@app.put('/nodes', dependencies=[Depends(check_authentication)])
 async def upsert_node(body: Node) -> None:
     if hasattr(body, 'node_id') and body.node_id != None:
         return await database.execute(update(nodes).where(nodes.c.node_id == body.node_id).\
@@ -179,7 +195,7 @@ async def get_node_power(search_term: Optional[str] = None) -> List[str]:
 async def read_node(id: int) -> Node:
     return await database.fetch_one(select(nodes).where(nodes.c.node_id == id))
 
-@app.delete('/node/{id}', response_model=None)
+@app.delete('/node/{id}', response_model=None, dependencies=[Depends(check_authentication)])
 async def delete_node(id: int) -> None:
     try:
         await database.fetch_one(delete(nodes).where(nodes.c.node_id == id))
@@ -217,7 +233,7 @@ async def read_deployment(id: int) -> DeploymentResponse:
     d['node'] = { c: r['n_'+c] for c in nodes.columns.keys() }
     return d
 
-@app.delete('/deployment/{id}', response_model=None)
+@app.delete('/deployment/{id}', response_model=None, dependencies=[Depends(check_authentication)])
 async def delete_deployment(id: int) -> None:
     transaction = await database.transaction()
     try:
@@ -239,7 +255,7 @@ async def delete_deployment(id: int) -> None:
         await transaction.commit()
         return True
 
-@app.post('/deployments', response_model=None)
+@app.post('/deployments', response_model=None, dependencies=[Depends(check_authentication)])
 async def add_deployment(body: Deployment) -> None:
     try:
         await database.fetch_one(deployments.insert().values({
@@ -250,7 +266,7 @@ async def add_deployment(body: Deployment) -> None:
     except ExclusionViolationError as e:
         raise HTTPException(status_code=409, detail=str(e))
 
-@app.put('/deployments', response_model=None)
+@app.put('/deployments', response_model=None, dependencies=[Depends(check_authentication)])
 async def upsert_deployment(body: DeploymentRequest) -> None:
     transaction = await database.transaction()
     # TODO: put all except the except block into one function to be used in multiple occasions
@@ -307,7 +323,7 @@ async def upsert_deployment(body: DeploymentRequest) -> None:
     else:
         await transaction.commit()
 
-@app.put('/validate/deployment', response_model=ValidationResult)
+@app.put('/validate/deployment', response_model=ValidationResult, dependencies=[Depends(check_authentication)])
 async def validate_deployment(body: DeploymentRequest) -> None:
     transaction = await database.transaction()
     try:
@@ -364,7 +380,7 @@ async def validate_deployment(body: DeploymentRequest) -> None:
         await transaction.rollback()
         return False
 
-@app.put('/validate/node', response_model=ValidationResult)
+@app.put('/validate/node', response_model=ValidationResult, dependencies=[Depends(check_authentication)])
 async def validate_node(body: NodeValidationRequest) -> ValidationResult:
     r = None
     if hasattr(body, 'node_id') and body.node_id != None:
