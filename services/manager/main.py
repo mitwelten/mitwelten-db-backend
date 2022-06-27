@@ -40,11 +40,7 @@ app = FastAPI(
 )
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        'https://manager.mitwelten.org', # production environment
-        'http://localhost',              # dev environment
-        'http://localhost:4200',         # angular dev environment
-    ],
+    allow_origins=['*'],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
