@@ -124,3 +124,13 @@ deployments = sqlalchemy.Table(
     # sqlalchemy.Column('updated_at',    sqlalchemy.TIMESTAMP(timezone=True),  nullable=False),
     schema=crd.db.schema
 )
+
+data_records = sqlalchemy.Table(
+    'data_records', # this is a view!
+    metadata,
+    sqlalchemy.Column('record_id',   sqlalchemy.Integer),
+    sqlalchemy.Column('node_id',     sqlalchemy.Integer),
+    sqlalchemy.Column('location_id', sqlalchemy.Integer),
+    sqlalchemy.Column('type',        sqlalchemy.String(255)),
+    schema=crd.db.schema
+)

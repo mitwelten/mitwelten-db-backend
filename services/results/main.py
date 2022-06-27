@@ -3,7 +3,7 @@ from typing import List, Optional
 import databases
 
 import sqlalchemy
-from sqlalchemy.sql import insert, update, select, delete, func, and_, desc, text, distinct, LABEL_STYLE_TABLENAME_PLUS_COL
+from sqlalchemy.sql import insert, update, select, delete, exists, func, and_, not_, desc, text, distinct, LABEL_STYLE_TABLENAME_PLUS_COL
 from sqlalchemy.sql.functions import current_timestamp
 
 from fastapi import FastAPI, Request, status, HTTPException
@@ -13,11 +13,14 @@ from fastapi.responses import JSONResponse
 
 from asyncpg.exceptions import ExclusionViolationError, ForeignKeyViolationError
 
-from tables import nodes, locations, deployments, results, tasks, species, species_day
+from tables import nodes, locations, deployments, results, tasks, species, species_day, data_records
 from models import Deployment, Result, Species, DeploymentResponse, DeploymentRequest, Node, ValidationResult, NodeValidationRequest
 
 sys.path.append('../../')
 import credentials as crd
+
+class RecordsDependencyError(BaseException):
+    ...
 
 DATABASE_URL = f'postgresql://{crd.db.user}:{crd.db.password}@{crd.db.host}/{crd.db.database}'
 database = databases.Database(DATABASE_URL)
@@ -205,6 +208,28 @@ async def read_deployment(id: int) -> DeploymentResponse:
     d['location'] = { c: r['l_'+c] for c in locations.columns.keys() }
     d['node'] = { c: r['n_'+c] for c in nodes.columns.keys() }
     return d
+
+@app.delete('/deployment/{id}', response_model=None)
+async def delete_deployment(id: int) -> None:
+    transaction = await database.transaction()
+    try:
+        # asyncpg doesn't support returning affected rowcount yet (https://github.com/encode/databases/issues/61)
+        # checking the constraint manually
+        exists_files_audio = (exists().where(data_records.c.node_id == deployments.c.node_id))
+        q = select(deployments).where(deployments.c.deployment_id == id, not_(exists_files_audio))
+        r = await database.fetch_one(q)
+        if r == None:
+            raise RecordsDependencyError('There are data records referring to the node in the deployment do be deleted.')
+        await database.execute(delete(deployments).where(deployments.c.deployment_id == id, not_(exists_files_audio)))
+    except RecordsDependencyError as e:
+        await transaction.rollback()
+        raise HTTPException(status_code=409, detail=str(e))
+    except Exception as e:
+        await transaction.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    else:
+        await transaction.commit()
+        return True
 
 @app.post('/deployments', response_model=None)
 async def add_deployment(body: Deployment) -> None:

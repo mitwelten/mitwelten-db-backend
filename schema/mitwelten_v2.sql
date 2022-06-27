@@ -376,6 +376,14 @@ CREATE OR REPLACE VIEW dev.entries_location
     FROM dev.entries e
     LEFT JOIN dev.locations l ON e.location_id = l.location_id;
 
+CREATE OR REPLACE VIEW dev.data_records
+    AS
+    SELECT file_id AS record_id, node_id, location_id, 'audio' AS type
+    FROM dev.files_audio
+    UNION
+    SELECT file_id AS record_id, node_id, location_id, 'image' AS type
+    FROM dev.files_image;
+
 END;
 
 GRANT USAGE ON SCHEMA dev TO  mitwelten_internal, mitwelten_rest, mitwelten_upload, mitwelten_public;
