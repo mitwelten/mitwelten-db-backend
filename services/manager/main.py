@@ -26,12 +26,24 @@ DATABASE_URL = f'postgresql://{crd.db.user}:{crd.db.password}@{crd.db.host}/{crd
 database = databases.Database(DATABASE_URL)
 engine = sqlalchemy.create_engine(DATABASE_URL)
 
-app = FastAPI()
+app = FastAPI(
+    title='Mitwelten Internal REST API',
+    description='This service provides REST endpoints to exchange data from [Mitwelten](https://mitwelten.org)',
+    contact={'email': 'mitwelten.technik@fhnw.ch'},
+    version='1.0.0',
+    servers=[
+        {'url': 'https://data.mitwelten.org/manager/v1', 'description': 'Production environment'},
+        {'url': 'http://localhost:8000', 'description': 'Development environment'}
+    ],
+    root_path='/viz/v1',
+    root_path_in_servers=False
+)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        'http://localhost:4200',
-        'http://localhost:8080',
+        'https://manager.mitwelten.org', # production environment
+        'http://localhost',              # dev environment
+        'http://localhost:4200',         # angular dev environment
     ],
     allow_credentials=True,
     allow_methods=["*"],
