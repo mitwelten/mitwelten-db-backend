@@ -9,7 +9,6 @@ from sqlalchemy.sql.functions import current_timestamp
 
 from fastapi import FastAPI, Request, status, HTTPException, Depends, Header
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
@@ -37,20 +36,8 @@ app = FastAPI(
         {'url': 'https://data.mitwelten.org/manager/v1', 'description': 'Production environment'},
         {'url': 'http://localhost:8000', 'description': 'Development environment'}
     ],
-    # root_path='/manager/v1',
-    # root_path_in_servers=False
-)
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
-        'https://manager.mitwelten.org', # production environment
-        'https://mitwelten.surge.sh',    # test environment
-        'http://localhost',              # dev environment
-        'http://localhost:4200',         # angular dev environment
-    ],
-    allow_credentials=True,
-    allow_methods=['*'],
-    allow_headers=['*'],
+    root_path='/manager/v1',
+    root_path_in_servers=False
 )
 
 security = HTTPBasic()
