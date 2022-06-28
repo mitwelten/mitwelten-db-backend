@@ -107,3 +107,28 @@ services:
 
     restart: always
 
+  deployment-frontend:
+    image: nginx:alpine
+    container_name: "deployment-frontend"
+    volumes:
+      - "/opt/deployment-frontend/public:/usr/share/nginx/html"
+      - "/opt/deployment-frontend/nginx.conf:/etc/nginx/conf.d/default.conf"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.services.deployment-frontend.loadbalancer.server.port=80"
+
+      # for https
+      - "traefik.http.routers.deployment-frontend_insecure.rule=Host(`deploy.mitwelten.org`)"
+      - "traefik.http.routers.deployment-frontend_insecure.entrypoints=http"
+
+      # redirect to https
+      - "traefik.http.middlewares.deployment-frontend-https.redirectscheme.scheme=https"
+      - "traefik.http.routers.deployment-frontend_insecure.middlewares=deployment-frontend-https"
+
+      # for https
+      - "traefik.http.routers.deployment-frontend.rule=Host(`deploy.mitwelten.org`)"
+      - "traefik.http.routers.deployment-frontend.entrypoints=https"
+      - "traefik.http.routers.deployment-frontend.tls.certresolver=ssl"
+
+    restart: always
+
