@@ -27,11 +27,31 @@ DATABASE_URL = f'postgresql://{crd.db.user}:{crd.db.password}@{crd.db.host}/{crd
 database = databases.Database(DATABASE_URL)
 engine = sqlalchemy.create_engine(DATABASE_URL)
 
+tags_metadata = [
+    {
+        'name': 'authentication',
+        'description': 'Handle authentication',
+    },
+    {
+        'name': 'deployments',
+        'description': 'Node deployments management',
+    },
+    {
+        'name': 'inferrence',
+        'description': 'Machine-Learning inference results',
+    },
+    {
+        'name': 'queue',
+        'description': 'Machine-Learning queue monitoring and management',
+    },
+]
+
 app = FastAPI(
     title='Mitwelten Internal REST API',
     description='This service provides REST endpoints to exchange data from [Mitwelten](https://mitwelten.org)',
     contact={'email': 'mitwelten.technik@fhnw.ch'},
     version='1.0.0',
+    openapi_tags=tags_metadata,
     servers=[
         {'url': 'https://data.mitwelten.org/manager/v1', 'description': 'Production environment'},
         {'url': 'http://localhost:8000', 'description': 'Development environment'}
@@ -68,16 +88,16 @@ async def startup():
 async def shutdown():
     await database.disconnect()
 
-@app.get('/login')
+@app.get('/login', tags=['authentication'])
 def login(login_state: bool = Depends(check_authentication)):
     return login_state
 
-@app.get('/results/', response_model=List[Result])
+@app.get('/results/', response_model=List[Result], tags=['inferrence'])
 async def read_notes():
     query = results.select().where(results.c.confidence > 0.9)
     return await database.fetch_all(query)
 
-@app.get('/species/')
+@app.get('/species/', tags=['inferrence'])
 async def read_species(start: int = 0, end: int = 0, conf: float = 0.9):
     query = select(results.c.species, func.count(results.c.species).label('count')).\
         where(results.c.confidence >= conf).\
@@ -85,7 +105,7 @@ async def read_species(start: int = 0, end: int = 0, conf: float = 0.9):
         order_by(desc('count'))
     return await database.fetch_all(query)
 
-@app.get('/species/{spec}') # , response_model=List[Species]
+@app.get('/species/{spec}', tags=['inferrence']) # , response_model=List[Species]
 async def read_species_detail(spec: str, start: int = 0, end: int = 0, conf: float = 0.9):
     query = select(species.c.species, func.min(species.c.time_start).label('earliest'),
             func.max(species.c.time_start).label('latest'),
@@ -94,7 +114,7 @@ async def read_species_detail(spec: str, start: int = 0, end: int = 0, conf: flo
         group_by(species.c.species)
     return await database.fetch_all(query)
 
-@app.get('/species/{spec}/day/') # , response_model=List[Species]
+@app.get('/species/{spec}/day/', tags=['inferrence']) # , response_model=List[Species]
 async def read_species_day(spec: str, start: int = 0, end: int = 0, conf: float = 0.9):
     query = select(species_day.c.species, species_day.c.date,
             func.count(species_day.c.species).label('count')).\
@@ -103,7 +123,7 @@ async def read_species_day(spec: str, start: int = 0, end: int = 0, conf: float 
         order_by(species_day.c.date)
     return await database.fetch_all(query)
 
-@app.get('/queue/progress/')
+@app.get('/queue/progress/', tags=['queue'])
 async def read_progress():
     query = select(tasks.c.batch_id, tasks.c.state,
             func.count(tasks.c.task_id).label('count')).\
@@ -123,7 +143,7 @@ async def read_progress():
             batch_progress[row.batch_id]['pending'] += row.count
     return batch_progress
 
-@app.get('/queue/input/')
+@app.get('/queue/input/', tags=['queue'])
 async def read_input():
     query = f'''
     select node_label, count(node_label) as count, min(time) as date_start, max(time) as date_end, sum(file_size) as size
@@ -135,11 +155,11 @@ async def read_input():
     #     print(row)
     return result
 
-@app.get('/nodes')
+@app.get('/nodes', tags=['deployments'])
 async def read_nodes():
     return await database.fetch_all(select(nodes).order_by(nodes.c.node_label))
 
-@app.put('/nodes', dependencies=[Depends(check_authentication)])
+@app.put('/nodes', dependencies=[Depends(check_authentication)], tags=['deployments'])
 async def upsert_node(body: Node) -> None:
     if hasattr(body, 'node_id') and body.node_id != None:
         return await database.execute(update(nodes).where(nodes.c.node_id == body.node_id).\
@@ -149,8 +169,8 @@ async def upsert_node(body: Node) -> None:
         return await database.execute(insert(nodes).values(body.dict(exclude_none=True)).\
             returning(nodes.c.node_id))
 
-@app.get('/node/type_options')
-@app.get('/node/type_options/{search_term}')
+@app.get('/node/type_options', tags=['deployments'])
+@app.get('/node/type_options/{search_term}', tags=['deployments'])
 async def get_node_type(search_term: Optional[str] = None) -> List[str]:
     q = select(distinct(nodes.c.type))
     if search_term != None:
@@ -158,8 +178,8 @@ async def get_node_type(search_term: Optional[str] = None) -> List[str]:
     r = await database.fetch_all(q.order_by(nodes.c.type))
     return [v[nodes.c.type] for v in r if v[nodes.c.type] != None]
 
-@app.get('/node/platform_options')
-@app.get('/node/platform_options/{search_term}')
+@app.get('/node/platform_options', tags=['deployments'])
+@app.get('/node/platform_options/{search_term}', tags=['deployments'])
 async def get_node_platform(search_term: Optional[str] = None) -> List[str]:
     q = select(distinct(nodes.c.platform))
     if search_term != None:
@@ -167,8 +187,8 @@ async def get_node_platform(search_term: Optional[str] = None) -> List[str]:
     r = await database.fetch_all(q.order_by(nodes.c.platform))
     return [v[nodes.c.platform] for v in r if v[nodes.c.platform] != None]
 
-@app.get('/node/connectivity_options')
-@app.get('/node/connectivity_options/{search_term}')
+@app.get('/node/connectivity_options', tags=['deployments'])
+@app.get('/node/connectivity_options/{search_term}', tags=['deployments'])
 async def get_node_connectivity(search_term: Optional[str] = None) -> List[str]:
     q = select(distinct(nodes.c.connectivity))
     if search_term != None:
@@ -176,8 +196,8 @@ async def get_node_connectivity(search_term: Optional[str] = None) -> List[str]:
     r = await database.fetch_all(q.order_by(nodes.c.connectivity))
     return [v[nodes.c.connectivity] for v in r if v[nodes.c.connectivity] != None]
 
-@app.get('/node/power_options')
-@app.get('/node/power_options/{search_term}')
+@app.get('/node/power_options', tags=['deployments'])
+@app.get('/node/power_options/{search_term}', tags=['deployments'])
 async def get_node_power(search_term: Optional[str] = None) -> List[str]:
     q = select(distinct(nodes.c.power))
     if search_term != None:
@@ -185,11 +205,11 @@ async def get_node_power(search_term: Optional[str] = None) -> List[str]:
     r = await database.fetch_all(q.order_by(nodes.c.power))
     return [v[nodes.c.power] for v in r if v[nodes.c.power] != None]
 
-@app.get('/node/{id}', response_model=Node)
+@app.get('/node/{id}', response_model=Node, tags=['deployments'])
 async def read_node(id: int) -> Node:
     return await database.fetch_one(select(nodes).where(nodes.c.node_id == id))
 
-@app.delete('/node/{id}', response_model=None, dependencies=[Depends(check_authentication)])
+@app.delete('/node/{id}', response_model=None, dependencies=[Depends(check_authentication)], tags=['deployments'])
 async def delete_node(id: int) -> None:
     try:
         await database.fetch_one(delete(nodes).where(nodes.c.node_id == id))
@@ -198,7 +218,7 @@ async def delete_node(id: int) -> None:
     else:
         return True
 
-@app.get('/deployments', response_model=List[DeploymentResponse])
+@app.get('/deployments', response_model=List[DeploymentResponse], tags=['deployments'])
 async def read_deployments() -> List[DeploymentResponse]:
 
     query = select(deployments.alias('d').outerjoin(nodes.alias('n')).outerjoin(locations.alias('l'))).\
@@ -212,7 +232,7 @@ async def read_deployments() -> List[DeploymentResponse]:
         response.append(d)
     return response
 
-@app.get('/deployment/{id}', response_model=DeploymentResponse)
+@app.get('/deployment/{id}', response_model=DeploymentResponse, tags=['deployments'])
 async def read_deployment(id: int) -> DeploymentResponse:
 
     query = select(deployments.alias('d').outerjoin(nodes.alias('n')).outerjoin(locations.alias('l'))).\
@@ -227,7 +247,7 @@ async def read_deployment(id: int) -> DeploymentResponse:
     d['node'] = { c: r['n_'+c] for c in nodes.columns.keys() }
     return d
 
-@app.delete('/deployment/{id}', response_model=None, dependencies=[Depends(check_authentication)])
+@app.delete('/deployment/{id}', response_model=None, dependencies=[Depends(check_authentication)], tags=['deployments'])
 async def delete_deployment(id: int) -> None:
     transaction = await database.transaction()
     try:
@@ -249,7 +269,7 @@ async def delete_deployment(id: int) -> None:
         await transaction.commit()
         return True
 
-@app.post('/deployments', response_model=None, dependencies=[Depends(check_authentication)])
+@app.post('/deployments', response_model=None, dependencies=[Depends(check_authentication)], tags=['deployments'])
 async def add_deployment(body: Deployment) -> None:
     try:
         await database.fetch_one(deployments.insert().values({
@@ -260,7 +280,7 @@ async def add_deployment(body: Deployment) -> None:
     except ExclusionViolationError as e:
         raise HTTPException(status_code=409, detail=str(e))
 
-@app.put('/deployments', response_model=None, dependencies=[Depends(check_authentication)])
+@app.put('/deployments', response_model=None, dependencies=[Depends(check_authentication)], tags=['deployments'])
 async def upsert_deployment(body: DeploymentRequest) -> None:
     transaction = await database.transaction()
     # TODO: put all except the except block into one function to be used in multiple occasions
@@ -317,7 +337,7 @@ async def upsert_deployment(body: DeploymentRequest) -> None:
     else:
         await transaction.commit()
 
-@app.put('/validate/deployment', response_model=ValidationResult)
+@app.put('/validate/deployment', response_model=ValidationResult, tags=['deployments'])
 async def validate_deployment(body: DeploymentRequest) -> None:
     transaction = await database.transaction()
     try:
@@ -374,7 +394,7 @@ async def validate_deployment(body: DeploymentRequest) -> None:
         await transaction.rollback()
         return False
 
-@app.put('/validate/node', response_model=ValidationResult)
+@app.put('/validate/node', response_model=ValidationResult, tags=['deployments'])
 async def validate_node(body: NodeValidationRequest) -> ValidationResult:
     r = None
     if hasattr(body, 'node_id') and body.node_id != None:
@@ -384,6 +404,6 @@ async def validate_node(body: NodeValidationRequest) -> ValidationResult:
         r = await database.fetch_one(select(nodes).where(nodes.c.node_label == body.node_label))
     return True if r == None else False
 
-@app.get('/')
+@app.get('/', include_in_schema=False)
 async def root():
     return {'message': 'Mitwelten ML Backend: query inference results, queue status, etc.'}
