@@ -42,7 +42,12 @@ app = FastAPI(
 )
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=['*'],
+    allow_origins=[
+        'https://manager.mitwelten.org', # production environment
+        'https://mitwelten.surge.sh',    # test environment
+        'http://localhost',              # dev environment
+        'http://localhost:4200',         # angular dev environment
+    ],
     allow_credentials=True,
     allow_methods=['*'],
     allow_headers=['*'],
@@ -53,14 +58,13 @@ security = HTTPBasic()
 def check_authentication(credentials: HTTPBasicCredentials = Depends(security), authorization: Optional[str] = Header(None)):
     correct_username = secrets.compare_digest(credentials.username, crd.ba.username)
     correct_password = secrets.compare_digest(credentials.password, crd.ba.password)
-    print('checking credentials')
     if not (correct_username and correct_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail='Incorrect username or password',
             headers={'WWW-Authenticate': 'Basic'},
         )
-    return True
+    return { 'authenticated': True }
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
@@ -77,6 +81,9 @@ async def startup():
 async def shutdown():
     await database.disconnect()
 
+@app.get('/login')
+def login(login_state: bool = Depends(check_authentication)):
+    return login_state
 
 @app.get('/results/', response_model=List[Result])
 async def read_notes():
