@@ -50,7 +50,7 @@ services:
       - "traefik.http.routers.viz_api.tls.certresolver=ssl"
 
       #  middlewares for https
-      - "traefik.http.routers.viz_api.middlewares=cors,viz-api-stripprefix,viz-api-basic-auth"
+      - "traefik.http.routers.viz_api.middlewares=viz-api-cors,viz-api-stripprefix,viz-api-basic-auth"
 
       # strip prefix /viz/v1
       - "traefik.http.middlewares.viz-api-stripprefix.stripprefix.prefixes=/viz/v1"
@@ -59,12 +59,12 @@ services:
       - "traefik.http.middlewares.viz-api-basic-auth.basicauth.users=${VIZ_API_BASIC_AUTH_USER_PW}"
 
       # CORS
-      - "traefik.http.middlewares.cors.headers.accesscontrolallowmethods=GET,OPTIONS,PUT,POST,PATCH,DELETE"
-      - "traefik.http.middlewares.cors.headers.accessControlAllowOriginList=https://viz.mitwelten.org;http://localhost"
-      - "traefik.http.middlewares.cors.headers.accessControlAllowHeaders=*"
-      - "traefik.http.middlewares.cors.headers.accessControlExposeHeaders=*"
-      - "traefik.http.middlewares.cors.headers.accesscontrolmaxage=100"
-      - "traefik.http.middlewares.cors.headers.addvaryheader=true"
+      - "traefik.http.middlewares.viz-api-cors.headers.accesscontrolallowmethods=GET,OPTIONS,PUT,POST,PATCH,DELETE"
+      - "traefik.http.middlewares.viz-api-cors.headers.accessControlAllowOriginList=https://viz.mitwelten.org;http://localhost"
+      - "traefik.http.middlewares.viz-api-cors.headers.accessControlAllowHeaders=*"
+      - "traefik.http.middlewares.viz-api-cors.headers.accessControlExposeHeaders=*"
+      - "traefik.http.middlewares.viz-api-cors.headers.accesscontrolmaxage=100"
+      - "traefik.http.middlewares.viz-api-cors.headers.addvaryheader=true"
 
   manager-api:
     image: mitwelten-manager:0.1
@@ -89,7 +89,7 @@ services:
       - "traefik.http.routers.manager_api.tls.certresolver=ssl"
 
       #  middlewares for https
-      - "traefik.http.routers.manager_api.middlewares=cors,manager-api-stripprefix,manager-api-basic-auth"
+      - "traefik.http.routers.manager_api.middlewares=manager-api-cors,manager-api-stripprefix,manager-api-basic-auth"
 
       # strip prefix /manager/v1
       - "traefik.http.middlewares.manager-api-stripprefix.stripprefix.prefixes=/manager/v1"
@@ -98,12 +98,12 @@ services:
       - "traefik.http.middlewares.manager-api-basic-auth.basicauth.users=${MANAGER_API_BASIC_AUTH_USER_PW}"
 
       # CORS
-      - "traefik.http.middlewares.cors.headers.accesscontrolallowmethods=GET,OPTIONS,PUT,POST,PATCH,DELETE"
-      - "traefik.http.middlewares.cors.headers.accessControlAllowOriginList=*"
-      - "traefik.http.middlewares.cors.headers.accessControlAllowHeaders=*"
-      - "traefik.http.middlewares.cors.headers.accessControlExposeHeaders=*"
-      - "traefik.http.middlewares.cors.headers.accesscontrolmaxage=100"
-      - "traefik.http.middlewares.cors.headers.addvaryheader=true"
+      - "traefik.http.middlewares.manager-api-cors.headers.accesscontrolallowmethods=GET,OPTIONS,PUT,POST,PATCH,DELETE"
+      - "traefik.http.middlewares.manager-api-cors.headers.accessControlAllowOriginList=*"
+      - "traefik.http.middlewares.manager-api-cors.headers.accessControlAllowHeaders=*"
+      - "traefik.http.middlewares.manager-api-cors.headers.accessControlExposeHeaders=*"
+      - "traefik.http.middlewares.manager-api-cors.headers.accesscontrolmaxage=100"
+      - "traefik.http.middlewares.manager-api-cors.headers.addvaryheader=true"
 
     restart: always
 
