@@ -5,6 +5,37 @@ from pydantic import BaseModel, Field, constr
 from asyncpg.types import Range
 
 class TimeStampRange(TSTZRANGE):
+    '''
+## Field mapping from/to TSTZRANGE
+
+__Time range defined as two timestamps with time zone__
+
+I didn't find a better solution to use the atomated documentation, so here it is
+manually: When inserting/updating, provide the range as an object with the keys
+`start` and `end` holding the corresponding timestamp.
+
+```json
+{
+    "start": "2021-09-11T22:00:00+00:00",
+    "end": "2021-10-14T22:00:00+00:00"
+}
+```
+
+This object will be turned into the postgres type `tstzrange` like this (note
+the interval definition "including start timestamp up until, but not including
+end timestamp):
+
+```sql
+['2021-09-12 00:00:00+02:00','2021-10-15 00:00:00+02:00')
+```
+
+The pydantic model / type definition also converts this `tstzrange` back into
+the aforementioned format when retrieving (using as a response model).
+'''
+
+    def __init__(self, start: datetime, end: datetime):
+        self.start = start
+        self.end = end
 
     def stripz(ts):
         assert isinstance(ts, str)
@@ -13,6 +44,16 @@ class TimeStampRange(TSTZRANGE):
     @classmethod
     def __get_validators__(cls):
         yield cls.validate_type
+
+    @classmethod
+    def __modify_schema__(cls, field_schema):
+        # __modify_schema__ should mutate the dict it receives in place,
+        # the returned value will be ignored
+        field_schema.update(
+            title='Time Range',
+            description=cls.__doc__,
+            example='{"start": "2021-09-11T22:00:00+00:00","end": "2021-10-14T22:00:00+00:00"}',
+        )
 
     @classmethod
     def validate_type(cls, val: Range):
@@ -26,6 +67,9 @@ class TimeStampRange(TSTZRANGE):
             if val['end'] != '' and val['end'] != None:
                 upper = datetime.fromisoformat(cls.stripz(val['end']))
             return Range(lower=lower, upper=upper)
+
+    def __repr__(self):
+        return f'TimeStampRange({super().__repr__()})'
 
 class ValidationResult(BaseModel):
     __root__: bool
@@ -79,7 +123,6 @@ class Node(BaseModel):
     hardware_version: Optional[str]
     software_version: Optional[str]
     firmware_version: Optional[str]
-
 
 class Deployment(BaseModel):
     '''
