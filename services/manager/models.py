@@ -4,15 +4,17 @@ from sqlalchemy.dialects.postgresql import TSTZRANGE
 from pydantic import BaseModel, Field, constr
 from asyncpg.types import Range
 
-class TimeStampRange(TSTZRANGE):
+class TimeStampRange(BaseModel):
     '''
 ## Field mapping from/to TSTZRANGE
 
 __Time range defined as two timestamps with time zone__
 
-I didn't find a better solution to use the atomated documentation, so here it is
-manually: When inserting/updating, provide the range as an object with the keys
-`start` and `end` holding the corresponding timestamp.
+When inserting/updating, provide the range as an object with the keys
+`start` and `end` holding the corresponding timestamp. The timestamps can be
+in the format `2021-09-11T22:00:00+00:00` or `2021-09-11T22:00:00Z`, in the
+latter case the `Z` is replaced by `+00:00` to make it compatible to pythons
+`datetime.fromisoformat()`.
 
 ```json
 {
@@ -32,6 +34,8 @@ end timestamp):
 The pydantic model / type definition also converts this `tstzrange` back into
 the aforementioned format when retrieving (using as a response model).
 '''
+    start: datetime = Field(..., example='2021-09-11T22:00:00+00:00', title="Beginning of period (inclusive)")
+    end: datetime = Field(..., example='2021-10-14T22:00:00Z', title="End of period (non inclusive)")
 
     def __init__(self, start: datetime, end: datetime):
         self.start = start
@@ -39,21 +43,11 @@ the aforementioned format when retrieving (using as a response model).
 
     def stripz(ts):
         assert isinstance(ts, str)
-        return ts[0:len(ts)-1] if ts[-1] == 'Z' else ts
+        return ts[0:len(ts)-1]+'+00:00' if ts[-1] == 'Z' else ts
 
     @classmethod
     def __get_validators__(cls):
         yield cls.validate_type
-
-    @classmethod
-    def __modify_schema__(cls, field_schema):
-        # __modify_schema__ should mutate the dict it receives in place,
-        # the returned value will be ignored
-        field_schema.update(
-            title='Time Range',
-            description=cls.__doc__,
-            example='{"start": "2021-09-11T22:00:00+00:00","end": "2021-10-14T22:00:00+00:00"}',
-        )
 
     @classmethod
     def validate_type(cls, val: Range):
