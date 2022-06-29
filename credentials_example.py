@@ -5,4 +5,9 @@ class DbConfig(object):
   user = 'postgres'
   password = 'secret'
 
+class BasicAuth(object):
+    username = 'username'
+    password = 'password'
+
 db = DbConfig()
+ba = BasicAuth()

@@ -388,12 +388,34 @@ CREATE OR REPLACE VIEW dev.birdnet_input
         LEFT JOIN dev.nodes n ON f.node_id = n.node_id
         LEFT JOIN dev.locations l ON f.location_id = l.location_id;
 
+CREATE OR REPLACE VIEW dev.birdnet_inferred_species
+    AS
+    SELECT o.species,
+        o.confidence,
+        f.time + ((o.time_start || ' seconds')::interval) AS time_start
+    FROM dev.birdnet_results o
+    LEFT JOIN dev.files_audio f ON o.file_id = f.file_id;
+
+CREATE OR REPLACE VIEW dev.birdnet_inferred_species_day
+    AS
+    SELECT s.species,
+        s.confidence,
+        to_char(s.time_start at time zone 'UTC', 'YYYY-mm-DD') AS date
+    FROM dev.birdnet_inferred_species s;
 
 CREATE OR REPLACE VIEW dev.entries_location
     AS
     SELECT e.*, l.location
     FROM dev.entries e
     LEFT JOIN dev.locations l ON e.location_id = l.location_id;
+
+CREATE OR REPLACE VIEW dev.data_records
+    AS
+    SELECT file_id AS record_id, node_id, location_id, 'audio' AS type
+    FROM dev.files_audio
+    UNION
+    SELECT file_id AS record_id, node_id, location_id, 'image' AS type
+    FROM dev.files_image;
 
 END;
 
