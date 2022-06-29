@@ -219,10 +219,12 @@ async def delete_node(id: int) -> None:
         return True
 
 @app.get('/deployments', response_model=List[DeploymentResponse], tags=['deployments'])
-async def read_deployments() -> List[DeploymentResponse]:
+async def read_deployments(node_id: Optional[int] = None) -> List[DeploymentResponse]:
 
     query = select(deployments.alias('d').outerjoin(nodes.alias('n')).outerjoin(locations.alias('l'))).\
         set_label_style(LABEL_STYLE_TABLENAME_PLUS_COL)
+    if node_id != None:
+        query = query.where(text('d.node_id = :node_id').bindparams(node_id=node_id))
     result = await database.fetch_all(query)
     response = []
     for r in result:
