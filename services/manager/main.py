@@ -14,8 +14,8 @@ from fastapi.responses import JSONResponse
 
 from asyncpg.exceptions import ExclusionViolationError, ForeignKeyViolationError
 
-from tables import nodes, locations, deployments, results, tasks, species, species_day, data_records
-from models import Deployment, Result, Species, DeploymentResponse, DeploymentRequest, Node, ValidationResult, NodeValidationRequest
+from tables import nodes, locations, deployments, results, tasks, species, species_day, data_records, files_image
+from models import Deployment, Result, Species, DeploymentResponse, DeploymentRequest, Node, ValidationResult, NodeValidationRequest, ImageValidationRequest, ImageValidationResponse, ImageRequest
 
 sys.path.append('../../')
 import credentials as crd
@@ -405,6 +405,31 @@ async def validate_node(body: NodeValidationRequest) -> ValidationResult:
     else:
         r = await database.fetch_one(select(nodes).where(nodes.c.node_label == body.node_label))
     return True if r == None else False
+
+
+@app.post('/validate/image', response_model=ImageValidationResponse, tags=['ingest'])
+async def check_image(body: ImageValidationRequest) -> None:
+
+    query = text(f'''
+    WITH n AS (
+        SELECT :sha256 as sha256,
+        :node_label ||'/'||to_char(:timestamp at time zone 'UTC', 'YYYY-mm-DD/HH24/') -- file_path (node_label, time_start)
+        || :node_label ||'_'||to_char(:timestamp at time zone 'UTC', 'YYYY-mm-DD"T"HH24-MI-SS"Z"')||:extension -- file_name (node_label, time_start, extension)
+        as object_name
+    )
+    SELECT f.sha256 = n.sha256 as hash_match,
+        f.object_name = n.object_name as object_name_match
+    from {crd.db.schema}.files_image f, n
+    where (f.sha256 = n.sha256 or f.object_name = n.object_name)
+    ''').bindparams(sha256=body.sha256, node_label=body.node_label, timestamp=body.timestamp, extension='.jpg')
+
+    # print(str(query.compile(compile_kwargs={"literal_binds": True})))
+    return await database.fetch_one(query)
+
+@app.post('/ingest/image', tags=['ingest'])
+async def ingest_image(body: ImageRequest) -> None:
+    print(body)
+    ...
 
 @app.get('/', include_in_schema=False)
 async def root():

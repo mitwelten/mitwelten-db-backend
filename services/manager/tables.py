@@ -134,3 +134,18 @@ data_records = sqlalchemy.Table(
     sqlalchemy.Column('type',        sqlalchemy.String(255)),
     schema=crd.db.schema
 )
+
+files_image = sqlalchemy.Table(
+    'files_image',
+    metadata,
+    sqlalchemy.Column('file_id',        sqlalchemy.Integer,                   primary_key=True),
+    sqlalchemy.Column('object_name',    sqlalchemy.Text,                      nullable=False),
+    sqlalchemy.Column('sha256',         sqlalchemy.String(64),                nullable=False),
+    sqlalchemy.Column('time',           sqlalchemy.TIMESTAMP,                 nullable=False),
+    sqlalchemy.Column('node_id',        sqlalchemy.ForeignKey('nodes.node_id')),
+    sqlalchemy.Column('location_id',    sqlalchemy.ForeignKey('locations.location_id')),
+    sqlalchemy.Column('file_size',      sqlalchemy.Integer,                   nullable=False),
+    sqlalchemy.Column('resolution',     sqlalchemy.ARRAY(sqlalchemy.Integer), nullable=False),
+    sqlalchemy.Column('created_at',     sqlalchemy.TIMESTAMP(timezone=True),  nullable=False),
+    sqlalchemy.Column('updated_at',     sqlalchemy.TIMESTAMP(timezone=True),  nullable=False),
+)

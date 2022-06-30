@@ -1,7 +1,7 @@
-from typing import Optional
+from typing import Optional, List, Tuple
 from datetime import datetime
 from sqlalchemy.dialects.postgresql import TSTZRANGE
-from pydantic import BaseModel, Field, constr
+from pydantic import BaseModel, Field, constr, PositiveInt
 from asyncpg.types import Range
 
 class TimeStampRange(BaseModel):
@@ -71,6 +71,32 @@ class ValidationResult(BaseModel):
 class NodeValidationRequest(BaseModel):
     node_id: Optional[int]
     node_label: str
+
+class ImageValidationRequest(BaseModel):
+    sha256: str
+    node_label: str
+    timestamp: datetime
+
+    class Config:
+        json_encoders = {
+            datetime: lambda v: v.timestamp(),
+        }
+
+class ImageValidationResponse(BaseModel):
+    hash_match: bool
+    object_name_match: bool
+
+class ImageRequest(BaseModel):
+    sha256: str
+    node_label: str
+    timestamp: datetime
+    file_size: int
+    resolution: Tuple[PositiveInt, PositiveInt]
+
+    class Config:
+        json_encoders = {
+            datetime: lambda v: v.timestamp(),
+        }
 
 class Result(BaseModel):
     result_id: int
