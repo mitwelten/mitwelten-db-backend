@@ -20,7 +20,7 @@ from models import Deployment, Result, Species, DeploymentResponse, DeploymentRe
 sys.path.append('../../')
 import credentials as crd
 
-class RecordsDependencyError(BaseException):
+class RecordsDependencyException(BaseException):
     ...
 
 class NodeNotDeployedException(BaseException):
@@ -262,9 +262,9 @@ async def delete_deployment(id: int) -> None:
         q = select(deployments).where(deployments.c.deployment_id == id, not_(exists_files_audio))
         r = await database.fetch_one(q)
         if r == None:
-            raise RecordsDependencyError('There are data records referring to the node in the deployment do be deleted.')
+            raise RecordsDependencyException('There are data records referring to the node in the deployment do be deleted.')
         await database.execute(delete(deployments).where(deployments.c.deployment_id == id, not_(exists_files_audio)))
-    except RecordsDependencyError as e:
+    except RecordsDependencyException as e:
         await transaction.rollback()
         raise HTTPException(status_code=409, detail=str(e))
     except Exception as e:
