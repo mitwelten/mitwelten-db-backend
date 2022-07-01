@@ -85,11 +85,19 @@ class ImageValidationRequest(BaseModel):
 class ImageValidationResponse(BaseModel):
     hash_match: bool
     object_name_match: bool
+    object_name: str
+    node_deployed: bool
+    node_id: Optional[int] = None
+    location_id: Optional[int] = None
+
 
 class ImageRequest(BaseModel):
+    object_name: str
     sha256: str
-    node_label: str
     timestamp: datetime
+    node_label: str
+    node_id: int
+    location_id: int
     file_size: int
     resolution: Tuple[PositiveInt, PositiveInt]
 

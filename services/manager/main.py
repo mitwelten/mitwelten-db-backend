@@ -23,6 +23,9 @@ import credentials as crd
 class RecordsDependencyError(BaseException):
     ...
 
+class NodeNotDeployedException(BaseException):
+    ...
+
 DATABASE_URL = f'postgresql://{crd.db.user}:{crd.db.password}@{crd.db.host}/{crd.db.database}'
 database = databases.Database(DATABASE_URL)
 engine = sqlalchemy.create_engine(DATABASE_URL)
@@ -410,7 +413,7 @@ async def validate_node(body: NodeValidationRequest) -> ValidationResult:
 @app.post('/validate/image', response_model=ImageValidationResponse, tags=['ingest'])
 async def check_image(body: ImageValidationRequest) -> None:
 
-    query = text(f'''
+    duplicate_query = text(f'''
     WITH n AS (
         SELECT :sha256 as sha256,
         :node_label ||'/'||to_char(:timestamp at time zone 'UTC', 'YYYY-mm-DD/HH24/') -- file_path (node_label, time_start)
@@ -418,18 +421,53 @@ async def check_image(body: ImageValidationRequest) -> None:
         as object_name
     )
     SELECT f.sha256 = n.sha256 as hash_match,
-        f.object_name = n.object_name as object_name_match
+        f.object_name = n.object_name as object_name_match,
+        n.object_name as object_name
     from {crd.db.schema}.files_image f, n
     where (f.sha256 = n.sha256 or f.object_name = n.object_name)
     ''').bindparams(sha256=body.sha256, node_label=body.node_label, timestamp=body.timestamp, extension='.jpg')
 
     # print(str(query.compile(compile_kwargs={"literal_binds": True})))
-    return await database.fetch_one(query)
+    duplicate_result = await database.fetch_one(duplicate_query)
+    print(dict(duplicate_result._mapping))
+
+    deployment_query = select(deployments.c.node_id, deployments.c.location_id).join(nodes).\
+        where(nodes.c.node_label == body.node_label, text('period @> :timestamp ::timestamptz').bindparams(timestamp=body.timestamp))
+    deployment_result = await database.fetch_one(deployment_query)
+
+    if deployment_result:
+        print(dict(deployment_result._mapping))
+        return {**duplicate_result._mapping, **deployment_result._mapping, 'node_deployed': True}
+    else:
+        print('no deployment_result')
+        return {**duplicate_result._mapping, 'node_deployed': False, 'node_id': None, 'location_id': None}
 
 @app.post('/ingest/image', tags=['ingest'])
 async def ingest_image(body: ImageRequest) -> None:
-    print(body)
-    ...
+
+    transaction = await database.transaction()
+
+    try:
+        record = {
+            files_image.c.object_name: body.object_name,
+            files_image.c.sha256: body.sha256,
+            files_image.c.time: body.timestamp, # TODO: rename in uploader code
+            files_image.c.node_id: body.node_id,
+            files_image.c.location_id: body.location_id,
+            files_image.c.file_size: body.file_size,
+            files_image.c.resolution: body.resolution
+        }
+        insert_query = insert(files_image).values(record)
+        await database.execute(insert_query)
+
+    except Exception as e:
+        await transaction.rollback()
+        print(str(e))
+        raise HTTPException(status_code=409, detail=str(e))
+
+    else:
+        await transaction.commit()
+
 
 @app.get('/', include_in_schema=False)
 async def root():
