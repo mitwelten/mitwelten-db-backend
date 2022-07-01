@@ -436,7 +436,7 @@ async def check_image(body: ImageValidationRequest) -> None:
         SELECT :node_label ||'/'||to_char(:timestamp at time zone 'UTC', 'YYYY-mm-DD/HH24/') -- file_path (node_label, timestamp)
         || :node_label ||'_'||to_char(:timestamp at time zone 'UTC', 'YYYY-mm-DD"T"HH24-MI-SS"Z"')||:extension -- file_name (node_label, timestamp, extension)
         as object_name
-        ''').bindparams(sha256=body.sha256, node_label=body.node_label, timestamp=body.timestamp, extension='.jpg')
+        ''').bindparams(node_label=body.node_label, timestamp=body.timestamp, extension='.jpg')
         object_name_result = await database.fetch_one(object_name_result)
         object_name = object_name_result._mapping['object_name']
     else:
