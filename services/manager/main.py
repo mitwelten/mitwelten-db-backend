@@ -437,7 +437,7 @@ async def check_image(body: ImageValidationRequest) -> None:
         || :node_label ||'_'||to_char(:timestamp at time zone 'UTC', 'YYYY-mm-DD"T"HH24-MI-SS"Z"')||:extension -- file_name (node_label, timestamp, extension)
         as object_name
         ''').bindparams(node_label=body.node_label, timestamp=body.timestamp, extension='.jpg')
-        object_name_result = await database.fetch_one(object_name_result)
+        object_name_result = await database.fetch_one(object_name_query)
         object_name = object_name_result._mapping['object_name']
     else:
         object_name = duplicate_result._mapping['object_name']
