@@ -1,4 +1,3 @@
-from pprint import pprint
 import sys
 import secrets
 from typing import List, Optional
@@ -10,7 +9,6 @@ from sqlalchemy.sql.functions import current_timestamp
 
 from fastapi import FastAPI, Request, status, HTTPException, Depends, Header
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
@@ -22,7 +20,6 @@ from models import Deployment, Result, Species, DeploymentResponse, DeploymentRe
 sys.path.append('../../')
 import credentials as crd
 
-# TODO: rename to RecordsDependencyException
 class RecordsDependencyError(BaseException):
     ...
 
@@ -62,23 +59,9 @@ app = FastAPI(
         {'url': 'https://data.mitwelten.org/manager/v1', 'description': 'Production environment'},
         {'url': 'http://localhost:8000', 'description': 'Development environment'}
     ],
-    # root_path='/manager/v1',
-    # root_path_in_servers=False
+    root_path='/manager/v1',
+    root_path_in_servers=False
 )
-
-if crd.DEV == True:
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=[
-            'https://manager.mitwelten.org', # production environment
-            'https://mitwelten.surge.sh',    # test environment
-            'http://localhost',              # dev environment
-            'http://localhost:4200',         # angular dev environment
-        ],
-        allow_credentials=True,
-        allow_methods=['*'],
-        allow_headers=['*'],
-    )
 
 security = HTTPBasic()
 
@@ -454,7 +437,7 @@ async def check_image(body: ImageValidationRequest) -> None:
         || :node_label ||'_'||to_char(:timestamp at time zone 'UTC', 'YYYY-mm-DD"T"HH24-MI-SS"Z"')||:extension -- file_name (node_label, timestamp, extension)
         as object_name
         ''').bindparams(node_label=body.node_label, timestamp=body.timestamp, extension='.jpg')
-        object_name_result = await database.fetch_one(object_name_query)
+        object_name_result = await database.fetch_one(object_name_result)
         object_name = object_name_result._mapping['object_name']
     else:
         object_name = duplicate_result._mapping['object_name']
