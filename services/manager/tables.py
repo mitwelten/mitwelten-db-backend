@@ -40,6 +40,20 @@ class GeometryPoint(UserDefinedType):
 
 metadata = sqlalchemy.MetaData(schema=crd.db.schema)
 
+# view: birdnet_input
+birdnet_input = sqlalchemy.Table(
+    'birdnet_input',
+    metadata,
+    sqlalchemy.Column('file_id',      sqlalchemy.Integer   , primary_key=True),
+    sqlalchemy.Column('object_name',  sqlalchemy.Text      , nullable=False),
+    sqlalchemy.Column('time',         sqlalchemy.TIMESTAMP , nullable=False),
+    sqlalchemy.Column('file_size',    sqlalchemy.Integer   , nullable=False),
+    sqlalchemy.Column('sample_rate',  sqlalchemy.Integer   , nullable=False),
+    sqlalchemy.Column('node_label',   sqlalchemy.String(32), nullable=False),
+    sqlalchemy.Column('duration',     sqlalchemy.REAL      , nullable=False),
+    sqlalchemy.Column('location',     GeometryPoint        , nullable=False)
+)
+
 results = sqlalchemy.Table(
     'birdnet_results',
     metadata,
@@ -71,7 +85,7 @@ tasks = sqlalchemy.Table(
     'birdnet_tasks',
     metadata,
     sqlalchemy.Column('task_id',        sqlalchemy.Integer    , primary_key=True),
-    sqlalchemy.Column('file_id',        sqlalchemy.Integer    , nullable=False),
+    sqlalchemy.Column('file_id',        None                  , sqlalchemy.ForeignKey('birdnet_input.file_id')),
     sqlalchemy.Column('config_id',      sqlalchemy.Integer    , nullable=False),
     sqlalchemy.Column('state',          sqlalchemy.Integer    , nullable=False),
     sqlalchemy.Column('scheduled_on',   sqlalchemy.TIMESTAMP  , nullable=False),

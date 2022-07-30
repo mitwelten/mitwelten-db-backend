@@ -14,7 +14,7 @@ from fastapi.responses import JSONResponse
 
 from asyncpg.exceptions import ExclusionViolationError, ForeignKeyViolationError
 
-from tables import nodes, locations, deployments, results, tasks, species, species_day, data_records, files_image
+from tables import nodes, locations, deployments, results, tasks, species, species_day, data_records, files_image, birdnet_input
 from models import Deployment, Result, Species, DeploymentResponse, DeploymentRequest, Node, ValidationResult, NodeValidationRequest, ImageValidationRequest, ImageValidationResponse, ImageRequest
 
 sys.path.append('../../')
@@ -128,23 +128,50 @@ async def read_species_day(spec: str, start: int = 0, end: int = 0, conf: float 
 
 @app.get('/queue/progress/', tags=['queue'])
 async def read_progress():
-    query = select(tasks.c.batch_id, tasks.c.state,
-            func.count(tasks.c.task_id).label('count')).\
-        group_by(tasks.c.batch_id, tasks.c.state).\
-        order_by(tasks.c.batch_id)
+    query = select(birdnet_input.c.node_label, tasks.c.state,
+            func.sum(birdnet_input.c.file_size).label('size'),
+            func.count(birdnet_input.c.file_id).label('count')).\
+        outerjoin(tasks).\
+        where(birdnet_input.c.sample_rate == 48000, birdnet_input.c.duration >= 3).\
+        group_by(tasks.c.state, birdnet_input.c.node_label).\
+        order_by(birdnet_input.c.node_label)
     progess = await database.fetch_all(query)
-    batch_progress = {}
+    node_progress = {}
     for row in progess:
-        if row.batch_id not in batch_progress:
-            batch_progress[row.batch_id] = {
-                'complete': 0,
-                'pending': 0
+        if row.node_label not in node_progress:
+            node_progress[row.node_label] = {
+                'size': 0,
+                'total_count': 0,
+                'total_pending': 0,
+
+                'noqueue': 0,  # None
+                'pending': 0,  # 0
+                'running': 0,  # 1
+                'complete': 0, # 2
+                'failed': 0,   # 3
+                'paused': 0,   # 4
             }
-        if row.state == 2:
-            batch_progress[row.batch_id]['complete'] = row.count
-        else:
-            batch_progress[row.batch_id]['pending'] += row.count
-    return batch_progress
+
+        node_progress[row.node_label]['size']  += row['size']
+        node_progress[row.node_label]['total_count']  += row['count']
+
+        if row.state != 2:
+            node_progress[row.node_label]['total_pending']  += row['count']
+
+        if row.state == None:
+            node_progress[row.node_label]['noqueue']  = row['count']
+        elif row.state == 0:
+            node_progress[row.node_label]['pending']  = row['count']
+        elif row.state == 1:
+            node_progress[row.node_label]['running']  = row['count']
+        elif row.state == 2:
+            node_progress[row.node_label]['complete'] = row['count']
+        elif row.state == 3:
+            node_progress[row.node_label]['failed']   = row['count']
+        elif row.state == 4:
+            node_progress[row.node_label]['paused']   = row['count']
+
+    return list(map(lambda i: {'node_label': i[0], **i[1]}, node_progress.items()))
 
 @app.get('/queue/input/', tags=['queue'])
 async def read_input():
