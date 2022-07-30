@@ -251,6 +251,41 @@ async def queue_input(definition: QueueUpdateDefinition):
         await database.execute(delete_results_query.bindparams(node_label=definition.node_label))
         return await database.execute(reset_query.bindparams(node_label=definition.node_label))
 
+@app.get('/queue/detail/{node_label}', tags=['queue'])
+async def read_queue_detail(node_label: str):
+
+    # file stats
+    file_stats_query = text(f'''
+    select mode() within group (order by duration) as common_duration,
+    min(time) as min_time, max(time) as max_time
+    from {crd.db.schema}.birdnet_input
+    where node_label = :node_label and duration >= 3 and sample_rate = 48000
+    ''')
+
+    # task stats
+    task_stats_query = text(f'''
+    select avg(end_on - pickup_on) as avg_runtime, min(end_on - pickup_on) as min_runtime, max(end_on - pickup_on) as max_runtime,
+    min(scheduled_on) as min_scheduled_on, max(scheduled_on) as max_scheduled_on, min(end_on) as min_end_on, max(end_on) as max_end_on, sum(end_on - pickup_on) as total_runtime
+    from {crd.db.schema}.birdnet_tasks t
+    left outer join {crd.db.schema}.birdnet_input i on i.file_id = t.file_id
+    where state = 2 and node_label = :node_label and duration >= 3 and sample_rate = 48000
+    ''')
+
+    # result stats
+    result_stats_query = text(f'''
+    select count(result_id), count(distinct case when confidence > 0.9 then result_id end) as count_conf_09
+    from {crd.db.schema}.birdnet_results
+    left join {crd.db.schema}.birdnet_input on birdnet_input.file_id = birdnet_results.file_id
+    where node_label = :node_label and duration >= 3 and sample_rate = 48000
+    ''')
+
+    file_stats = await database.fetch_one(file_stats_query.bindparams(node_label = node_label))
+    task_stats = await database.fetch_one(task_stats_query.bindparams(node_label = node_label))
+    result_stats = await database.fetch_one(result_stats_query.bindparams(node_label = node_label))
+
+    return { 'node_label': node_label, 'file_stats': file_stats, 'task_stats': task_stats, 'result_stats': result_stats }
+
+
 @app.get('/nodes', tags=['deployments'])
 async def read_nodes():
     return await database.fetch_all(select(nodes).order_by(nodes.c.node_label))
