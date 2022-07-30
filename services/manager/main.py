@@ -15,7 +15,7 @@ from fastapi.responses import JSONResponse
 from asyncpg.exceptions import ExclusionViolationError, ForeignKeyViolationError
 
 from tables import nodes, locations, deployments, results, tasks, species, species_day, data_records, files_image, birdnet_input
-from models import Deployment, Result, Species, DeploymentResponse, DeploymentRequest, Node, ValidationResult, NodeValidationRequest, ImageValidationRequest, ImageValidationResponse, ImageRequest
+from models import Deployment, Result, Species, DeploymentResponse, DeploymentRequest, Node, ValidationResult, NodeValidationRequest, ImageValidationRequest, ImageValidationResponse, ImageRequest, QueueInputDefinition, QueueUpdateDefinition
 
 sys.path.append('../../')
 import credentials as crd
@@ -184,6 +184,72 @@ async def read_input():
     # for row in result:
     #     print(row)
     return result
+
+@app.post('/queue/input/', tags=['queue'])
+async def queue_input(definition: QueueInputDefinition):
+
+    select_query = select(birdnet_input.c.file_id, 1, 0, current_timestamp()).\
+        outerjoin(tasks).\
+        where(birdnet_input.c.sample_rate == 48000, birdnet_input.c.duration >= 3,
+            tasks.c.state == None, birdnet_input.c.node_label == definition.node_label)
+    insert_query = insert(tasks).from_select(['file_id', 'config_id', 'state', 'scheduled_on'], select_query)
+    # 'on conflict do nothing' not implemented.
+    # not required here as the records are selected by the fact that they are absent.
+
+    return await database.execute(insert_query)
+
+@app.patch('/queue/input/', tags=['queue'])
+async def queue_input(definition: QueueUpdateDefinition):
+
+    transition_query = text(f'''
+    update {crd.db.schema}.birdnet_tasks set state = :to_state
+    where task_id in (
+        select task_id from {crd.db.schema}.birdnet_tasks t
+        left outer join {crd.db.schema}.birdnet_input i on i.file_id = t.file_id
+        where t.state = :from_state and node_label = :node_label
+        for update of t skip locked
+    )
+    ''')
+
+    reset_query = text(f'''
+    update {crd.db.schema}.birdnet_tasks set state = 0
+    where task_id in (
+        select task_id from {crd.db.schema}.birdnet_tasks t
+        left outer join {crd.db.schema}.birdnet_input i on i.file_id = t.file_id
+        where node_label = :node_label
+        for update of t skip locked
+    )
+    ''')
+
+    delete_failed_results_query = text(f'''
+    delete from {crd.db.schema}.birdnet_results
+    where task_id in (
+        select task_id from {crd.db.schema}.birdnet_tasks t
+        left outer join {crd.db.schema}.birdnet_input i on i.file_id = t.file_id
+        where t.state = 3 and node_label = :node_label
+    )
+    ''')
+
+    delete_results_query = text(f'''
+    delete from {crd.db.schema}.birdnet_results
+    where task_id in (
+        select task_id from {crd.db.schema}.birdnet_tasks t
+        left outer join {crd.db.schema}.birdnet_input i on i.file_id = t.file_id
+        where node_label = :node_label
+    )
+    ''')
+
+    if definition.action == 'pause':
+        return await database.execute(transition_query.bindparams(from_state=0, to_state=4, node_label=definition.node_label))
+    elif definition.action == 'resume':
+        return await database.execute(transition_query.bindparams(from_state=4, to_state=0, node_label=definition.node_label))
+    elif definition.action == 'reset_failed':
+        await database.execute(delete_failed_results_query.bindparams(node_label=definition.node_label))
+        return await database.execute(transition_query.bindparams(from_state=3, to_state=0, node_label=definition.node_label))
+    elif definition.action == 'reset_all':
+        return # Not active, too dangerous
+        await database.execute(delete_results_query.bindparams(node_label=definition.node_label))
+        return await database.execute(reset_query.bindparams(node_label=definition.node_label))
 
 @app.get('/nodes', tags=['deployments'])
 async def read_nodes():

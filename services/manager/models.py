@@ -1,4 +1,4 @@
-from typing import Optional, List, Tuple
+from typing import Optional, List, Tuple, Literal
 from datetime import datetime
 from sqlalchemy.dialects.postgresql import TSTZRANGE
 from pydantic import BaseModel, Field, constr, PositiveInt
@@ -179,3 +179,10 @@ class DeploymentRequest(BaseModel):
     node_id: int
     location: Point
     period: TimeStampRange
+
+class QueueInputDefinition(BaseModel):
+    node_label: str # for now keep this required. TODO: implement update for all dask when node_label not present
+
+class QueueUpdateDefinition(BaseModel):
+    node_label: str # for now keep this required. TODO: implement update for all dask when node_label not present
+    action: Literal['reset_all', 'reset_failed', 'pause', 'resume']
