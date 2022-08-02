@@ -593,6 +593,10 @@ async def check_image(body: ImageValidationRequest) -> None:
                 **duplicate_result._mapping,
                 'node_id': None, 'location_id': None, 'node_deployed': False }
 
+@app.get('/ingest/image/{sha256}', tags=['ingest'])
+async def ingest_image(sha256: str) -> None:
+    return await database.fetch_one(select(files_image).where(files_image.c.sha256 == sha256))
+
 @app.post('/ingest/image', tags=['ingest'])
 async def ingest_image(body: ImageRequest) -> None:
 
