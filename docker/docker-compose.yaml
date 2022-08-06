@@ -156,7 +156,7 @@ services:
     restart: always
 
   geo:
-    image: nginx:alpine
+    image: mitwelten-geo:0.1
     container_name: "geo"
     volumes:
       - "/opt/mitwelten-db-backend/services/geo:/app"
