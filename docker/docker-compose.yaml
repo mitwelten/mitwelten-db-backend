@@ -162,6 +162,45 @@ services:
 
     restart: always
 
+  geo:
+    image: mitwelten-geo:0.1
+    container_name: "geo"
+    volumes:
+      - "/opt/mitwelten-db-backend/services/geo:/app"
+      - "/opt/mitwelten-db-backend/credentials.py:/app/credentials.py"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.services.geo.loadbalancer.server.port=80"
+
+      # for https
+      - "traefik.http.routers.geo_insecure.rule=Host(`data.mitwelten.org`)&&PathPrefix(`/geo/v1/`)"
+      - "traefik.http.routers.geo_insecure.entrypoints=http"
+
+      # redirect to https
+      - "traefik.http.middlewares.geo-https.redirectscheme.scheme=https"
+      - "traefik.http.routers.geo_insecure.middlewares=geo-https"
+
+      # for https
+      - "traefik.http.routers.geo.rule=Host(`data.mitwelten.org`)&&PathPrefix(`/geo/v1/`)"
+      - "traefik.http.routers.geo.entrypoints=https"
+      - "traefik.http.routers.geo.tls.certresolver=ssl"
+
+      #  middlewares for https
+      - "traefik.http.routers.geo.middlewares=geo-cors,geo-stripprefix"
+
+      # strip prefix /geo/v1
+      - "traefik.http.middlewares.geo-stripprefix.stripprefix.prefixes=/geo/v1"
+
+      # CORS
+      - "traefik.http.middlewares.geo-cors.headers.accesscontrolallowmethods=GET,OPTIONS"
+      - "traefik.http.middlewares.geo-cors.headers.accessControlAllowOriginList=https://www.mitwelten.org"
+      - "traefik.http.middlewares.geo-cors.headers.accessControlAllowHeaders=*"
+      - "traefik.http.middlewares.geo-cors.headers.accessControlExposeHeaders=*"
+      - "traefik.http.middlewares.geo-cors.headers.accesscontrolmaxage=100"
+      - "traefik.http.middlewares.geo-cors.headers.addvaryheader=true"
+
+    restart: always
+
   prometheus:
     image: prom/prometheus:latest
     hostname: prometheus
