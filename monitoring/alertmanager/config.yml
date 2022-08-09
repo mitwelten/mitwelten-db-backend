@@ -1,0 +1,28 @@
+route:
+  receiver: slack
+
+receivers:
+  - name: slack
+    # slack_configs:
+    #   - send_resolved: true
+    #     username: <username>
+    #     channel: #<channel-name>
+    #     api_url: <incomming-webhook-url>
+  - name: telegram
+    # webhook_configs:
+    # - send_resolved: True
+    #   url: http://127.0.0.1:9088/alert/-xyz
+
+# Inhibition rules allow to mute a set of alerts given that another alert is
+# firing.
+# We use this to mute any warning-level notifications if the same alert is
+# already critical.
+inhibit_rules:
+  - source_match:
+      severity: critical
+    target_match:
+      severity: warning
+    equal: # Apply inhibition if the alertname is the same.
+      - alertname
+      - cluster
+      - service
