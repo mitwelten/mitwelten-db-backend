@@ -186,7 +186,7 @@ services:
 
       # CORS
       - "traefik.http.middlewares.geo-cors.headers.accesscontrolallowmethods=GET,OPTIONS"
-      - "traefik.http.middlewares.geo-cors.headers.accessControlAllowOriginList=mitwelten.org"
+      - "traefik.http.middlewares.geo-cors.headers.accessControlAllowOriginList=https://www.mitwelten.org"
       - "traefik.http.middlewares.geo-cors.headers.accessControlAllowHeaders=*"
       - "traefik.http.middlewares.geo-cors.headers.accessControlExposeHeaders=*"
       - "traefik.http.middlewares.geo-cors.headers.accesscontrolmaxage=100"
