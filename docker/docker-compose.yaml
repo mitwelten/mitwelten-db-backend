@@ -167,7 +167,7 @@ services:
     hostname: prometheus
     container_name: prometheus
     volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ../monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
       - prometheus_data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
@@ -186,9 +186,9 @@ services:
     container_name: grafana
     image: grafana/grafana:latest
     volumes:
-      - ./grafana/grafana.ini:/etc/grafana/grafana.ini
-      - ./grafana/provisioning/datasources/datasource.yml:/etc/grafana/provisioning/datasources/datasource.yml
-      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
+      - ../monitoring/grafana/grafana.ini:/etc/grafana/grafana.ini
+      - ../monitoring/grafana/provisioning/datasources/datasource.yml:/etc/grafana/provisioning/datasources/datasource.yml
+      - ../monitoring/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
       - grafana_data:/var/lib/grafana
     ports:
       - 3000:3000
@@ -219,7 +219,7 @@ services:
     hostname: alertmanager
     image: prom/alertmanager:latest
     volumes:
-      - ./alertmanager/:/etc/alertmanager/
+      - ../monitoring/alertmanager/:/etc/alertmanager/
       - alertmanager_data:/alertmanager
     command:
       - '--config.file=/etc/alertmanager/config.yml'
