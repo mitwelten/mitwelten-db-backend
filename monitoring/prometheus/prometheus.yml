@@ -29,7 +29,7 @@ scrape_configs:
   - targets:
     - localhost:9090
 
-- job_name: mitwelten
+- job_name: picam-capture
   scheme: https
   file_sd_configs:
   - files:
