@@ -8,14 +8,11 @@ alerting:
   - static_configs:
     - targets:
       - 172.17.0.1:9093
-    scheme: http
-    timeout: 10s
-    api_version: v1
 
 # Load rules once and periodically evaluate them according to the global 'evaluation_interval'.
-# rule_files:
-#   - alert.rules.yml
-#   - 'alerts/*.yml'
+rule_files:
+- alert.rules.yml
+- alerts/*.yml
 
 scrape_configs:
 
@@ -31,7 +28,11 @@ scrape_configs:
 
 - job_name: picam-capture
   scheme: https
+  relabel_configs:
+  - source_labels: [__address__]
+    regex: '.+(ap-\d{4}-\d{4})-.+'
+    target_label: instance
   file_sd_configs:
   - files:
-    - /etc/prometheus/sd/*.json
+    - /etc/prometheus/sd/mitwelten_capture-nodes.json
     refresh_interval: 5m

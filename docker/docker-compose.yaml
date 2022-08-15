@@ -207,6 +207,8 @@ services:
     container_name: prometheus
     volumes:
       - ../monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ../monitoring/prometheus/alert.rules.yml:/etc/prometheus/alert.rules.yml
+      - ../monitoring/prometheus/alerts:/etc/prometheus/alerts
       - ../monitoring/prometheus/sd:/etc/prometheus/sd
       - prometheus_data:/prometheus
     command:
@@ -214,7 +216,7 @@ services:
       - '--storage.tsdb.path=/prometheus'
       - '--web.console.libraries=/etc/prometheus/console_libraries'
       - '--web.console.templates=/etc/prometheus/consoles'
-      - '--web.enable-lifecycle'
+      - '--web.enable-lifecycle' # reload configuration with curl -X POST http://localhost:9090/-/reload
     ports:
       - 9090:9090
     expose:

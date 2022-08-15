@@ -1,14 +1,53 @@
+global:
+  telegram_api_url: 'https://api.telegram.org'
+  slack_api_url_file: slack_api_url
+
+templates:
+- templates/mitwelten_slack.tmpl
+
 route:
-  receiver: slack
+  receiver: root
+  routes:
+  - receiver: telegram
+    continue: true
+  - receiver: slack
+    continue: true
 
 receivers:
-  - name: slack
-    # slack_configs:
-    #   - send_resolved: true
-    #     username: <username>
-    #     channel: #<channel-name>
-    #     api_url: <incomming-webhook-url>
-  - name: telegram
+- name: root
+- name: slack
+  slack_configs:
+  - channel: '#devops-bot'
+    send_resolved: true
+    color: '{{ template "slack.color" . }}'
+    title: '{{ template "slack.title" . }}'
+    text: '{{ template "slack.text" . }}'
+    actions:
+    - name: runbook
+      type: button
+      text: 'Runbook :green_book:'
+      url: '{{ (index .Alerts 0).Annotations.runbook_url }}'
+    - name: query
+      type: button
+      text: 'Query :mag:'
+      url: '{{ (index .Alerts 0).GeneratorURL }}'
+    - name: dashboard
+      type: button
+      text: 'Dashboard :chart_with_upwards_trend:'
+      url: '{{ (index .Alerts 0).Annotations.dashboard_url }}'
+    - name: silence
+      type: button
+      text: 'Silence :no_bell:'
+      url: '{{ template "__alert_silence_link" . }}'
+
+- name: telegram
+  telegram_configs:
+  - chat_id: 0 # <- put chat id
+    bot_token: '' # <- put token
+    send_resolved: true
+    api_url: 'https://api.telegram.org'
+    parse_mode: HTML
+
     # webhook_configs:
     # - send_resolved: True
     #   url: http://127.0.0.1:9088/alert/-xyz
