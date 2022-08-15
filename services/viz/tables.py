@@ -77,6 +77,19 @@ tag = sqlalchemy.Table(
     schema=crd.db.schema
 )
 
+file = sqlalchemy.Table(
+    'files_entry',
+    metadata,
+    sqlalchemy.Column('file_id',     sqlalchemy.Integer,     primary_key=True),
+    sqlalchemy.Column('entry_id',    None,                   ForeignKey('entries.entry_id')),
+    sqlalchemy.Column('object_name', sqlalchemy.String(255), nullable=False), # file url in S3
+    sqlalchemy.Column('name',        sqlalchemy.String(255), nullable=False),
+    sqlalchemy.Column('type',        sqlalchemy.String(255), nullable=False),
+    sqlalchemy.Column('created_at',  sqlalchemy.TIMESTAMP,   nullable=True),
+    sqlalchemy.Column('updated_at',  sqlalchemy.TIMESTAMP,   nullable=True),
+    schema=crd.db.schema
+)
+
 node = sqlalchemy.Table(
     'nodes',
     metadata,

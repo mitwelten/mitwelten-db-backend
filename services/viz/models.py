@@ -6,6 +6,7 @@ from typing import List, Optional, Union, Literal
 
 from pydantic import BaseModel, Field, constr
 
+s3_file_url_regex = r'^https:\/\/mitwelten-frontend\.s3\.amazonaws\.com\/[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(?:[-a-zA-Z0-9()@:%_\+.~#?&\/=]*)$'
 
 class Tag(BaseModel):
     '''
@@ -13,6 +14,19 @@ class Tag(BaseModel):
     '''
     id: Optional[int] = None
     name: Optional[constr(regex=r'\w+')] = None
+
+
+class File(BaseModel):
+    '''
+    File uploaded through front end to S3, associated to an entry
+    '''
+    id: Optional[int] = None
+    type: str = Field(title='MIME type', example='application/pdf')
+    name: str = Field(title='File name')
+    link: constr(strip_whitespace=True, regex=s3_file_url_regex) = Field(
+        title='Link to S3 object',
+        description='Constrained to mitwelten bucket at https://mitwelten-frontend.s3.amazonaws.com'
+    )
 
 
 class Type(Enum):
@@ -129,7 +143,7 @@ class Entry(BaseModel):
     type: Optional[str] = Field(None, example='A walk in the park')
     tags: Optional[List[Tag]] = None
     comments: Optional[List[Comment]] = None
-    fileUrls: Optional[List[str]] = None
+    files: Optional[List[File]] = None
 
 class PatchEntry(Entry):
     '''

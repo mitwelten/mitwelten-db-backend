@@ -13,8 +13,8 @@ import databases
 from sqlalchemy.sql import select, func, between, and_
 from asyncpg.exceptions import UniqueViolationError, StringDataRightTruncationError, ForeignKeyViolationError
 
-from models import ApiResponse, DatumResponse, Entry, PatchEntry, Node, Tag, ApiErrorResponse, PaxDatum, EnvDatum
-from tables import entry, location, tag, mm_tag_entry, node, datum_pax, datum_env
+from models import ApiResponse, DatumResponse, Entry, PatchEntry, Node, Tag, ApiErrorResponse, PaxDatum, EnvDatum, File
+from tables import entry, location, tag, mm_tag_entry, node, datum_pax, datum_env, file
 
 sys.path.append('../../')
 import credentials as crd
@@ -252,8 +252,9 @@ async def get_entry_by_id(id: int) -> Entry:
     '''
     Find entry by ID
     '''
-    query = select(entry, entry.c.entry_id.label('id'), entry.c.created_at.label('date'), location.c.location, tag.c.tag_id, tag.c.name.label('tag_name')).\
-        select_from(entry.outerjoin(location).outerjoin(mm_tag_entry).outerjoin(tag)).where(entry.c.entry_id == id)
+    query = select(entry, entry.c.entry_id.label('id'), entry.c.created_at.label('date'), location.c.location, tag.c.tag_id, tag.c.name.label('tag_name'),
+        file.c.file_id, file.c.name, file.c.object_name, file.c.type).\
+        select_from(entry.outerjoin(location).outerjoin(mm_tag_entry).outerjoin(tag).outerjoin(file)).where(entry.c.entry_id == id)
     result = await database.fetch_all(query=query)
 
     if result == None:
@@ -264,11 +265,23 @@ async def get_entry_by_id(id: int) -> Entry:
             if entry_map:
                 # add tags to array
                 entry_map['tags'].append({'id':item['tag_id'], 'name':item['tag_name']})
+                # add files to array
+                entry_map['files'].append({'id':item['file_id'], 'name':item['name'], 'link':item['object_name'], 'type':item['type']})
             else:
                 entry_map = {**item._mapping}
                 entry_map['location'] = item['location']
                 if item['tag_id'] != None:
                     entry_map['tags'] = [{'id':item['tag_id'], 'name':item['tag_name']}]
+                if item['file_id'] != None:
+                    entry_map['files'] = [{'id':item['file_id'], 'name':item['name'], 'link':item['object_name'], 'type':item['type']}]
+
+        # reduce cardinality duplication
+        if 'tags' in entry_map:
+            entry_map['tags'] = [next((e for e in entry_map['tags'] if e['id'] == i)) for i in {t['id'] for t in entry_map['tags']}]
+        if 'files' in entry_map:
+            entry_map['files'] = [next((e for e in entry_map['files'] if e['id'] == i)) for i in {f['id'] for f in entry_map['files']}]
+
+        print(entry_map)
         return entry_map
 
 @app.patch('/entry/{id}', response_model=None, tags=['entry'])
@@ -276,7 +289,7 @@ async def update_entry(id: int, body: PatchEntry = ...) -> None:
     '''
     ## Updates an entry
 
-    Patching not implemented for `tags`
+    Patching not implemented for `tags` and `files`
 
     ### Locations
 
@@ -338,6 +351,7 @@ async def delete_entry(id: int) -> None:
 
     try:
         await database.execute(mm_tag_entry.delete().where(mm_tag_entry.c.entries_entry_id == id))
+        await database.execute(file.delete().where(file.c.file_id == id))
         await database.execute(entry.delete().where(entry.c.entry_id == id))
     except Exception as e:
         await transaction.rollback()
@@ -412,15 +426,31 @@ async def delete_tag_from_entry(id: int, body: Tag) -> None:
         and_(mm_tag_entry.c.tags_tag_id == delete_id, mm_tag_entry.c.entries_entry_id == id)))
 
 
-@app.post('/entry/{id}/file', response_model=ApiResponse, tags=['entry', 'file'])
-def upload_file(id: int) -> ApiResponse:
+@app.post('/entry/{entry_id}/file', response_model=None, tags=['entry', 'file'])
+async def add_file_to_entry(entry_id: int, body: File) -> None:
     '''
-    Uploads a file
-
-    **Not Implemented**
+    Adds a file for an entry
     '''
-    pass
 
+    # do i need this if there's a FK constraint?
+    check = await database.fetch_one(entry.select().where(entry.c.entry_id == entry_id))
+    if check == None:
+        raise HTTPException(status_code=404, detail='Entry not found')
+
+    values = {
+        file.c.entry_id: entry_id,
+        file.c.object_name: body.link,
+        file.c.name: body.name.strip(),
+        file.c.type: body.type.strip(),
+    }
+    return await database.fetch_one(file.insert().values(values).returning(file.c.file_id))
+
+@app.delete('/file/{id}', response_model=None, tags=['file'])
+async def delete_file(file_id: int) -> None:
+    '''
+    Deletes a file
+    '''
+    await database.execute(file.delete().where(file.c.file_id == file_id))
 
 @app.get('/nodes', response_model=List[Node], tags=['node'])
 async def list_nodes(
