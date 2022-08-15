@@ -117,7 +117,7 @@ async def list_data(
         target = datum_env
         typeclass = EnvDatum
     else:
-        raise HTTPException(status_code=400, detail='Invalid node type')
+        raise HTTPException(status_code=400, detail='Invalid node type: {}'.format(typecheck['type']))
 
     # define the join
     query = select(target, node.c.node_label.label('nodeLabel')).\
