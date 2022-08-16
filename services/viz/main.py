@@ -441,7 +441,11 @@ async def add_file_to_entry(entry_id: int, body: File) -> None:
         file.c.name: body.name.strip(),
         file.c.type: body.type.strip(),
     }
-    return await database.fetch_one(file.insert().values(values).returning(file.c.file_id))
+    try:
+        return await database.fetch_one(file.insert().values(values).returning(file.c.file_id))
+    except UniqueViolationError:
+        raise HTTPException(status_code=409, detail='Tag with same name already exists')
+
 
 @app.delete('/file/{id}', response_model=None, tags=['file'])
 async def delete_file(file_id: int) -> None:
