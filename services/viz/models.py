@@ -6,7 +6,7 @@ from typing import List, Optional, Union, Literal
 
 from pydantic import BaseModel, Field, constr
 
-s3_file_url_regex = r'^https:\/\/mitwelten-frontend\.s3\.amazonaws\.com\/[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(?:[-a-zA-Z0-9()@:%_\+.~#?&\/=]*)$'
+s3_file_url_regex = r'^https:\/\/mitwelten-frontend\.s3\.amazonaws\.com\/.+$'
 
 class Tag(BaseModel):
     '''
