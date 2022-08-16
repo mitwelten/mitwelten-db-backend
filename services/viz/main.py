@@ -225,7 +225,6 @@ async def add_entry(body: Entry) -> None:
             values (point({body.location.lat},{body.location.lon}), 'user-added')
             returning location_id
             '''
-            print(loc_insert_query)
             location_id = await database.execute(loc_insert_query)
         else:
             location_id = result.location_id
@@ -281,7 +280,6 @@ async def get_entry_by_id(id: int) -> Entry:
         if 'files' in entry_map:
             entry_map['files'] = [next((e for e in entry_map['files'] if e['id'] == i)) for i in {f['id'] for f in entry_map['files']}]
 
-        print(entry_map)
         return entry_map
 
 @app.patch('/entry/{id}', response_model=None, tags=['entry'])
