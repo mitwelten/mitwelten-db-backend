@@ -25,7 +25,7 @@ import credentials as crd
 
 DATABASE_URL = f'postgresql://{crd.db.user}:{crd.db.password}@{crd.db.host}/{crd.db.database}'
 
-database = databases.Database(DATABASE_URL)
+database = databases.Database(DATABASE_URL, min_size=5, max_size=10)
 
 #
 # Set up FastAPI

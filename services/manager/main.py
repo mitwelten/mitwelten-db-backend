@@ -27,8 +27,7 @@ class NodeNotDeployedException(BaseException):
     ...
 
 DATABASE_URL = f'postgresql://{crd.db.user}:{crd.db.password}@{crd.db.host}/{crd.db.database}'
-database = databases.Database(DATABASE_URL)
-engine = sqlalchemy.create_engine(DATABASE_URL)
+database = databases.Database(DATABASE_URL, min_size=5, max_size=10)
 
 tags_metadata = [
     {
@@ -180,10 +179,7 @@ async def read_input():
     from {crd.db.schema}.birdnet_input
     group by node_label
     '''
-    result = engine.execute(query).fetchall()
-    # for row in result:
-    #     print(row)
-    return result
+    return await database.execute(query).fetchall()
 
 @app.post('/queue/input/', tags=['queue'])
 async def queue_input(definition: QueueInputDefinition):
