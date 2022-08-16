@@ -261,18 +261,19 @@ async def get_entry_by_id(id: int) -> Entry:
     else:
         entry_map = None
         for item in result:
-            if entry_map:
-                # add tags to array
-                entry_map['tags'].append({'id':item['tag_id'], 'name':item['tag_name']})
-                # add files to array
-                entry_map['files'].append({'id':item['file_id'], 'name':item['name'], 'link':item['object_name'], 'type':item['type']})
-            else:
+            # initialize result dictionary
+            if entry_map == None:
                 entry_map = {**item._mapping}
+                entry_map['tags'] = []
+                entry_map['files'] = []
+            # add data from relationships
                 entry_map['location'] = item['location']
                 if item['tag_id'] != None:
-                    entry_map['tags'] = [{'id':item['tag_id'], 'name':item['tag_name']}]
+                # add tags to array
+                entry_map['tags'].append({'id':item['tag_id'], 'name':item['tag_name']})
                 if item['file_id'] != None:
-                    entry_map['files'] = [{'id':item['file_id'], 'name':item['name'], 'link':item['object_name'], 'type':item['type']}]
+                # add files to array
+                entry_map['files'].append({'id':item['file_id'], 'name':item['name'], 'link':item['object_name'], 'type':item['type']})
 
         # reduce cardinality duplication
         if 'tags' in entry_map:
