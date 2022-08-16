@@ -267,11 +267,11 @@ async def get_entry_by_id(id: int) -> Entry:
                 entry_map['tags'] = []
                 entry_map['files'] = []
             # add data from relationships
-                entry_map['location'] = item['location']
-                if item['tag_id'] != None:
+            entry_map['location'] = item['location']
+            if item['tag_id'] != None:
                 # add tags to array
                 entry_map['tags'].append({'id':item['tag_id'], 'name':item['tag_name']})
-                if item['file_id'] != None:
+            if item['file_id'] != None:
                 # add files to array
                 entry_map['files'].append({'id':item['file_id'], 'name':item['name'], 'link':item['object_name'], 'type':item['type']})
 
@@ -288,7 +288,7 @@ async def update_entry(id: int, body: PatchEntry = ...) -> None:
     '''
     ## Updates an entry
 
-    Patching not implemented for `tags` and `files`
+    Patching not implemented for `tags`, `files` and `comments`
 
     ### Locations
 
@@ -323,6 +323,23 @@ async def update_entry(id: int, body: PatchEntry = ...) -> None:
                 location_id = result.location_id
             update_data['location_id'] = location_id
             del update_data['location']
+
+        # 'files' not implemented
+        if 'files' in update_data:
+            del update_data['files']
+
+        # 'tags' not implemented
+        if 'tags' in update_data:
+            del update_data['tags']
+
+        # 'comments' not implemented
+        if 'comments' in update_data:
+            del update_data['comments']
+
+        del update_data['id']
+
+        update_data['created_at'] = update_data['date']
+        del update_data['date']
 
         query = entry.update().where(entry.c.entry_id == id).\
             values({**update_data, entry.c.updated_at: func.current_timestamp()})
