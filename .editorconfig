@@ -10,3 +10,7 @@ insert_final_newline = true
 
 [*.py]
 indent_size = 4
+
+[slack_api_url]
+trim_trailing_whitespace = true
+insert_final_newline = false
