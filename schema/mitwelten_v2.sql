@@ -345,7 +345,7 @@ ALTER TABLE IF EXISTS dev.files_entry
     ADD FOREIGN KEY (entry_id)
     REFERENCES dev.entries (entry_id) MATCH SIMPLE
     ON UPDATE NO ACTION
-    ON DELETE NO ACTION
+    ON DELETE CASCADE
     NOT VALID;
 
 -- fast delete queries in birdnet_tasks

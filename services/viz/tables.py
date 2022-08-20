@@ -81,7 +81,7 @@ file = sqlalchemy.Table(
     'files_entry',
     metadata,
     sqlalchemy.Column('file_id',     sqlalchemy.Integer,     primary_key=True),
-    sqlalchemy.Column('entry_id',    None,                   ForeignKey('entries.entry_id')),
+    sqlalchemy.Column('entry_id',    None,                   ForeignKey(entry.c.entry_id, ondelete='CASCADE')),
     sqlalchemy.Column('object_name', sqlalchemy.String(255), nullable=False), # file url in S3
     sqlalchemy.Column('name',        sqlalchemy.String(255), nullable=False),
     sqlalchemy.Column('type',        sqlalchemy.String(255), nullable=False),

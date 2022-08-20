@@ -367,7 +367,6 @@ async def delete_entry(id: int) -> None:
 
     try:
         await database.execute(mm_tag_entry.delete().where(mm_tag_entry.c.entries_entry_id == id))
-        await database.execute(file.delete().where(file.c.file_id == id))
         await database.execute(entry.delete().where(entry.c.entry_id == id))
     except Exception as e:
         await transaction.rollback()
