@@ -1,3 +1,4 @@
+from pprint import pprint
 import sys
 from typing import List, Union
 from datetime import datetime
@@ -252,11 +253,11 @@ async def get_entry_by_id(id: int) -> Entry:
     Find entry by ID
     '''
     query = select(entry, entry.c.entry_id.label('id'), entry.c.created_at.label('date'), location.c.location, tag.c.tag_id, tag.c.name.label('tag_name'),
-        file.c.file_id, file.c.name, file.c.object_name, file.c.type).\
+        file.c.file_id, file.c.name.label('file_name'), file.c.object_name, file.c.type.label('file_type')).\
         select_from(entry.outerjoin(location).outerjoin(mm_tag_entry).outerjoin(tag).outerjoin(file)).where(entry.c.entry_id == id)
     result = await database.fetch_all(query=query)
 
-    if result == None:
+    if result == None or len(result) == 0:
         raise HTTPException(status_code=404, detail='Entry not found')
     else:
         entry_map = None
@@ -273,7 +274,7 @@ async def get_entry_by_id(id: int) -> Entry:
                 entry_map['tags'].append({'id':item['tag_id'], 'name':item['tag_name']})
             if item['file_id'] != None:
                 # add files to array
-                entry_map['files'].append({'id':item['file_id'], 'name':item['name'], 'link':item['object_name'], 'type':item['type']})
+                entry_map['files'].append({'id':item['file_id'], 'name':item['file_name'], 'link':item['object_name'], 'type':item['file_type']})
 
         # reduce cardinality duplication
         if 'tags' in entry_map:
