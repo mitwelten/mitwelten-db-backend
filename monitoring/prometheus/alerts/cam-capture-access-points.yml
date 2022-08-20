@@ -1,0 +1,24 @@
+groups:
+- name: PiCam Capture Accesspoints
+  rules:
+  - alert: AP down
+    # Condition for alerting
+    expr: up{job="mitwelten"} == 0
+    for: 30s
+    # Annotation - additional informational labels to store more information
+    annotations:
+      summary: 'PiCam capture accesspoint down'
+      title: 'Instance {{ $labels.instance }} ({{ $labels.description }}) down'
+      description: '{{ $labels.instance }} ({{ $labels.description }}) has been down for more than 30 seconds.'
+    # Labels - additional labels to be attached to the alert
+    labels:
+      severity: 'critical'
+  - alert: AP HDD lost
+    expr: node_mountpoint_state == 0
+    for: 15s
+    annotations:
+      summary: 'PiCam capture HDD lost'
+      title: 'HDD failure on {{ $labels.instance }} ({{ $labels.description }})'
+      description: 'HDD on {{ $labels.instance }} ({{ $labels.description }}) failed.'
+    labels:
+      severity: 'critical'

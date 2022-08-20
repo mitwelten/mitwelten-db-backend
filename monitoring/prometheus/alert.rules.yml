@@ -1,20 +1,7 @@
 groups:
 - name: PiCam Capture Accesspoints
   rules:
-  - alert: AP Down
-    # Condition for alerting
-    expr: up{job="mitwelten"} == 0
-    for: 30s
-    # Annotation - additional informational labels to store more information
-    annotations:
-      summary: '{{ $labels.job }}: PiCam Capture Accesspoints'
-      title: 'Instance {{ $labels.instance }} ({{ $labels.description }}) down'
-      description: '{{ $labels.instance }} ({{ $labels.description }}) has been down for more than 30 seconds.'
-    # Labels - additional labels to be attached to the alert
-    labels:
-      severity: 'critical'
-
-  - alert: AP Up
+  - alert: AP Up (testing)
     # Condition for alerting
     expr: up{job="mitwelten"} == 1
     for: 30s

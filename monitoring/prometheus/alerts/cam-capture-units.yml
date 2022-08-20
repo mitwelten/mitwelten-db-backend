@@ -1,0 +1,21 @@
+groups:
+- name: PiCam Capture Units
+  rules:
+  - alert: Cam High Request Latency
+    expr: avg_over_time(cam_response_latency_seconds[5m]) > 0.600
+    for: 5m
+    annotations:
+      summary: 'PiCam capture units - high latency'
+      title: 'Connection from AP {{ $labels.instance }} to capture unit {{ $labels.endpoint }} is experiencing high latency'
+      description: '{{ $labels.instance }} to {{ $labels.endpoint }}: high latency'
+    labels:
+      severity: 'warning'
+  - alert: Cam Not Reachable
+    expr: cam_reachable == 0
+    for: 30s
+    annotations:
+      summary: 'PiCam capture unit is down'
+      title: 'Capture unit not responding: {{ $labels.endpoint }} on AP {{ $labels.instance }}'
+      description: '{{ $labels.endpoint }} to {{ $labels.instance }}: connection failed'
+    labels:
+      severity: 'error'
