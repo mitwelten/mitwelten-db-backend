@@ -13,9 +13,11 @@
 {{/* Severity of the alert */}}
 {{ define "__alert_severity" -}}
     {{- if eq .CommonLabels.severity "critical" -}}
-    *Severity:* `Critical`
+    *Severity:* :fire: `Critical`
+    {{- else if eq .CommonLabels.severity "error" -}}
+    *Severity:* :bangbang: `Error`
     {{- else if eq .CommonLabels.severity "warning" -}}
-    *Severity:* `Warning`
+    *Severity:* :heavy_exclamation_mark: `Warning`
     {{- else if eq .CommonLabels.severity "info" -}}
     *Severity:* `Info`
     {{- else -}}
@@ -65,7 +67,7 @@
     {{ if eq .Status "firing" -}}
         {{ if eq .CommonLabels.severity "warning" -}}
             warning
-        {{- else if eq .CommonLabels.severity "critical" -}}
+        {{- else if or (eq .CommonLabels.severity "critical") (eq .CommonLabels.severity "error") -}}
             danger
         {{- else -}}
             #439FE0
