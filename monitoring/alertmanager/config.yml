@@ -7,6 +7,7 @@ templates:
 
 route:
   receiver: root
+  group_by: [alertname]
   routes:
   - receiver: telegram
     continue: true
