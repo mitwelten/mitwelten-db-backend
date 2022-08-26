@@ -1,3 +1,4 @@
+from itertools import filterfalse, groupby
 from pprint import pprint
 import sys
 from typing import List, Union
@@ -142,7 +143,22 @@ async def list_data(
         typed_result.append(typeclass(type=typecheck['type'], **datum))
     return typed_result
 
-@app.get('/entries', response_model=List[Entry], tags=['entry'])
+def unique_everseen(iterable, key=None):
+    '''List unique elements, preserving order. Remember all elements ever seen.'''
+    seen = set()
+    seen_add = seen.add
+    if key is None:
+        for element in filterfalse(seen.__contains__, iterable):
+            seen_add(element)
+            yield element
+    else:
+        for element in iterable:
+            k = key(element)
+            if k not in seen:
+                seen_add(k)
+                yield element
+
+@app.get('/entries', response_model=List[Entry], tags=['entry'], response_model_exclude_none=True)
 async def list_entries(
     time_from: Optional[datetime] = Query(None, alias='from', example='2022-06-22T18:00:00.000Z'),
     time_to: Optional[datetime] = Query(None, alias='to', example='2022-06-22T20:00:00.000Z'),
@@ -159,8 +175,8 @@ async def list_entries(
     is omitted in the response.
     '''
 
-    query = select(entry, entry.c.entry_id.label('id'), entry.c.created_at.label('date'), location.c.location, tag.c.tag_id, tag.c.name.label('tag_name')).\
-        select_from(entry.outerjoin(location).outerjoin(mm_tag_entry).outerjoin(tag))
+    query = select(entry, entry.c.entry_id.label('id'), entry.c.created_at.label('date'), location.c.location, tag.c.tag_id, tag.c.name.label('tag_name'), file.c.file_id, file.c.object_name, file.c.name.label('file_name'), file.c.type.label('file_type')).\
+        select_from(entry.outerjoin(location).outerjoin(mm_tag_entry).outerjoin(tag).outerjoin(file))
 
     if time_from and time_to:
         query = query.where(between(entry.c.created_at, time_from, time_to))
@@ -170,19 +186,16 @@ async def list_entries(
         query = query.where(entry.c.created_at < time_to)
 
     result = await database.fetch_all(query=query)
-    entry_map = {}
-    for item in result:
-        if item['id'] in entry_map:
-            # add tags to array
-            d = {**item._mapping}
-            entry_map[item['id']]['tags'].append({'id':d['tag_id'], 'name':d['tag_name']})
-        else:
-            d = {**item._mapping}
-            d['location'] = item['location']
-            if d['tag_id'] != None:
-                d['tags'] = [{'id':d['tag_id'], 'name':d['tag_name']}]
-            entry_map[item['id']] = d
-    return list(entry_map.values())
+    output = []
+    for key, grp in groupby(result, key=lambda x: x['id']):
+        grp = list(grp)
+        f_l = unique_everseen(grp, lambda x: x['file_id'])
+        t_l = unique_everseen(grp, lambda x: x['tag_id'])
+        e = dict(grp[0])
+        e['files'] = [{'name': f['file_name'], 'link': f['object_name'], 'type': f['file_type']} for f in f_l if f['file_id'] != None]
+        e['tags'] = [{'id': t['tag_id'], 'name': t['tag_name']} for t in t_l if t['tag_id'] != None]
+        output.append(e)
+    return output
 
 
 @app.post('/entries', response_model=Entry, tags=['entry'])
