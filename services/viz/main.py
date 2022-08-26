@@ -12,11 +12,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import conint, constr
 
 import databases
-from sqlalchemy.sql import select, func, between, and_
+from sqlalchemy.sql import select, func, between, and_, text, LABEL_STYLE_TABLENAME_PLUS_COL
 from asyncpg.exceptions import UniqueViolationError, StringDataRightTruncationError, ForeignKeyViolationError
 
 from models import ApiResponse, DatumResponse, Entry, PatchEntry, Node, Tag, ApiErrorResponse, PaxDatum, EnvDatum, File
-from tables import entry, location, tag, mm_tag_entry, node, datum_pax, datum_env, file
+from tables import entry, location, tag, mm_tag_entry, node, datum_pax, datum_env, file, deployment
 
 sys.path.append('../../')
 import credentials as crd
@@ -474,84 +474,29 @@ async def list_nodes(
     time_to: Optional[datetime] = Query(None, alias='to', example='2022-08-31T23:59:59.999Z'),
 ) -> List[Node]:
     '''
-    List all nodes
-
-    This is a temporary, hacky, but working implementation. It becomes obvious
-    that the database schema requires an abstraction of `deployment`.
+    List all deployed nodes
     '''
 
-    select_part = f'''
-    select nl.node_id, node_label, n.type as node_type, n.description as node_description, platform,
-    nl.location_id, location, name as location_name, l.description as location_description, l.type as location_type
-    from node_locations nl
-    left join {crd.db.schema}.nodes n on n.node_id = nl.node_id
-    left join {crd.db.schema}.locations l on l.location_id = nl.location_id
-    '''
-    query = ''
-    values = {}
+    query = select(deployment.alias('d').outerjoin(node.alias('n')).outerjoin(location.alias('l'))).\
+        set_label_style(LABEL_STYLE_TABLENAME_PLUS_COL)
 
+    # define time range criteria
     if time_from and time_to:
-        query = f'''
-        with node_locations as (
-            select distinct node_id, location_id from {crd.db.schema}.files_image
-            where location_id is not null and time between :time_from and :time_to
-            union
-            select distinct node_id, location_id from {crd.db.schema}.files_audio
-            where location_id is not null and (time + (duration || ' seconds')::interval) > :time_from and time < :time_to
-        )'''
-        values = { 'time_from': time_from, 'time_to': time_to }
+        query = query.where(text("d.period && tstzrange(:time_from, :time_to)").bindparams(time_from=time_from, time_to=time_to))
     elif time_from:
-        query = f'''
-        with node_locations as (
-            select distinct node_id, location_id from {crd.db.schema}.files_image
-            where location_id is not null and time >= :time_from
-            union
-            select distinct node_id, location_id from {crd.db.schema}.files_audio
-            where location_id is not null and (time + (duration || ' seconds')::interval) > :time_from
-        )'''
-        values = { 'time_from': time_from }
+        query = query.where(text("d.period && tstzrange(:time_from, 'infinity')").bindparams(time_from=time_from))
     elif time_to:
-        query = f'''
-        with node_locations as (
-            select distinct node_id, location_id from {crd.db.schema}.files_image
-            where location_id is not null and time < :time_to
-            union
-            select distinct node_id, location_id from {crd.db.schema}.files_audio
-            where location_id is not null and (time + (duration || ' seconds')::interval) <= :time_to
-        )'''
-        values = { 'time_to': time_to }
-    else:
-        query = f'''
-        with node_locations as (
-            select distinct node_id, location_id from {crd.db.schema}.files_image
-            where location_id is not null
-            union
-            select distinct node_id, location_id from {crd.db.schema}.files_audio
-            where location_id is not null
-        )'''
+        query = query.where(text("d.period && tstzrange('-infinity', :time_to)").bindparams(time_to=time_to))
 
-    query += select_part
-    result = await database.fetch_all(query=query, values=values)
-    transform = []
-    for record in result:
-        transform.append({
-            'id': record.node_id,
-            'name': record.node_label,
-            'description': record.node_description,
-            'platform': record.platform,
-            'type': record.node_type,
-            'location': {
-                'id': record.location_id,
-                'location': {
-                    'lat': record.location[0],
-                    'lon': record.location[1]
-                },
-                'type': record.location_type,
-                'name': record.location_name,
-                'description': record.location_description
-            }
-        })
-    return transform
+    result = await database.fetch_all(query)
+    return [{
+        'id': r['n_node_id'],
+        'name': r['n_node_label'],
+        'location': { c: r['l_'+c] for c in location.columns.keys() },
+        'type': r['n_type'],
+        'platform': r['n_platform'],
+        'description': r['n_description'],
+    } for r in result]
 
 
 @app.put('/tag', response_model=None, tags=['tag'], responses={

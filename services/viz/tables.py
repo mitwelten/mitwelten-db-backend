@@ -4,6 +4,7 @@ import sqlalchemy
 
 # from geoalchemy2 import Geometry
 from asyncpg.pgproto.types import Point as PgPoint
+from sqlalchemy.dialects.postgresql import TSTZRANGE
 
 from sqlalchemy import func, ForeignKey
 from sqlalchemy.types import UserDefinedType, Float
@@ -106,6 +107,18 @@ node = sqlalchemy.Table(
     sqlalchemy.Column('firmware_version',   sqlalchemy.String(128), nullable=True),
     sqlalchemy.Column('created_at',         sqlalchemy.TIMESTAMP,   nullable=False),
     sqlalchemy.Column('updated_at',         sqlalchemy.TIMESTAMP,   nullable=False),
+    schema=crd.db.schema
+)
+
+deployment = sqlalchemy.Table(
+    'deployments',
+    metadata,
+    sqlalchemy.Column('deployment_id', sqlalchemy.Integer, primary_key=True),
+    sqlalchemy.Column('node_id',       None,               sqlalchemy.ForeignKey('nodes.node_id')),
+    sqlalchemy.Column('location_id',   None,               sqlalchemy.ForeignKey('locations.location_id')),
+    sqlalchemy.Column('period',        TSTZRANGE,          nullable=False),
+    # sqlalchemy.Column('created_at',    sqlalchemy.TIMESTAMP(timezone=True),  nullable=False),
+    # sqlalchemy.Column('updated_at',    sqlalchemy.TIMESTAMP(timezone=True),  nullable=False),
     schema=crd.db.schema
 )
 

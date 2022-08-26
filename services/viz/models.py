@@ -172,7 +172,7 @@ class Datum(BaseModel):
 
 class Node(BaseModel):
     '''
-    A device deployed in the field, commondly collecting and/or processing data
+    A device deployed in the field, collecting and/or processing data
     '''
     id: Optional[int] = None
     name: constr(regex=r'\d{4}-\d{4}') = Field(
