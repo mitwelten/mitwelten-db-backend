@@ -260,7 +260,7 @@ async def add_entry(body: Entry) -> None:
         await transaction.commit()
         return  { **body.dict(), 'id': result.entry_id, 'date': result.created_at }
 
-@app.get('/entry/{id}', response_model=Entry, tags=['entry'], responses={404: {"model": ApiErrorResponse}})
+@app.get('/entry/{id}', response_model=Entry, tags=['entry'], responses={404: {"model": ApiErrorResponse}}, response_model_exclude_none=True)
 async def get_entry_by_id(id: int) -> Entry:
     '''
     Find entry by ID
@@ -273,29 +273,12 @@ async def get_entry_by_id(id: int) -> Entry:
     if result == None or len(result) == 0:
         raise HTTPException(status_code=404, detail='Entry not found')
     else:
-        entry_map = None
-        for item in result:
-            # initialize result dictionary
-            if entry_map == None:
-                entry_map = {**item._mapping}
-                entry_map['tags'] = []
-                entry_map['files'] = []
-            # add data from relationships
-            entry_map['location'] = item['location']
-            if item['tag_id'] != None:
-                # add tags to array
-                entry_map['tags'].append({'id':item['tag_id'], 'name':item['tag_name']})
-            if item['file_id'] != None:
-                # add files to array
-                entry_map['files'].append({'id':item['file_id'], 'name':item['file_name'], 'link':item['object_name'], 'type':item['file_type']})
-
-        # reduce cardinality duplication
-        if 'tags' in entry_map:
-            entry_map['tags'] = [next((e for e in entry_map['tags'] if e['id'] == i)) for i in {t['id'] for t in entry_map['tags']}]
-        if 'files' in entry_map:
-            entry_map['files'] = [next((e for e in entry_map['files'] if e['id'] == i)) for i in {f['id'] for f in entry_map['files']}]
-
-        return entry_map
+        f_l = unique_everseen(result, lambda x: x['file_id'])
+        t_l = unique_everseen(result, lambda x: x['tag_id'])
+        e = dict(result[0])
+        e['files'] = [{'name': f['file_name'], 'link': f['object_name'], 'type': f['file_type']} for f in f_l if f['file_id'] != None]
+        e['tags'] = [{'id': t['tag_id'], 'name': t['tag_name']} for t in t_l if t['tag_id'] != None]
+        return e
 
 @app.patch('/entry/{id}', response_model=None, tags=['entry'])
 async def update_entry(id: int, body: PatchEntry = ...) -> None:
