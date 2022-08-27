@@ -1,9 +1,13 @@
+--
+-- Mitwelten Database - Schema V2.1
+--
+
 BEGIN;
 
 CREATE SCHEMA IF NOT EXISTS prod
     AUTHORIZATION mitwelten_admin;
 
-CREATE EXTENSION btree_gist;
+CREATE EXTENSION IF NOT EXISTS btree_gist;
 
 CREATE TABLE IF NOT EXISTS prod.birdnet_configs
 (
@@ -93,7 +97,7 @@ CREATE TABLE IF NOT EXISTS prod.birdnet_tasks
     task_id serial,
     file_id integer NOT NULL,
     config_id integer NOT NULL,
-    batch_id integer NOT NULL DEFAULT current_timestamp,
+    batch_id integer,
     state integer NOT NULL,
     scheduled_on timestamptz NOT NULL,
     pickup_on timestamptz,
@@ -119,12 +123,12 @@ CREATE TABLE IF NOT EXISTS prod.nodes
     node_label character varying(32) NOT NULL,
     type character varying(128) NOT NULL,
     serial_number character varying(128),
-    platform character varying(128);
-    connectivity character varying(128);
-    power character varying(128);
-    hardware_version character varying(128);
-    software_version character varying(128);
-    firmware_version character varying(128);
+    platform character varying(128),
+    connectivity character varying(128),
+    power character varying(128),
+    hardware_version character varying(128),
+    software_version character varying(128),
+    firmware_version character varying(128),
     description text,
     created_at timestamptz NOT NULL DEFAULT current_timestamp,
     updated_at timestamptz NOT NULL DEFAULT current_timestamp,
@@ -172,7 +176,6 @@ CREATE TABLE IF NOT EXISTS prod.entries
     created_at timestamptz NOT NULL DEFAULT current_timestamp,
     updated_at timestamptz NOT NULL DEFAULT current_timestamp,
     PRIMARY KEY (entry_id)
-    -- UNIQUE (entry_id, location_id, name)
 );
 
 CREATE TABLE IF NOT EXISTS prod.tags
@@ -181,7 +184,7 @@ CREATE TABLE IF NOT EXISTS prod.tags
     name character varying(255) NOT NULL,
     created_at timestamptz DEFAULT current_timestamp,
     updated_at timestamptz DEFAULT current_timestamp,
-    PRIMARY KEY (tag_id)
+    PRIMARY KEY (tag_id),
     UNIQUE (name)
 );
 
