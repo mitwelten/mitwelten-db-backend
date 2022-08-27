@@ -195,11 +195,11 @@ CREATE TABLE IF NOT EXISTS prod.mm_tags_entries
     PRIMARY KEY (tags_tag_id, entries_entry_id)
 );
 
-CREATE TABLE IF NOT EXISTS prod.mm_tags_nodes
+CREATE TABLE IF NOT EXISTS prod.mm_tags_deployments
 (
     tags_tag_id integer,
-    nodes_node_id integer,
-    PRIMARY KEY (tags_tag_id, nodes_node_id)
+    deployments_deployment_id integer,
+    PRIMARY KEY (tags_tag_id, deployments_deployment_id)
 );
 
 CREATE TABLE IF NOT EXISTS prod.files_entry
@@ -330,16 +330,16 @@ ALTER TABLE IF EXISTS prod.mm_tags_entries
     ON DELETE NO ACTION
     NOT VALID;
 
-ALTER TABLE IF EXISTS prod.mm_tags_nodes
+ALTER TABLE IF EXISTS prod.mm_tags_deployments
     ADD FOREIGN KEY (tags_tag_id)
     REFERENCES prod.tags (tag_id) MATCH SIMPLE
     ON UPDATE NO ACTION
     ON DELETE NO ACTION
     NOT VALID;
 
-ALTER TABLE IF EXISTS prod.mm_tags_nodes
-    ADD FOREIGN KEY (nodes_node_id)
-    REFERENCES prod.nodes (node_id) MATCH SIMPLE
+ALTER TABLE IF EXISTS prod.mm_tags_deployments
+    ADD FOREIGN KEY (deployments_deployment_id)
+    REFERENCES prod.deployments (deployment_id) MATCH SIMPLE
     ON UPDATE NO ACTION
     ON DELETE NO ACTION
     NOT VALID;
@@ -427,7 +427,7 @@ GRANT USAGE ON SCHEMA prod TO  mitwelten_internal, mitwelten_rest, mitwelten_upl
 GRANT ALL ON ALL TABLES IN SCHEMA prod TO mitwelten_internal;
 GRANT UPDATE ON ALL SEQUENCES IN SCHEMA prod TO mitwelten_internal;
 
-GRANT ALL ON prod.locations, prod.nodes, prod.sensordata_env, prod.sensordata_pax, prod.entries, prod.tags, prod.mm_tags_entries, prod.mm_tags_nodes, prod.files_entry TO mitwelten_rest;
+GRANT ALL ON prod.locations, prod.nodes, prod.sensordata_env, prod.sensordata_pax, prod.entries, prod.tags, prod.mm_tags_entries, prod.mm_tags_deployments, prod.files_entry TO mitwelten_rest;
 GRANT SELECT ON prod.birdnet_configs, prod.files_audio, prod.files_image, prod.birdnet_results, prod.birdnet_species_occurrence, prod.birdnet_tasks TO mitwelten_rest;
 GRANT UPDATE ON prod.entries_entry_id_seq, prod.files_entry_file_id_seq, prod.locations_location_id_seq, prod.nodes_node_id_seq, prod.tags_tag_id_seq TO mitwelten_rest;
 
