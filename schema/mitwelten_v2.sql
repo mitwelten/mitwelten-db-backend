@@ -26,8 +26,7 @@ CREATE TABLE IF NOT EXISTS prod.files_audio
     object_name text NOT NULL,
     sha256 character varying(64) NOT NULL,
     time timestamptz NOT NULL,
-    node_id integer NOT NULL,
-    location_id integer,
+    deployment_id integer NOT NULL,
     duration double precision NOT NULL,
     serial_number character varying(32),
     format character varying(64),
@@ -56,8 +55,7 @@ CREATE TABLE IF NOT EXISTS prod.files_image
     object_name text NOT NULL,
     sha256 character varying(64) NOT NULL,
     time timestamptz NOT NULL,
-    node_id integer NOT NULL,
-    location_id integer,
+    deployment_id integer NOT NULL,
     file_size integer NOT NULL,
     resolution integer[] NOT NULL,
     created_at timestamptz NOT NULL DEFAULT current_timestamp,
@@ -106,17 +104,6 @@ CREATE TABLE IF NOT EXISTS prod.birdnet_tasks
     CONSTRAINT unique_task_in_batch UNIQUE (file_id, config_id, batch_id)
 );
 
-CREATE TABLE IF NOT EXISTS prod.locations
-(
-    location_id serial,
-    location point NOT NULL,
-    type character varying(128),
-    name character varying(128),
-    description text,
-    PRIMARY KEY (location_id),
-    UNIQUE (name)
-);
-
 CREATE TABLE IF NOT EXISTS prod.nodes
 (
     node_id serial,
@@ -140,7 +127,8 @@ CREATE TABLE IF NOT EXISTS prod.deployments
 (
     deployment_id serial,
     node_id integer NOT NULL,
-    location_id integer NOT NULL,
+    location point NOT NULL,
+    description text,
     period tstzrange NOT NULL DEFAULT tstzrange('-infinity', 'infinity'),
     PRIMARY KEY (deployment_id),
     EXCLUDE USING GIST (node_id WITH =, period WITH &&)
@@ -149,8 +137,7 @@ CREATE TABLE IF NOT EXISTS prod.deployments
 CREATE TABLE IF NOT EXISTS prod.sensordata_env
 (
     time timestamptz NOT NULL,
-    node_id integer NOT NULL,
-    location_id integer NOT NULL,
+    deployment_id integer NOT NULL,
     temperature double precision NOT NULL,
     humidity double precision NOT NULL,
     moisture double precision NOT NULL,
@@ -160,8 +147,7 @@ CREATE TABLE IF NOT EXISTS prod.sensordata_env
 CREATE TABLE IF NOT EXISTS prod.sensordata_pax
 (
     time timestamptz NOT NULL,
-    node_id integer NOT NULL,
-    location_id integer NOT NULL,
+    deployment_id integer NOT NULL,
     pax integer NOT NULL,
     voltage real
 );
@@ -169,7 +155,7 @@ CREATE TABLE IF NOT EXISTS prod.sensordata_pax
 CREATE TABLE IF NOT EXISTS prod.entries
 (
     entry_id serial,
-    location_id integer NOT NULL,
+    location point NOT NULL,
     name character varying(255),
     description text,
     type character varying(255),
@@ -216,32 +202,19 @@ CREATE TABLE IF NOT EXISTS prod.files_entry
 );
 
 ALTER TABLE IF EXISTS prod.files_audio
-    ADD FOREIGN KEY (location_id)
-    REFERENCES prod.locations (location_id) MATCH SIMPLE
-    ON UPDATE NO ACTION
-    ON DELETE NO ACTION
-    NOT VALID;
-
-ALTER TABLE IF EXISTS prod.files_audio
-    ADD FOREIGN KEY (node_id)
-    REFERENCES prod.nodes (node_id) MATCH SIMPLE
+    ADD FOREIGN KEY (deployment_id)
+    REFERENCES prod.deployments (deployment_id) MATCH SIMPLE
     ON UPDATE NO ACTION
     ON DELETE NO ACTION
     NOT VALID;
 
 ALTER TABLE IF EXISTS prod.files_image
-    ADD FOREIGN KEY (location_id)
-    REFERENCES prod.locations (location_id) MATCH SIMPLE
+    ADD FOREIGN KEY (deployment_id)
+    REFERENCES prod.deployments (deployment_id) MATCH SIMPLE
     ON UPDATE NO ACTION
     ON DELETE NO ACTION
     NOT VALID;
 
-ALTER TABLE IF EXISTS prod.files_image
-    ADD FOREIGN KEY (node_id)
-    REFERENCES prod.nodes (node_id) MATCH SIMPLE
-    ON UPDATE NO ACTION
-    ON DELETE NO ACTION
-    NOT VALID;
 
 ALTER TABLE IF EXISTS prod.birdnet_results
     ADD FOREIGN KEY (file_id)
@@ -275,46 +248,23 @@ ALTER TABLE IF EXISTS prod.deployments
     ON UPDATE NO ACTION
     ON DELETE RESTRICT;
 
-ALTER TABLE IF EXISTS prod.deployments
-    ADD FOREIGN KEY (location_id)
-    REFERENCES prod.locations (location_id) MATCH SIMPLE
-    ON UPDATE NO ACTION
-    ON DELETE RESTRICT;
+
 
 ALTER TABLE IF EXISTS prod.sensordata_env
-    ADD FOREIGN KEY (node_id)
-    REFERENCES prod.nodes (node_id) MATCH SIMPLE
+    ADD FOREIGN KEY (deployment_id)
+    REFERENCES prod.deployments (deployment_id) MATCH SIMPLE
     ON UPDATE NO ACTION
     ON DELETE NO ACTION
     NOT VALID;
 
-ALTER TABLE IF EXISTS prod.sensordata_env
-    ADD FOREIGN KEY (location_id)
-    REFERENCES prod.locations (location_id) MATCH SIMPLE
-    ON UPDATE NO ACTION
-    ON DELETE NO ACTION
-    NOT VALID;
 
 ALTER TABLE IF EXISTS prod.sensordata_pax
-    ADD FOREIGN KEY (node_id)
-    REFERENCES prod.nodes (node_id) MATCH SIMPLE
+    ADD FOREIGN KEY (deployment_id)
+    REFERENCES prod.deployments (deployment_id) MATCH SIMPLE
     ON UPDATE NO ACTION
     ON DELETE NO ACTION
     NOT VALID;
 
-ALTER TABLE IF EXISTS prod.sensordata_pax
-    ADD FOREIGN KEY (location_id)
-    REFERENCES prod.locations (location_id) MATCH SIMPLE
-    ON UPDATE NO ACTION
-    ON DELETE NO ACTION
-    NOT VALID;
-
-ALTER TABLE IF EXISTS prod.entries
-    ADD FOREIGN KEY (location_id)
-    REFERENCES prod.locations (location_id) MATCH SIMPLE
-    ON UPDATE NO ACTION
-    ON DELETE NO ACTION
-    NOT VALID;
 
 ALTER TABLE IF EXISTS prod.mm_tags_entries
     ADD FOREIGN KEY (tags_tag_id)
@@ -386,10 +336,10 @@ CREATE OR REPLACE VIEW prod.birdnet_input
         f.sample_rate,
         n.node_label,
         f.duration,
-        l.location
+        d.location
       FROM prod.files_audio f
-        LEFT JOIN prod.nodes n ON f.node_id = n.node_id
-        LEFT JOIN prod.locations l ON f.location_id = l.location_id;
+        LEFT JOIN prod.deployments d ON f.deployment_id = d.deployment_id
+        LEFT JOIN prod.nodes n ON d.node_id = n.node_id;
 
 CREATE OR REPLACE VIEW prod.birdnet_inferred_species
     AS
@@ -406,18 +356,12 @@ CREATE OR REPLACE VIEW prod.birdnet_inferred_species_day
         to_char(s.time_start at time zone 'UTC', 'YYYY-mm-DD') AS date
     FROM prod.birdnet_inferred_species s;
 
-CREATE OR REPLACE VIEW prod.entries_location
-    AS
-    SELECT e.*, l.location
-    FROM prod.entries e
-    LEFT JOIN prod.locations l ON e.location_id = l.location_id;
-
 CREATE OR REPLACE VIEW prod.data_records
     AS
-    SELECT file_id AS record_id, node_id, location_id, 'audio' AS type
+    SELECT file_id AS record_id, deployment_id, 'audio' AS type
     FROM prod.files_audio
     UNION
-    SELECT file_id AS record_id, node_id, location_id, 'image' AS type
+    SELECT file_id AS record_id, deployment_id, 'image' AS type
     FROM prod.files_image;
 
 END;
@@ -427,9 +371,9 @@ GRANT USAGE ON SCHEMA prod TO  mitwelten_internal, mitwelten_rest, mitwelten_upl
 GRANT ALL ON ALL TABLES IN SCHEMA prod TO mitwelten_internal;
 GRANT UPDATE ON ALL SEQUENCES IN SCHEMA prod TO mitwelten_internal;
 
-GRANT ALL ON prod.locations, prod.nodes, prod.sensordata_env, prod.sensordata_pax, prod.entries, prod.tags, prod.mm_tags_entries, prod.mm_tags_deployments, prod.files_entry TO mitwelten_rest;
+GRANT ALL ON prod.nodes, prod.sensordata_env, prod.sensordata_pax, prod.entries, prod.tags, prod.mm_tags_entries, prod.mm_tags_deployments, prod.files_entry TO mitwelten_rest;
 GRANT SELECT ON prod.birdnet_configs, prod.files_audio, prod.files_image, prod.birdnet_results, prod.birdnet_species_occurrence, prod.birdnet_tasks TO mitwelten_rest;
-GRANT UPDATE ON prod.entries_entry_id_seq, prod.files_entry_file_id_seq, prod.locations_location_id_seq, prod.nodes_node_id_seq, prod.tags_tag_id_seq TO mitwelten_rest;
+GRANT UPDATE ON prod.entries_entry_id_seq, prod.files_entry_file_id_seq, prod.nodes_node_id_seq, prod.tags_tag_id_seq TO mitwelten_rest;
 
 GRANT ALL ON prod.files_audio, prod.files_image, prod.nodes TO mitwelten_upload;
 GRANT UPDATE ON prod.files_audio_file_id_seq, prod.files_image_file_id_seq, prod.nodes_node_id_seq TO mitwelten_upload;
