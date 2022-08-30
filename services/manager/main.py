@@ -16,7 +16,7 @@ from fastapi.responses import JSONResponse
 from asyncpg.exceptions import ExclusionViolationError, ForeignKeyViolationError
 from asyncpg.types import Range
 
-from tables import nodes, locations, deployments, results, tasks, species, species_day, data_records, files_image, birdnet_input
+from tables import nodes, deployments, results, tasks, species, species_day, data_records, files_image, birdnet_input
 from models import Deployment, Result, Species, DeploymentResponse, DeploymentRequest, Node, ValidationResult, NodeValidationRequest, ImageValidationRequest, ImageValidationResponse, ImageRequest, QueueInputDefinition, QueueUpdateDefinition
 
 sys.path.append('../../')
@@ -356,7 +356,7 @@ def to_inclusive_range(period: Range) -> Range:
 @app.get('/deployments', response_model=List[DeploymentResponse], tags=['deployments'])
 async def read_deployments(node_id: Optional[int] = None) -> List[DeploymentResponse]:
 
-    query = select(deployments.alias('d').outerjoin(nodes.alias('n')).outerjoin(locations.alias('l'))).\
+    query = select(deployments.alias('d').outerjoin(nodes.alias('n'))).\
         set_label_style(LABEL_STYLE_TABLENAME_PLUS_COL)
     if node_id != None:
         query = query.where(text('d.node_id = :node_id').bindparams(node_id=node_id))
@@ -364,7 +364,6 @@ async def read_deployments(node_id: Optional[int] = None) -> List[DeploymentResp
     response = []
     for r in result:
         d = { c: r['d_'+c] for c in deployments.columns.keys() }
-        d['location'] = { c: r['l_'+c] for c in locations.columns.keys() }
         d['node'] = { c: r['n_'+c] for c in nodes.columns.keys() }
         d['period'] = from_inclusive_range(d['period'])
         response.append(d)
@@ -373,7 +372,7 @@ async def read_deployments(node_id: Optional[int] = None) -> List[DeploymentResp
 @app.get('/deployment/{id}', response_model=DeploymentResponse, tags=['deployments'])
 async def read_deployment(id: int) -> DeploymentResponse:
 
-    query = select(deployments.alias('d').outerjoin(nodes.alias('n')).outerjoin(locations.alias('l'))).\
+    query = select(deployments.alias('d').outerjoin(nodes.alias('n'))).\
         where(text('deployment_id = :id').bindparams(id=id)).set_label_style(LABEL_STYLE_TABLENAME_PLUS_COL)
 
     r = await database.fetch_one(query)
@@ -381,7 +380,6 @@ async def read_deployment(id: int) -> DeploymentResponse:
         raise HTTPException(status_code=404, detail='Deployment not found')
 
     d = { c: r['d_'+c] for c in deployments.columns.keys() }
-    d['location'] = { c: r['l_'+c] for c in locations.columns.keys() }
     d['node'] = { c: r['n_'+c] for c in nodes.columns.keys() }
     d['period'] = from_inclusive_range(d['period'])
     return d
@@ -392,7 +390,7 @@ async def delete_deployment(id: int) -> None:
     try:
         # asyncpg doesn't support returning affected rowcount yet (https://github.com/encode/databases/issues/61)
         # checking the constraint manually
-        exists_files_audio = (exists().where(data_records.c.node_id == deployments.c.node_id))
+        exists_files_audio = (exists().where(data_records.c.deployment_id == deployments.c.deployment_id))
         q = select(deployments).where(deployments.c.deployment_id == id, not_(exists_files_audio))
         r = await database.fetch_one(q)
         if r == None:
@@ -413,7 +411,8 @@ async def add_deployment(body: Deployment) -> None:
     try:
         await database.fetch_one(deployments.insert().values({
             deployments.c.node_id: body.node_id,
-            deployments.c.location_id: body.location_id,
+            deployments.c.location: body.location,
+            deployments.c.description: body.description,
             deployments.c.period: to_inclusive_range(body.period),
         }))
     except ExclusionViolationError as e:
@@ -421,108 +420,53 @@ async def add_deployment(body: Deployment) -> None:
 
 @app.put('/deployments', response_model=None, dependencies=[Depends(check_authentication)], tags=['deployments'])
 async def upsert_deployment(body: DeploymentRequest) -> None:
-    transaction = await database.transaction()
-    # TODO: put all except the except block into one function to be used in multiple occasions
     try:
-        # check if the location exists
-        point = f'point({float(body.location.lat)}, {float(body.location.lon)})'
-        thresh_1m = 0.0000115
-        location_query = f'''
-        select location_id from {crd.db.schema}.locations
-        where location <-> {point} < {thresh_1m}
-        order by location <-> {point}
-        limit 1
-        '''
-        result = await database.fetch_one(query=location_query)
-
-        location_id = None
-        if result == None:
-            # insert new location
-            loc_insert_query = f'''
-            insert into {crd.db.schema}.locations(location, type)
-            values (point({body.location.lat},{body.location.lon}), 'user-added')
-            returning location_id
-            '''
-            location_id = await database.execute(loc_insert_query)
-        else:
-            location_id = result.location_id
+        values = {
+            deployments.c.node_id: body.node_id,
+            deployments.c.location: text('point(:lat,:lon)').bindparams(lat=body.location.lat,lon=body.location.lon),
+            deployments.c.period: to_inclusive_range(body.period),
+        }
+        if hasattr(body, 'description') and body.description != None:
+            values[deployments.c.description] = body.description
 
         if hasattr(body, 'deployment_id') and body.deployment_id != None:
             # this is an update
             # update the record to see if it conflicts
             await database.execute(deployments.update().\
                 where(deployments.c.deployment_id == body.deployment_id).\
-                values({
-                    deployments.c.node_id: body.node_id,
-                    deployments.c.location_id: location_id,
-                    deployments.c.period: to_inclusive_range(body.period),
-                }
-            ))
+                values(values))
         else:
             # this is a new record, try to insert
             await database.execute(deployments.insert().\
-                values({
-                    deployments.c.node_id: body.node_id,
-                    deployments.c.location_id: location_id,
-                    deployments.c.period: to_inclusive_range(body.period),
-                }
-            ))
+                values(values))
     except ExclusionViolationError as e:
-        await transaction.rollback()
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        await transaction.rollback()
         raise HTTPException(status_code=400, detail=str(e))
-    else:
-        await transaction.commit()
 
 @app.put('/validate/deployment', response_model=ValidationResult, tags=['deployments'])
 async def validate_deployment(body: DeploymentRequest) -> None:
     transaction = await database.transaction()
     try:
-        # check if the location exists
-        point = f'point({float(body.location.lat)}, {float(body.location.lon)})'
-        thresh_1m = 0.0000115
-        location_query = f'''
-        select location_id from {crd.db.schema}.locations
-        where location <-> {point} < {thresh_1m}
-        order by location <-> {point}
-        limit 1
-        '''
-        result = await database.fetch_one(query=location_query)
 
-        location_id = None
-        if result == None:
-            # insert new location
-            loc_insert_query = f'''
-            insert into {crd.db.schema}.locations(location, type)
-            values (point({body.location.lat},{body.location.lon}), 'user-added')
-            returning location_id
-            '''
-            location_id = await database.execute(loc_insert_query)
-        else:
-            location_id = result.location_id
+        values = {
+            deployments.c.node_id: body.node_id,
+            deployments.c.location: text('point(:lat,:lon)').bindparams(lat=body.location.lat,lon=body.location.lon),
+            deployments.c.period: to_inclusive_range(body.period),
+        }
+        if hasattr(body, 'description') and body.description != None:
+            values[deployments.c.description] = body.description
 
         if hasattr(body, 'deployment_id') and body.deployment_id != None:
             # this is an update
             # update the record to see if it conflicts
             await database.execute(deployments.update().\
                 where(deployments.c.deployment_id == body.deployment_id).\
-                values({
-                    deployments.c.node_id: body.node_id,
-                    deployments.c.location_id: location_id,
-                    deployments.c.period: to_inclusive_range(body.period),
-                }
-            ))
+                values(values))
         else:
             # this is a new record, try to insert
             await database.execute(deployments.insert().\
-                values({
-                    deployments.c.node_id: body.node_id,
-                    deployments.c.location_id: location_id,
-                    deployments.c.period: to_inclusive_range(body.period),
-                }
-            ))
+                values(values))
     except ExclusionViolationError as e:
         await transaction.rollback()
         return True
