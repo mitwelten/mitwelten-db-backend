@@ -1,5 +1,6 @@
 import sys
 import secrets
+from datetime import timedelta
 from typing import List, Optional
 import databases
 
@@ -13,6 +14,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from asyncpg.exceptions import ExclusionViolationError, ForeignKeyViolationError
+from asyncpg.types import Range
 
 from tables import nodes, locations, deployments, results, tasks, species, species_day, data_records, files_image, birdnet_input
 from models import Deployment, Result, Species, DeploymentResponse, DeploymentRequest, Node, ValidationResult, NodeValidationRequest, ImageValidationRequest, ImageValidationResponse, ImageRequest, QueueInputDefinition, QueueUpdateDefinition
@@ -345,6 +347,12 @@ async def delete_node(id: int) -> None:
     else:
         return True
 
+def from_inclusive_range(period: Range) -> Range:
+    return Range(period.lower, None if period.upper == None else period.upper - timedelta(days=1))
+
+def to_inclusive_range(period: Range) -> Range:
+    return Range(period.lower, None if period.upper == None else period.upper + timedelta(days=1))
+
 @app.get('/deployments', response_model=List[DeploymentResponse], tags=['deployments'])
 async def read_deployments(node_id: Optional[int] = None) -> List[DeploymentResponse]:
 
@@ -358,6 +366,7 @@ async def read_deployments(node_id: Optional[int] = None) -> List[DeploymentResp
         d = { c: r['d_'+c] for c in deployments.columns.keys() }
         d['location'] = { c: r['l_'+c] for c in locations.columns.keys() }
         d['node'] = { c: r['n_'+c] for c in nodes.columns.keys() }
+        d['period'] = from_inclusive_range(d['period'])
         response.append(d)
     return response
 
@@ -374,6 +383,7 @@ async def read_deployment(id: int) -> DeploymentResponse:
     d = { c: r['d_'+c] for c in deployments.columns.keys() }
     d['location'] = { c: r['l_'+c] for c in locations.columns.keys() }
     d['node'] = { c: r['n_'+c] for c in nodes.columns.keys() }
+    d['period'] = from_inclusive_range(d['period'])
     return d
 
 @app.delete('/deployment/{id}', response_model=None, dependencies=[Depends(check_authentication)], tags=['deployments'])
@@ -404,7 +414,7 @@ async def add_deployment(body: Deployment) -> None:
         await database.fetch_one(deployments.insert().values({
             deployments.c.node_id: body.node_id,
             deployments.c.location_id: body.location_id,
-            deployments.c.period: body.period,
+            deployments.c.period: to_inclusive_range(body.period),
         }))
     except ExclusionViolationError as e:
         raise HTTPException(status_code=409, detail=str(e))
@@ -445,7 +455,7 @@ async def upsert_deployment(body: DeploymentRequest) -> None:
                 values({
                     deployments.c.node_id: body.node_id,
                     deployments.c.location_id: location_id,
-                    deployments.c.period: body.period,
+                    deployments.c.period: to_inclusive_range(body.period),
                 }
             ))
         else:
@@ -454,7 +464,7 @@ async def upsert_deployment(body: DeploymentRequest) -> None:
                 values({
                     deployments.c.node_id: body.node_id,
                     deployments.c.location_id: location_id,
-                    deployments.c.period: body.period,
+                    deployments.c.period: to_inclusive_range(body.period),
                 }
             ))
     except ExclusionViolationError as e:
@@ -501,7 +511,7 @@ async def validate_deployment(body: DeploymentRequest) -> None:
                 values({
                     deployments.c.node_id: body.node_id,
                     deployments.c.location_id: location_id,
-                    deployments.c.period: body.period,
+                    deployments.c.period: to_inclusive_range(body.period),
                 }
             ))
         else:
@@ -510,7 +520,7 @@ async def validate_deployment(body: DeploymentRequest) -> None:
                 values({
                     deployments.c.node_id: body.node_id,
                     deployments.c.location_id: location_id,
-                    deployments.c.period: body.period,
+                    deployments.c.period: to_inclusive_range(body.period),
                 }
             ))
     except ExclusionViolationError as e:
