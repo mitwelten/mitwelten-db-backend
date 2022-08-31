@@ -520,7 +520,7 @@ async def check_image(body: ImageValidationRequest) -> None:
     else:
         object_name = duplicate_result._mapping['object_name']
 
-    deployment_query = select(deployments.c.node_id, deployments.c.location_id).join(nodes).\
+    deployment_query = select(deployments.c.deployment_id).join(nodes).\
         where(nodes.c.node_label == body.node_label, text('period @> :timestamp ::timestamptz').bindparams(timestamp=body.timestamp))
     deployment_result = await database.fetch_one(deployment_query)
 
@@ -532,7 +532,7 @@ async def check_image(body: ImageValidationRequest) -> None:
         else:
             return { # no duplicate, NOT deployed: validation failed
                 'hash_match': False, 'object_name_match': False, 'object_name': object_name,
-                'node_id': None, 'location_id': None, 'node_deployed': False }
+                'deployment_id': None, 'node_deployed': False }
     else:
         if deployment_result:
             return { # DUPLICATE, deployed: validation failed
@@ -541,7 +541,7 @@ async def check_image(body: ImageValidationRequest) -> None:
         else:
             return { # DUPLICATE, NOT deployed: validation failed
                 **duplicate_result._mapping,
-                'node_id': None, 'location_id': None, 'node_deployed': False }
+                'deployment_id': None, 'node_deployed': False }
 
 @app.get('/ingest/image/{sha256}', tags=['ingest'])
 async def ingest_image(sha256: str) -> None:
@@ -557,8 +557,7 @@ async def ingest_image(body: ImageRequest) -> None:
             files_image.c.object_name: body.object_name,
             files_image.c.sha256: body.sha256,
             files_image.c.time: body.timestamp, # TODO: rename in uploader code
-            files_image.c.node_id: body.node_id,
-            files_image.c.location_id: body.location_id,
+            files_image.c.deployment_id: body.deployment_id,
             files_image.c.file_size: body.file_size,
             files_image.c.resolution: body.resolution
         }
