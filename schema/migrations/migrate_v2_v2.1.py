@@ -161,6 +161,8 @@ if len(configs_records_dev) > 0:
 print('copying dev.birdnet_species_occurrence')
 cursor.execute('insert into prod.birdnet_species_occurrence (select * from dev.birdnet_species_occurrence)')
 
+print('committing...')
+connection.commit()
 
 # files_audio
 # - set deployment id from 'select deployment_id from prod.deployments where node_id = %s and files_audio.time <@ period
@@ -208,6 +210,7 @@ while True:
             execute_values(cursor, 'insert into prod.birdnet_results (task_id, file_id, time_start, time_end, confidence, species) values %s', results_prod)
         pbar.update(1)
 pbar.close()
+cursor_exp.close()
 
 # # files_image (deployments fs1 pending)
 # print('migrating dev.files_image')
@@ -224,8 +227,7 @@ pbar.close()
 # sensordata_pax (deployments fs1 pending)
 # print('migrating dev.sensordata_pax')
 
-
+print('committing...')
 connection.commit()
-cursor_exp.close()
 cursor.close()
 connection.close()
