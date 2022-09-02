@@ -225,7 +225,7 @@ pbar.close()
 # print('migrating dev.sensordata_pax')
 
 
-# connection.commit()
-# cursor_exp.close()
-# cursor.close()
-# connection.close()
+connection.commit()
+cursor_exp.close()
+cursor.close()
+connection.close()
