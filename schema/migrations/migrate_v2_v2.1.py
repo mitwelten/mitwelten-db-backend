@@ -172,7 +172,7 @@ cursor_exp = connection.cursor(cursor_factory=DictCursor, name='export_dev')
 cursor_exp.execute('select * from dev.files_audio')
 while True:
     records = cursor_exp.fetchmany(size=2000)
-    if records == None:
+    if len(records) == 0:
         break
     for record in records:
         # insert file, replacing node_id,location_id with deployment_id
