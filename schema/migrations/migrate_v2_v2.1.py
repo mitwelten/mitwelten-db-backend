@@ -79,7 +79,10 @@ for drd in tqdm(deployments_records_dev, ascii=True):
     location_dev = locations_dev[drd['location_id']]
     location_prod = location_dev['location']
     # string concat: locations.description (locations.type)
-    description_prod = f"{location_dev['description']} ({location_dev['type']})"
+    description_prod = []
+    if location_dev['description'] != None: description_prod.append(location_dev['description'])
+    if location_dev['type'] != None: description_prod.append(f"({location_dev['type']})")
+    description_prod = ' '.join(description_prod)
     period_prod = drd['period']
 
     cursor.execute('insert into prod.deployments (node_id, location, description, period) values %s returning deployment_id',
