@@ -17,7 +17,7 @@ print('migrating dev.tags')
 cursor.execute('select * from dev.tags')
 tags_records_dev = cursor.fetchall()
 tags_idmap = {} # tags_idmap dev -> prod
-for trd in tqdm(tags_records_dev):
+for trd in tqdm(tags_records_dev, ascii=True):
     id_dev = trd['tag_id']
     cols = list(trd.keys())[1:] # drop id
     vals = tuple(trd[c] for c in cols)
@@ -30,7 +30,7 @@ print('migrating dev.nodes')
 cursor.execute('select * from dev.nodes')
 nodes_records_dev = cursor.fetchall()
 nodes_idmap = {} # nodes_idmap dev -> prod
-for nrd in tqdm(nodes_records_dev):
+for nrd in tqdm(nodes_records_dev, ascii=True):
     id_dev = nrd['node_id']
     cols = list(nrd.keys())[1:] # drop id
     vals = tuple(nrd[c] for c in cols)
@@ -50,7 +50,7 @@ print('migrating dev.deployments, integrating dev.locations into prod.deployment
 cursor.execute('select * from dev.deployments')
 deployments_records_dev = cursor.fetchall()
 deployments_idmap = {} # deployments_idmap dev -> prod
-for drd in tqdm(deployments_records_dev):
+for drd in tqdm(deployments_records_dev, ascii=True):
     id_dev = drd['deployment_id']
 
     node_id_prod = nodes_idmap[drd['node_id']]
@@ -85,7 +85,7 @@ for drd in tqdm(deployments_records_dev):
 print('migrating dev.mm_tags_nodes to prod.mm_tags_deployments')
 cursor.execute('select * from dev.mm_tags_nodes')
 mm_tags_nodes_records_dev = cursor.fetchall()
-for mmtdr in tqdm(mm_tags_nodes_records_dev):
+for mmtdr in tqdm(mm_tags_nodes_records_dev, ascii=True):
     tag_id_prod = tags_idmap[mmtdr['tags_tag_id']]
     node_id_prod = nodes_idmap[mmtdr['nodes_node_id']]
     # deployments_deployment_id <- nodes_node_id
@@ -101,7 +101,7 @@ print('migrating dev.entries, integrating dev.locations into prod.entries')
 cursor.execute('select * from dev.entries')
 entries_records_dev = cursor.fetchall()
 entries_idmap = {}
-for erd in tqdm(entries_records_dev):
+for erd in tqdm(entries_records_dev, ascii=True):
     id_dev = erd['entry_id']
     cols = list(erd.keys())[1:] # drop id
     vals = list(erd[c] for c in cols)
@@ -118,7 +118,7 @@ print('migrating dev.files_entry')
 cursor.execute('select * from dev.files_entry')
 files_entry_records_dev = cursor.fetchall()
 files_entry_idmap = {}
-for ferd in tqdm(files_entry_records_dev):
+for ferd in tqdm(files_entry_records_dev, ascii=True):
     id_dev = ferd['file_id']
     cols = list(ferd.keys())[1:] # drop id
     vals = list(ferd[c] for c in cols)
@@ -132,7 +132,7 @@ for ferd in tqdm(files_entry_records_dev):
 print('migrating dev.mm_tags_entries')
 cursor.execute('select * from dev.mm_tags_entries')
 mm_tags_entries_records_dev = cursor.fetchall()
-for mmetrd in tqdm(mm_tags_entries_records_dev):
+for mmetrd in tqdm(mm_tags_entries_records_dev, ascii=True):
     tag_id_prod = tags_idmap[mmetrd['tags_tag_id']]
     entry_id_prod = entries_idmap[mmetrd['entries_entry_id']]
     insert_stmt = 'insert into prod.mm_tags_entries (tags_tag_id, entries_entry_id) values (%s, %s)'
@@ -167,7 +167,7 @@ cursor.execute('insert into prod.birdnet_species_occurrence (select * from dev.b
 # use server side cursor for tables with many records
 print('migrating dev.files_audio, with related records of dev.birdnet_tasks and dev.birdnet_results')
 cursor.execute('select count(file_id) from dev.files_audio')
-pbar = tqdm(total=cursor.fetchone()[0])
+pbar = tqdm(total=cursor.fetchone()[0], ascii=True)
 cursor_exp = connection.cursor(cursor_factory=DictCursor, name='export_dev')
 cursor_exp.execute('select * from dev.files_audio')
 while True:
