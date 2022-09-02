@@ -260,5 +260,21 @@ for t in tables:
     msg = '' if d == p else '!!!'
     print(f'{msg}[{d}/{p}]\tdev.{td} -> prod.{t}')
 
+print('integrity check for files_audio')
+cursor.execute('''
+select object_name, node_label, regexp_replace(object_name, '(\\d{4}-\\d{4}|AM(?:1|2))/.*', '\\1') as label_check
+from dev.files_audio f left join dev.nodes n on n.node_id = f.node_id
+''')
+mismatch_count = 0
+for cmp in tqdm(cursor.fetchall()):
+    try:
+        if cmp[2] == 'AM1': assert cmp[1] == '7758-4041'
+        elif cmp[2] == 'AM2': assert cmp[1] == '7257-5673'
+        else: assert cmp[2] == cmp[1]
+    except AssertionError:
+        mismatch_count += 1
+        print(list(cmp))
+print('files_audio: object_name / node_label mismatch count:', mismatch_count)
+
 cursor.close()
 connection.close()
