@@ -251,5 +251,14 @@ cursor_exp.close()
 
 print('committing...')
 connection.commit()
+
+print('checking record counts')
+for t in tables:
+    td = 'mm_tags_nodes' if t == 'mm_tags_deployments' else t
+    cursor.execute(f'select (select count(0) from dev.{td}) as dev, (select count(0) from prod.{t}) as prod')
+    d,p = cursor.fetchone()
+    msg = '' if d == p else '!!!'
+    print(f'{msg}[{d}/{p}]\tdev.{td} -> prod.{t}')
+
 cursor.close()
 connection.close()
