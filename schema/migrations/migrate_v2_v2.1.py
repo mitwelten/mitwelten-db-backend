@@ -11,6 +11,28 @@ import credentials as crd
 connection = pg.connect(host=crd.db.host,port=crd.db.port,database=crd.db.database,user=crd.db.user,password=crd.db.password)
 cursor = connection.cursor(cursor_factory=DictCursor)
 
+# needs db admin on localhost
+print('truncating target')
+tables = [
+    'deployments',
+    'mm_tags_entries',
+    'mm_tags_deployments',
+    'tags',
+    'nodes',
+    'entries',
+    'birdnet_configs',
+    'birdnet_results',
+    'birdnet_tasks',
+    'files_audio',
+    'files_image',
+    'files_entry',
+    'sensordata_env',
+    'sensordata_pax',
+    'birdnet_species_occurrence',
+]
+for t in tables:
+    cursor.execute(f'truncate prod.{t} restart identity cascade')
+    connection.commit()
 
 # insert / migrate node tags
 print('migrating dev.tags')
