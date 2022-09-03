@@ -264,10 +264,37 @@ pbar.close()
 cursor_exp.close()
 
 
-# sensordata_env (deployments fs1 pending)
-# print('migrating dev.sensordata_env')
-# sensordata_pax (deployments fs1 pending)
-# print('migrating dev.sensordata_pax')
+# sensordata_env
+print('migrating dev.sensordata_env')
+cursor.execute('select count(time) from dev.sensordata_env')
+cursor.execute('''select time, temperature, humidity, moisture, voltage,
+    (select deployment_id from dev.deployments d where d.node_id = se.node_id and se.time <@ period) as deployment_id
+from dev.sensordata_env se
+''')
+sensordata_env_records_dev = cursor.fetchall()
+cols_sensordata_env = list(sensordata_env_records_dev[0].keys())
+sensordata = []
+for record in sensordata_env_records_dev:
+    record['deployment_id'] = deployments_idmap[record['deployment_id']]
+    sensordata.append(tuple(record))
+execute_values(cursor, f'insert into prod.sensordata_env ({",".join(cols_sensordata_env)}) values %s', sensordata)
+
+
+# sensordata_pax
+print('migrating dev.sensordata_pax')
+cursor.execute('select count(time) from dev.sensordata_pax')
+cursor.execute('''select time, pax, voltage,
+    (select deployment_id from dev.deployments d where d.node_id = sp.node_id and sp.time <@ period) as deployment_id
+from dev.sensordata_pax sp
+''')
+sensordata_pax_records_dev = cursor.fetchall()
+cols_sensordata_pax = list(sensordata_pax_records_dev[0].keys())
+sensordata = []
+for record in sensordata_pax_records_dev:
+    record['deployment_id'] = deployments_idmap[record['deployment_id']]
+    sensordata.append(tuple(record))
+execute_values(cursor, f'insert into prod.sensordata_pax ({",".join(cols_sensordata_pax)}) values %s', sensordata)
+
 
 print('committing...')
 connection.commit()
