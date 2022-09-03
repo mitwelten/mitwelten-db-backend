@@ -138,9 +138,9 @@ CREATE TABLE IF NOT EXISTS prod.sensordata_env
 (
     time timestamptz NOT NULL,
     deployment_id integer NOT NULL,
-    temperature double precision NOT NULL,
-    humidity double precision NOT NULL,
-    moisture double precision NOT NULL,
+    temperature double precision,
+    humidity double precision,
+    moisture double precision,
     voltage real
 );
 
