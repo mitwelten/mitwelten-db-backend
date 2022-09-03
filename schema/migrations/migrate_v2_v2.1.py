@@ -236,15 +236,32 @@ while True:
         pbar.update(1)
 pbar.close()
 cursor_exp.close()
+print('committing...')
+connection.commit()
 
-# # files_image (deployments fs1 pending)
-# print('migrating dev.files_image')
-# cursor_exp.execute('''
-# insert into prod.files_image(object_name, sha256, time, deployment_id, file_size, resolution, created_at, updated_at)
-# (select object_name, sha256, time,
-#     (select deployment_id from dev.deployments d where d.node_id = f.node_id and f.time <@ period), file_size, resolution, created_at, updated_at
-# from dev.files_image f);
-# ''')
+
+# files_image
+print('migrating dev.files_image')
+cursor.execute('select count(file_id) from dev.files_image')
+pbar = tqdm(total=cursor.fetchone()[0], ascii=True)
+cursor_exp = connection.cursor(cursor_factory=DictCursor, name='export_dev')
+cursor_exp.execute('''select object_name, sha256, time,
+    (select deployment_id from dev.deployments d where d.node_id = f.node_id and f.time <@ period) as deployment_id, file_size, resolution, created_at, updated_at
+from dev.files_image f
+''')
+while True:
+    files_image_records_dev = cursor_exp.fetchmany(size=5000)
+    if len(files_image_records_dev) == 0:
+        break
+    cols_files_image = list(files_image_records_dev[0].keys())
+    files = []
+    for record in files_image_records_dev:
+        record['deployment_id'] = deployments_idmap[record['deployment_id']]
+        files.append(tuple(record))
+    execute_values(cursor, f'insert into prod.files_image ({",".join(cols_files_image)}) values %s', files)
+    pbar.update(len(files))
+pbar.close()
+cursor_exp.close()
 
 
 # sensordata_env (deployments fs1 pending)
