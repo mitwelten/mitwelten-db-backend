@@ -59,27 +59,13 @@ nodes = sqlalchemy.Table(
     schema=crd.db.schema
 )
 
-locations = sqlalchemy.Table(
-    'locations',
-    metadata,
-    sqlalchemy.Column('location_id', sqlalchemy.Integer,     primary_key=True),
-    sqlalchemy.Column('location',    GeometryPoint,          nullable=False),
-    sqlalchemy.Column('type',        sqlalchemy.String(255), nullable=True),
-    sqlalchemy.Column('name',        sqlalchemy.String(255), nullable=False),
-    sqlalchemy.Column('description', sqlalchemy.Text,        nullable=True),
-    # sqlalchemy.Column('created_at',  sqlalchemy.TIMESTAMP,   nullable=False),
-    # sqlalchemy.Column('updated_at',  sqlalchemy.TIMESTAMP,   nullable=False),
-    schema=crd.db.schema
-)
-
 deployments = sqlalchemy.Table(
     'deployments',
     metadata,
     sqlalchemy.Column('deployment_id', sqlalchemy.Integer, primary_key=True),
     sqlalchemy.Column('node_id',       None,               sqlalchemy.ForeignKey('nodes.node_id')),
-    sqlalchemy.Column('location_id',   None,               sqlalchemy.ForeignKey('locations.location_id')),
+    sqlalchemy.Column('location',      GeometryPoint,      nullable=False),
+    sqlalchemy.Column('description',   sqlalchemy.Text,    nullable=True),
     sqlalchemy.Column('period',        TSTZRANGE,          nullable=False),
-    # sqlalchemy.Column('created_at',    sqlalchemy.TIMESTAMP(timezone=True),  nullable=False),
-    # sqlalchemy.Column('updated_at',    sqlalchemy.TIMESTAMP(timezone=True),  nullable=False),
     schema=crd.db.schema
 )

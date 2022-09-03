@@ -8,7 +8,7 @@ from fastapi import FastAPI, Response
 
 import simplekml
 
-from tables import nodes, locations, deployments
+from tables import nodes, deployments
 
 sys.path.append('../../')
 import credentials as crd
@@ -50,7 +50,7 @@ async def shutdown():
 async def read_kml(fs: str):
     query = deployments.select()
 
-    query = select(deployments.alias('d').outerjoin(nodes.alias('n')).outerjoin(locations.alias('l'))).\
+    query = select(deployments.alias('d').outerjoin(nodes.alias('n'))).\
         set_label_style(LABEL_STYLE_TABLENAME_PLUS_COL)
 
     # if object_type != None:
@@ -66,7 +66,6 @@ async def read_kml(fs: str):
     records = []
     for r in result:
         d = { c: r['d_'+c] for c in deployments.columns.keys() }
-        d['location'] = { c: r['l_'+c] for c in locations.columns.keys() }
         d['node'] = { c: r['n_'+c] for c in nodes.columns.keys() }
         records.append(d)
 
@@ -87,7 +86,7 @@ async def read_kml(fs: str):
         p.description = f"{d['node']['platform']} ({d['node']['type']})"
         p.extendeddata = ext
         p.altitudemode = simplekml.AltitudeMode.clamptoground
-        p.coords = [(d['location']['location']['lon'],d['location']['location']['lat'],0)]
+        p.coords = [(d['location']['lon'],d['location']['lat'],0)]
         # p.tessellate = True
 
     return Response(content=kml.kml(format=True), media_type="application/vnd.google-earth.kml+xml")
