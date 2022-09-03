@@ -313,7 +313,7 @@ select object_name, node_label, regexp_replace(object_name, '(\\d{4}-\\d{4}|AM(?
 from dev.files_audio f left join dev.nodes n on n.node_id = f.node_id
 ''')
 mismatch_count = 0
-for cmp in tqdm(cursor.fetchall()):
+for cmp in tqdm(cursor.fetchall(), ascii=True):
     try:
         if cmp[2] == 'AM1': assert cmp[1] == '7758-4041'
         elif cmp[2] == 'AM2': assert cmp[1] == '7257-5673'
