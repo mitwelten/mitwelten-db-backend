@@ -8,6 +8,9 @@ from tqdm import tqdm
 sys.path.append('../../')
 import credentials as crd
 
+# The migration is complete, do not run these migrations again.
+MIGRATION_COMPLETE = True
+
 connection = pg.connect(host=crd.db.host,port=crd.db.port,database=crd.db.database,user=crd.db.user,password=crd.db.password)
 cursor = connection.cursor(cursor_factory=DictCursor)
 
@@ -30,9 +33,11 @@ tables = [
     'sensordata_pax',
     'birdnet_species_occurrence',
 ]
-for t in tables:
-    cursor.execute(f'truncate prod.{t} restart identity cascade')
-    connection.commit()
+if not MIGRATION_COMPLETE:
+    for t in tables:
+        # # uncomment/run only if you know what your doing: All data will be erased!
+        # cursor.execute(f'truncate prod.{t} restart identity cascade')
+        connection.commit()
 
 # insert / migrate node tags
 print('migrating dev.tags')
@@ -186,8 +191,9 @@ if len(configs_records_dev) > 0:
 print('copying dev.birdnet_species_occurrence')
 cursor.execute('insert into prod.birdnet_species_occurrence (select * from dev.birdnet_species_occurrence)')
 
-print('committing...')
-connection.commit()
+if not MIGRATION_COMPLETE:
+    print('committing...')
+    connection.commit()
 
 # files_audio
 # - set deployment id from 'select deployment_id from prod.deployments where node_id = %s and files_audio.time <@ period
@@ -236,8 +242,9 @@ while True:
         pbar.update(1)
 pbar.close()
 cursor_exp.close()
-print('committing...')
-connection.commit()
+if not MIGRATION_COMPLETE:
+    print('committing...')
+    connection.commit()
 
 
 # files_image
@@ -296,8 +303,9 @@ for record in sensordata_pax_records_dev:
 execute_values(cursor, f'insert into prod.sensordata_pax ({",".join(cols_sensordata_pax)}) values %s', sensordata)
 
 
-print('committing...')
-connection.commit()
+if not MIGRATION_COMPLETE:
+    print('committing...')
+    connection.commit()
 
 print('checking record counts')
 for t in tables:
