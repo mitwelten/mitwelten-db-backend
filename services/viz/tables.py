@@ -135,9 +135,3 @@ mm_tag_entry = sqlalchemy.Table(
     sqlalchemy.Column('entries_entry_id', None, ForeignKey(entry.c.entry_id)),
     schema=crd.db.schema
 )
-
-
-
-# # create the tables if they don't exists
-# # not useful in this case
-# metadata.create_all(engine)
