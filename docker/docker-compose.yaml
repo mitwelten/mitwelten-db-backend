@@ -262,7 +262,7 @@ services:
       - "traefik.http.routers.geo.entrypoints=https"
       - "traefik.http.routers.geo.tls.certresolver=ssl"
       - "traefik.http.middlewares.geo-redirect.redirectregex.regex=^https://data.mitwelten.org/geo/v1/(.*)"
-      - "traefik.http.middlewares.geo-redirect.redirectregex.replacement=https://data.mitwelten.org/geo/v2/${1}"
+      - "traefik.http.middlewares.geo-redirect.redirectregex.replacement=https://data.mitwelten.org/geo/v2/$${1}"
       - "traefik.http.middlewares.geo-redirect.redirectregex.permanent=true"
       - "traefik.http.routers.geo.middlewares=geo-redirect"
 
