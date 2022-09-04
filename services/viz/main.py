@@ -66,12 +66,12 @@ app = FastAPI(
     title='Mitwelten REST API',
     description='This service provides REST endpoints to exchange data from [Mitwelten](https://mitwelten.org) for the purpose of visualisation and map plotting.',
     contact={'email': 'mitwelten.technik@fhnw.ch'},
-    version='1.0.0',
+    version='2.0.0',
     servers=[
-        {'url': 'https://data.mitwelten.org/viz/v1', 'description': 'Production environment'},
+        {'url': 'https://data.mitwelten.org/viz/v2', 'description': 'Production environment'},
         {'url': 'http://localhost:8000', 'description': 'Development environment'}
     ],
-    root_path='/viz/v1',
+    root_path='/viz/v2',
     root_path_in_servers=False,
     openapi_tags=tags_metadata
 )
