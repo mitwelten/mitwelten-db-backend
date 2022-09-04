@@ -16,7 +16,7 @@ from sqlalchemy.sql import select, func, between, and_, text, LABEL_STYLE_TABLEN
 from asyncpg.exceptions import UniqueViolationError, StringDataRightTruncationError, ForeignKeyViolationError
 
 from models import ApiResponse, DatumResponse, Entry, PatchEntry, Node, Tag, ApiErrorResponse, PaxDatum, EnvDatum, File
-from tables import entry, location, tag, mm_tag_entry, node, datum_pax, datum_env, file, deployment
+from tables import entry, tag, mm_tag_entry, node, datum_pax, datum_env, file, deployment
 
 sys.path.append('../../')
 import credentials as crd
@@ -123,9 +123,9 @@ async def list_data(
 
     # define the join
     query = select(target, node.c.node_label.label('nodeLabel')).\
-        select_from(target.outerjoin(node)) # .outerjoin(location) # not required atm
+        select_from(target.outerjoin(deployment).outerjoin(node))
 
-    node_selection = target.c.node_id == typecheck['node_id']
+    node_selection = node.c.node_id == typecheck['node_id']
 
     # define time range criteria
     if time_from and time_to:
@@ -168,15 +168,10 @@ async def list_entries(
 
     The entry selection can optionally be delimited by supplying either bounded
     or unbounded ranges as a combination of `to` and `from` query parameters.
-
-    ### Locations
-
-    `locations` reside in a dedicated table, and are joined. The foreign key
-    is omitted in the response.
     '''
 
-    query = select(entry, entry.c.entry_id.label('id'), entry.c.created_at.label('date'), location.c.location, tag.c.tag_id, tag.c.name.label('tag_name'), file.c.file_id, file.c.object_name, file.c.name.label('file_name'), file.c.type.label('file_type')).\
-        select_from(entry.outerjoin(location).outerjoin(mm_tag_entry).outerjoin(tag).outerjoin(file))
+    query = select(entry, entry.c.entry_id.label('id'), entry.c.created_at.label('date'), tag.c.tag_id, tag.c.name.label('tag_name'), file.c.file_id, file.c.object_name, file.c.name.label('file_name'), file.c.type.label('file_type')).\
+        select_from(entry.outerjoin(mm_tag_entry).outerjoin(tag).outerjoin(file))
 
     if time_from and time_to:
         query = query.where(between(entry.c.created_at, time_from, time_to))
@@ -203,14 +198,6 @@ async def add_entry(body: Entry) -> None:
     '''
     ## Add a new entry to the map
 
-    ### Locations
-
-    `locations` reside in a dedicated table, new `entry` records are created
-    trying to find a `location` that is within a radius of ~1m. If such a
-    record is found, the closest one is referenced in the new `entry` record.
-    If no location is found, a new one is created, with `type` = 'user-created',
-    and referenced in the new `entry` record.
-
     ### Timestamps
 
     The internal attribute `created_at` is used as `date` defined by the model.
@@ -218,46 +205,15 @@ async def add_entry(body: Entry) -> None:
     by the user.
     '''
 
-    transaction = await database.transaction()
-
-    try:
-        point = f'point({float(body.location.lat)}, {float(body.location.lon)})'
-        thresh_1m = 0.0000115
-        # thresh_1m = 0.02
-        location_query = f'''
-        select location_id from {crd.db.schema}.locations
-        where location <-> {point} < {thresh_1m}
-        order by location <-> {point}
-        limit 1
-        '''
-        result = await database.fetch_one(query=location_query)
-
-        location_id = None
-        if result == None:
-            loc_insert_query = f'''
-            insert into {crd.db.schema}.locations(location, type)
-            values (point({body.location.lat},{body.location.lon}), 'user-added')
-            returning location_id
-            '''
-            location_id = await database.execute(loc_insert_query)
-        else:
-            location_id = result.location_id
-
         query = entry.insert().values(
             name=body.name,
             description=body.description,
             type=body.type,
-            location_id=location_id,
+        location=text(f'point(:lat,:lon)').bindparams(lat=body.location.lat, lon=body.location.lon),
             created_at=func.now(),
             updated_at=func.now()
         ).returning(entry.c.entry_id, entry.c.created_at)
         result = await database.fetch_one(query)
-
-    except Exception as e:
-        await transaction.rollback()
-        raise e
-    else:
-        await transaction.commit()
         return  { **body.dict(), 'id': result.entry_id, 'date': result.created_at }
 
 @app.get('/entry/{id}', response_model=Entry, tags=['entry'], responses={404: {"model": ApiErrorResponse}}, response_model_exclude_none=True)
@@ -265,9 +221,9 @@ async def get_entry_by_id(id: int) -> Entry:
     '''
     Find entry by ID
     '''
-    query = select(entry, entry.c.entry_id.label('id'), entry.c.created_at.label('date'), location.c.location, tag.c.tag_id, tag.c.name.label('tag_name'),
+    query = select(entry, entry.c.entry_id.label('id'), entry.c.created_at.label('date'), tag.c.tag_id, tag.c.name.label('tag_name'),
         file.c.file_id, file.c.name.label('file_name'), file.c.object_name, file.c.type.label('file_type')).\
-        select_from(entry.outerjoin(location).outerjoin(mm_tag_entry).outerjoin(tag).outerjoin(file)).where(entry.c.entry_id == id)
+        select_from(entry.outerjoin(mm_tag_entry).outerjoin(tag).outerjoin(file)).where(entry.c.entry_id == id)
     result = await database.fetch_all(query=query)
 
     if result == None or len(result) == 0:
@@ -286,40 +242,8 @@ async def update_entry(id: int, body: PatchEntry = ...) -> None:
     ## Updates an entry
 
     Patching not implemented for `tags`, `files` and `comments`
-
-    ### Locations
-
-    The record is updated with the closest `location` in a radius of ~1m. If
-    no `location` is found, a new one is created and referenced.
     '''
     update_data = body.dict(exclude_unset=True)
-
-    transaction = await database.transaction()
-
-    try:
-        location_id = None
-        if 'location' in update_data:
-            point = f'point({float(body.location.lat)}, {float(body.location.lon)})'
-            thresh_1m = 0.0000115
-            location_query = f'''
-            select location_id from {crd.db.schema}.locations
-            where location <-> {point} < {thresh_1m}
-            order by location <-> {point}
-            limit 1
-            '''
-            result = await database.fetch_one(query=location_query)
-
-            if result == None:
-                loc_insert_query = f'''
-                insert into {crd.db.schema}.locations(location, type)
-                values (point({body.location.lat},{body.location.lon}), 'user-added')
-                returning location_id
-                '''
-                location_id = await database.execute(loc_insert_query)
-            else:
-                location_id = result.location_id
-            update_data['location_id'] = location_id
-            del update_data['location']
 
         # 'files' not implemented
         if 'files' in update_data:
@@ -335,20 +259,18 @@ async def update_entry(id: int, body: PatchEntry = ...) -> None:
 
         del update_data['id']
 
+    update_data['location'] = text('point(:lat,:lon)').bindparams(
+        lat=update_data['location']['lat'],
+        lon=update_data['location']['lon']
+    )
+
         update_data['created_at'] = update_data['date']
         del update_data['date']
 
         query = entry.update().where(entry.c.entry_id == id).\
             values({**update_data, entry.c.updated_at: func.current_timestamp()})
 
-        result = await database.execute(query)
-
-    except Exception as e:
-        await transaction.rollback()
-        raise e
-    else:
-        await transaction.commit()
-        return result
+    return await database.execute(query)
 
 
 @app.delete('/entry/{id}', response_model=None, tags=['entry'])
@@ -477,22 +399,25 @@ async def list_nodes(
     List all deployed nodes
     '''
 
-    query = select(deployment.alias('d').outerjoin(node.alias('n')).outerjoin(location.alias('l'))).\
+    query = select(deployment.alias('d').outerjoin(node.alias('n'))).\
         set_label_style(LABEL_STYLE_TABLENAME_PLUS_COL)
 
     # define time range criteria
     if time_from and time_to:
-        query = query.where(text("d.period && tstzrange(:time_from, :time_to)").bindparams(time_from=time_from, time_to=time_to))
+        query = query.where(text("n.type != 'Test'"), text("d.period && tstzrange(:time_from, :time_to)").bindparams(time_from=time_from, time_to=time_to))
     elif time_from:
-        query = query.where(text("d.period && tstzrange(:time_from, 'infinity')").bindparams(time_from=time_from))
+        query = query.where(text("n.type != 'Test'"), text("d.period && tstzrange(:time_from, 'infinity')").bindparams(time_from=time_from))
     elif time_to:
-        query = query.where(text("d.period && tstzrange('-infinity', :time_to)").bindparams(time_to=time_to))
+        query = query.where(text("n.type != 'Test'"), text("d.period && tstzrange('-infinity', :time_to)").bindparams(time_to=time_to))
+    else:
+        query = query.where(text("n.type != 'Test'"))
 
     result = await database.fetch_all(query)
     return [{
         'id': r['n_node_id'],
         'name': r['n_node_label'],
-        'location': { c: r['l_'+c] for c in location.columns.keys() },
+        'location': r['d_location'],
+        'location_description': r['d_description'],
         'type': r['n_type'],
         'platform': r['n_platform'],
         'description': r['n_description'],
