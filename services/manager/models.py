@@ -87,17 +87,14 @@ class ImageValidationResponse(BaseModel):
     object_name_match: bool
     object_name: str
     node_deployed: bool
-    node_id: Optional[int] = None
-    location_id: Optional[int] = None
+    deployment_id: Optional[int] = None
 
 
 class ImageRequest(BaseModel):
     object_name: str
     sha256: str
     timestamp: datetime
-    node_label: str
-    node_id: int
-    location_id: int
+    deployment_id: int
     file_size: int
     resolution: Tuple[PositiveInt, PositiveInt]
 
@@ -126,16 +123,6 @@ class Point(BaseModel):
     lat: float = Field(..., example=47.53484943172696, title="Latitude (WGS84)")
     lon: float = Field(..., example=7.612519197679952, title="Longitude (WGS84)")
 
-class Location(BaseModel):
-    '''
-    A location record, describing metadata of a coordinate
-    '''
-    id: Optional[int] = None
-    location: Point
-    type: Optional[str] = None
-    name: Optional[str] = None
-    description: Optional[str] = None
-
 class Node(BaseModel):
     '''
     A device deployed in the field, commondly collecting and/or processing data
@@ -159,16 +146,16 @@ class Deployment(BaseModel):
 
     deployment_id: Optional[int] = None
     node_id: int
-    location_id: int
+    location: Point
+    description: Optional[str] = None
     period: TimeStampRange
 
 class DeploymentResponse(Deployment):
     '''
-    DeploymentResponse
+    DeploymentResponse: Deploymnet including associated node record
     '''
 
-    location: Optional[Location]
-    node: Optional[Node]
+    node: Node
 
 class DeploymentRequest(BaseModel):
     '''
@@ -178,6 +165,7 @@ class DeploymentRequest(BaseModel):
     deployment_id: Optional[int] = None
     node_id: int
     location: Point
+    description: Optional[str] = None
     period: TimeStampRange
 
 class QueueInputDefinition(BaseModel):

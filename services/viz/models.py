@@ -180,7 +180,8 @@ class Node(BaseModel):
         example='2323-4242',
         description='Identifyer, a.k.a _Node ID_, _Node Label_, or _Label_'
     )
-    location: Location
+    location: Point
+    location_description: Optional[str] = None
     type: Type = Field(..., example='Audio', description='Desription of function')
     platform: Optional[str] = Field(None, example='Audiomoth', description='Hardware platform')
     description: Optional[str] = Field(

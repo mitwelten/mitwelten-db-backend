@@ -11,3 +11,5 @@ class BasicAuth(object):
 
 db = DbConfig()
 ba = BasicAuth()
+
+DEV = False

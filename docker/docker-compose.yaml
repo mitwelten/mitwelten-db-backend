@@ -34,10 +34,10 @@ services:
 
   viz-api:
     image: mitwelten-viz:0.1
-    container_name: "mitwelten-viz-api"
+    container_name: "mitwelten-viz-api-v1"
     volumes:
-      - "/opt/mitwelten-db-backend/services/viz:/app"
-      - "/opt/mitwelten-db-backend/credentials.py:/app/credentials.py"
+      - "/opt/mitwelten-db-backend_api_v1/services/viz:/app"
+      - "/opt/mitwelten-db-backend_api_v1/credentials.py:/app/credentials.py"
     labels:
       - "traefik.enable=true"
       - "traefik.http.services.viz_api.loadbalancer.server.port=80"
@@ -71,12 +71,51 @@ services:
       - "traefik.http.middlewares.viz-api-cors.headers.accesscontrolmaxage=100"
       - "traefik.http.middlewares.viz-api-cors.headers.addvaryheader=true"
 
+  viz-api-v2:
+    image: mitwelten-viz:0.1
+    container_name: mitwelten-viz-api-v2
+    restart: unless-stopped
+    volumes:
+      - /opt/mitwelten-db-backend/services/viz:/app
+      - /opt/mitwelten-db-backend/credentials.py:/app/credentials.py
+    labels:
+      - traefik.enable=true
+      - traefik.http.services.viz_api_v2.loadbalancer.server.port=80
+
+      # http entrypoint
+      - traefik.http.routers.viz_api_v2_http.rule=Host(`data.mitwelten.org`)&&PathPrefix(`/viz/v2/`)
+      - traefik.http.routers.viz_api_v2_http.entrypoints=http
+      # redirect to https
+      - traefik.http.middlewares.viz_api_v2_https.redirectscheme.scheme=https
+      - traefik.http.routers.viz_api_v2_http.middlewares=viz_api_v2_https
+      # https entrypoint
+      - traefik.http.routers.viz_api_v2.rule=Host(`data.mitwelten.org`)&&PathPrefix(`/viz/v2/`)
+      - traefik.http.routers.viz_api_v2.entrypoints=https
+      - traefik.http.routers.viz_api_v2.tls.certresolver=ssl
+      #  middlewares for https
+      - traefik.http.routers.viz_api_v2.middlewares=viz_api_v2_cors,viz_api_v2_stripprefix,viz_api_v2_basic-auth
+
+      # strip prefix /viz/v2
+      - traefik.http.middlewares.viz_api_v2_stripprefix.stripprefix.prefixes=/viz/v2
+
+      # basic auth
+      - traefik.http.middlewares.viz_api_v2_basic-auth.basicauth.users=${VIZ_API_BASIC_AUTH_USER_PW}
+
+      # CORS
+      - traefik.http.middlewares.viz_api_v2_cors.headers.accesscontrolallowmethods=GET,OPTIONS,PUT,POST,PATCH,DELETE
+      - traefik.http.middlewares.viz_api_v2_cors.headers.accessControlAllowOriginList=https://viz.mitwelten.org;http://localhost
+      - traefik.http.middlewares.viz_api_v2_cors.headers.accessControlAllowHeaders=*
+      - traefik.http.middlewares.viz_api_v2_cors.headers.accessControlExposeHeaders=*
+      - traefik.http.middlewares.viz_api_v2_cors.headers.accesscontrolmaxage=100
+      - traefik.http.middlewares.viz_api_v2_cors.headers.addvaryheader=true
+
+
   manager-api:
     image: mitwelten-manager:0.1
-    container_name: "mitwelten-manager-api"
+    container_name: "mitwelten-manager-api-v1"
     volumes:
-      - "/opt/mitwelten-db-backend/services/manager:/app"
-      - "/opt/mitwelten-db-backend/credentials.py:/app/credentials.py"
+      - "/opt/mitwelten-db-backend_api_v1/services/manager:/app"
+      - "/opt/mitwelten-db-backend_api_v1/credentials.py:/app/credentials.py"
     labels:
       - "traefik.enable=true"
       - "traefik.http.services.manager_api.loadbalancer.server.port=80"
@@ -111,6 +150,44 @@ services:
       - "traefik.http.middlewares.manager-api-cors.headers.addvaryheader=true"
 
     restart: always
+
+  manager-api-v2:
+    image: mitwelten-manager:0.1
+    container_name: mitwelten-manager-api-v2
+    restart: unless-stopped
+    volumes:
+      - /opt/mitwelten-db-backend/services/manager:/app
+      - /opt/mitwelten-db-backend/credentials.py:/app/credentials.py
+    labels:
+      - traefik.enable=true
+      - traefik.http.services.manager_api_v2.loadbalancer.server.port=80
+
+      # http entrypoint
+      - traefik.http.routers.manager_api_v2_http.rule=Host(`data.mitwelten.org`)&&PathPrefix(`/manager/v2/`)
+      - traefik.http.routers.manager_api_v2_http.entrypoints=http
+      # redirect to https
+      - traefik.http.middlewares.manager_api_v2_https.redirectscheme.scheme=https
+      - traefik.http.routers.manager_api_v2_http.middlewares=manager_api_v2_https
+      # https entrypoint
+      - traefik.http.routers.manager_api_v2.rule=Host(`data.mitwelten.org`)&&PathPrefix(`/manager/v2/`)
+      - traefik.http.routers.manager_api_v2.entrypoints=https
+      - traefik.http.routers.manager_api_v2.tls.certresolver=ssl
+      #  middlewares for https
+      - traefik.http.routers.manager_api_v2.middlewares=manager_api_v2_cors,manager_api_v2_stripprefix,manager_api_v2_basic-auth
+
+      # strip prefix /manager/v2
+      - traefik.http.middlewares.manager_api_v2_stripprefix.stripprefix.prefixes=/manager/v2
+
+      # basic auth
+      - traefik.http.middlewares.manager_api_v2_basic-auth.basicauth.users=${MANAGER_API_BASIC_AUTH_USER_PW}
+
+      # CORS
+      - traefik.http.middlewares.manager_api_v2_cors.headers.accesscontrolallowmethods=GET,OPTIONS,PUT,POST,PATCH,DELETE
+      - traefik.http.middlewares.manager_api_v2_cors.headers.accessControlAllowOriginList=*
+      - traefik.http.middlewares.manager_api_v2_cors.headers.accessControlAllowHeaders=*
+      - traefik.http.middlewares.manager_api_v2_cors.headers.accessControlExposeHeaders=*
+      - traefik.http.middlewares.manager_api_v2_cors.headers.accesscontrolmaxage=100
+      - traefik.http.middlewares.manager_api_v2_cors.headers.addvaryheader=true
 
   deployment-frontend:
     image: nginx:alpine
@@ -172,8 +249,8 @@ services:
       - "traefik.enable=true"
       - "traefik.http.services.geo.loadbalancer.server.port=80"
 
-      # for https
-      - "traefik.http.routers.geo_insecure.rule=Host(`data.mitwelten.org`)&&PathPrefix(`/geo/v1/`)"
+      # for http
+      - "traefik.http.routers.geo_insecure.rule=Host(`data.mitwelten.org`)&&(PathPrefix(`/geo/v1/`) || PathPrefix(`/geo/v2/`))"
       - "traefik.http.routers.geo_insecure.entrypoints=http"
 
       # redirect to https
@@ -181,15 +258,19 @@ services:
       - "traefik.http.routers.geo_insecure.middlewares=geo-https"
 
       # for https
-      - "traefik.http.routers.geo.rule=Host(`data.mitwelten.org`)&&PathPrefix(`/geo/v1/`)"
+      - "traefik.http.routers.geo.rule=Host(`data.mitwelten.org`)&&(PathPrefix(`/geo/v1/`) || PathPrefix(`/geo/v2/`))"
       - "traefik.http.routers.geo.entrypoints=https"
       - "traefik.http.routers.geo.tls.certresolver=ssl"
+      - "traefik.http.middlewares.geo-redirect.redirectregex.regex=^https://data.mitwelten.org/geo/v1/(.*)"
+      - "traefik.http.middlewares.geo-redirect.redirectregex.replacement=https://data.mitwelten.org/geo/v2/$${1}"
+      - "traefik.http.middlewares.geo-redirect.redirectregex.permanent=true"
+      - "traefik.http.routers.geo.middlewares=geo-redirect"
 
       #  middlewares for https
       - "traefik.http.routers.geo.middlewares=geo-cors,geo-stripprefix"
 
-      # strip prefix /geo/v1
-      - "traefik.http.middlewares.geo-stripprefix.stripprefix.prefixes=/geo/v1"
+      # strip prefix /geo/v2
+      - "traefik.http.middlewares.geo-stripprefix.stripprefix.prefixes=/geo/v2"
 
       # CORS
       - "traefik.http.middlewares.geo-cors.headers.accesscontrolallowmethods=GET,OPTIONS"

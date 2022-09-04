@@ -1,5 +1,25 @@
 # Notes on development of schema
 
+## Migration v2 to v2.1
+
+For easier handling of locations and more logical abstraction of real-world processes that database schema has been
+restructured to store location data in deployments, and to link data-set records (audio, images, sensordata) to these
+deployments.
+
+A reproducible migration procedure is implemented in [migrate_v2_v2.1.py](./migrations/migrate_v2_v2.1.py).
+
+### Major changes
+
+- The SQL schema is changed to Postgres-schema `prod`.
+- The table `locations` is removed
+- `location` and `description` are added to table `deployments`, data transferred
+- `location` is added to table `entries`, data transferred
+- the combination of `node_id` and `location_id` is replaced by `deployment_id` in data-set records
+- the data-set records are updated to refer to their corresponding deployment
+- `tags` are assigned to `deployments` instead of `nodes`
+
+----
+
 ## Constructing `nodes` and `locations`
 
 ### Transfer `node_id`

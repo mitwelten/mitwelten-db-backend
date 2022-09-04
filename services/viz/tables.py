@@ -42,24 +42,11 @@ class GeometryPoint(UserDefinedType):
 
 metadata = sqlalchemy.MetaData(schema=crd.db.schema)
 
-location = sqlalchemy.Table(
-    'locations',
-    metadata,
-    sqlalchemy.Column('location_id', sqlalchemy.Integer,     primary_key=True),
-    sqlalchemy.Column('location',    GeometryPoint,          nullable=False),
-    sqlalchemy.Column('type',        sqlalchemy.String(255), nullable=True),
-    sqlalchemy.Column('name',        sqlalchemy.String(255), nullable=False),
-    sqlalchemy.Column('description', sqlalchemy.Text,        nullable=True),
-    # sqlalchemy.Column('created_at',  sqlalchemy.TIMESTAMP,   nullable=False),
-    # sqlalchemy.Column('updated_at',  sqlalchemy.TIMESTAMP,   nullable=False),
-    schema=crd.db.schema
-)
-
 entry = sqlalchemy.Table(
     'entries',
     metadata,
     sqlalchemy.Column('entry_id',    sqlalchemy.Integer,     primary_key=True),
-    sqlalchemy.Column('location_id', None,                   ForeignKey('locations.location_id')),
+    sqlalchemy.Column('location',    GeometryPoint,          nullable=False),
     sqlalchemy.Column('name',        sqlalchemy.String(255), nullable=False),
     sqlalchemy.Column('description', sqlalchemy.Text,        nullable=True),
     sqlalchemy.Column('type',        sqlalchemy.String(255), nullable=True),
@@ -114,11 +101,10 @@ deployment = sqlalchemy.Table(
     'deployments',
     metadata,
     sqlalchemy.Column('deployment_id', sqlalchemy.Integer, primary_key=True),
-    sqlalchemy.Column('node_id',       None,               sqlalchemy.ForeignKey('nodes.node_id')),
-    sqlalchemy.Column('location_id',   None,               sqlalchemy.ForeignKey('locations.location_id')),
+    sqlalchemy.Column('node_id',       None,               sqlalchemy.ForeignKey(node.c.node_id)),
+    sqlalchemy.Column('location',      GeometryPoint,      nullable=False),
+    sqlalchemy.Column('description',   sqlalchemy.Text,    nullable=True),
     sqlalchemy.Column('period',        TSTZRANGE,          nullable=False),
-    # sqlalchemy.Column('created_at',    sqlalchemy.TIMESTAMP(timezone=True),  nullable=False),
-    # sqlalchemy.Column('updated_at',    sqlalchemy.TIMESTAMP(timezone=True),  nullable=False),
     schema=crd.db.schema
 )
 
@@ -126,8 +112,7 @@ datum_pax = sqlalchemy.Table(
     'sensordata_pax',
     metadata,
     sqlalchemy.Column('time', sqlalchemy.TIMESTAMP, nullable=False),
-    sqlalchemy.Column('node_id', None, ForeignKey(node.c.node_id)),
-    sqlalchemy.Column('location_id', None, ForeignKey(location.c.location_id)),
+    sqlalchemy.Column('deployment_id', None, ForeignKey(deployment.c.deployment_id)),
     sqlalchemy.Column('pax', sqlalchemy.Integer, nullable=False),
     sqlalchemy.Column('voltage', sqlalchemy.Float, nullable=False),
 )
@@ -136,8 +121,7 @@ datum_env = sqlalchemy.Table(
     'sensordata_env',
     metadata,
     sqlalchemy.Column('time', sqlalchemy.TIMESTAMP, nullable=False),
-    sqlalchemy.Column('node_id', None, ForeignKey(node.c.node_id)),
-    sqlalchemy.Column('location_id', None, ForeignKey(location.c.location_id)),
+    sqlalchemy.Column('deployment_id', None, ForeignKey(deployment.c.deployment_id)),
     sqlalchemy.Column('temperature', sqlalchemy.Float, nullable=False),
     sqlalchemy.Column('humidity', sqlalchemy.Float, nullable=False),
     sqlalchemy.Column('moisture', sqlalchemy.Float, nullable=False),
@@ -151,9 +135,3 @@ mm_tag_entry = sqlalchemy.Table(
     sqlalchemy.Column('entries_entry_id', None, ForeignKey(entry.c.entry_id)),
     schema=crd.db.schema
 )
-
-
-
-# # create the tables if they don't exists
-# # not useful in this case
-# metadata.create_all(engine)

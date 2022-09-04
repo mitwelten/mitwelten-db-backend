@@ -2,9 +2,9 @@
 
 The schema is functionally described in [mitwelten_v2.sql](./mitwelten_v2.sql). It was developped on the previous schema ([mitwelten_v1.sql](./mitwelten_v1.sql)) and the schema built for the _ingest process_ of the project [mitwelten-ml-backend](https://github.com/mitwelten/mitwelten-ml-backend). For details see [NOTES.md](./NOTES.md).
 
-![schema_v2.pgerd](./assets/schema_v2.pgerd.png)
+![schema_v2.1](./assets/diagram_v2.1.png)
 
-_Source: [mitwelten_v2.pgerd](./mitwelten_v2.pgerd). Note: Schema name in ERD is `dev`, in production `public` will be used._
+_Source: [mitwelten_v2.1.diagram](./mitwelten_v2.1.diagram) generated with TablePlus. Other options: [mitwelten_v2.1.pgerd](./mitwelten_v2.1.pgerd) for use in pgAdmin4._
 
 ## Entities
 
@@ -26,46 +26,40 @@ Device (hardware), mostly used to collect data.
 
 [^node_labels_sn]: Previously, some of the _node labels_ were used with multiple devices: The _node labels_ for Audiomoths are printed on SD-cards, a few of the were used in multiple devices. The _serial numbers_ of those devices identify the node in that case and are stored in the `files_audio` records, not in the `node` records.
 
-### location
-
-A "pin" on the map: A _fixed location_ of an appliance, node, event or other entity.
-
-- Has a _location_ in the format WGS84: ° (latitude, longitude), currently implemented as `point(latitude, longitude)`[^postgis_ext]
-- Has a _unique name_ (like "Villa, 60cm above ground")
-- Has a _description_
-
-[^postgis_ext]: For geographic calculations the PostGIS extension could be added to the db in the future.
-
 ### deployment
 
 The _time period_ in which a _node_ has been or is installed at a specific _location_.
 
-- Has foreign keys to _nodes_ and _locations_
+- Has foreign keys to _nodes_
+- Has a _location_ in the format WGS84: ° (latitude, longitude), currently implemented as `point(latitude, longitude)`[^postgis_ext]
+- Can have a location _description_
 - Has a time _period_
 
 The combination of node and period is constrained to be unique and non-overlapping.
 
+[^postgis_ext]: For geographic calculations the PostGIS extension could be added to the db in the future.
+
 ### sensordata
 
-Several types of sensordata, currently environmental and pax. Records are assigned to `location` and `node` and must have a _timestamp_.
+Several types of sensordata, currently _environmental_ and _pax_. Records are assigned to `deployment` and must have a _timestamp_.
 
 ### files
 
 Several types of files, currently audio and images.
 
-- are assigned to `location` and `node`
+- are assigned to `deployment`
 - must have a _timestamp_
 - must have a unique _object name_ by which the file is identified in S3 storage
 - must have unique content, identifyed by `sha256`
 
 There is a separate relation for files uploaded by this _viz-dashboard_, that does not
-have attributes for location and node.
+have an attributes for `deployment`.
 
 ### entry
 
 - Has a _name_
 - Has a _description_
-- Has a foreign key to a _location_
+- Has _location_ (same format as `deployment`)
 - Has a type
 - Can have multiple _tags_
 - Can have multiple _files_
@@ -73,7 +67,9 @@ have attributes for location and node.
 
 ### tag
 
-Has a unique _name_
+- Has a unique _name_
+
+Records of `entry` and `deployment` can be tagged with multiple tags, using the tables `mm_tags_entries` and `mm_tags_deployments`.
 
 ### BirdNET pipeline
 

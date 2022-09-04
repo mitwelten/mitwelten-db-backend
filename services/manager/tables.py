@@ -114,38 +114,23 @@ nodes = sqlalchemy.Table(
     schema=crd.db.schema
 )
 
-locations = sqlalchemy.Table(
-    'locations',
-    metadata,
-    sqlalchemy.Column('location_id', sqlalchemy.Integer,     primary_key=True),
-    sqlalchemy.Column('location',    GeometryPoint,          nullable=False),
-    sqlalchemy.Column('type',        sqlalchemy.String(255), nullable=True),
-    sqlalchemy.Column('name',        sqlalchemy.String(255), nullable=False),
-    sqlalchemy.Column('description', sqlalchemy.Text,        nullable=True),
-    # sqlalchemy.Column('created_at',  sqlalchemy.TIMESTAMP,   nullable=False),
-    # sqlalchemy.Column('updated_at',  sqlalchemy.TIMESTAMP,   nullable=False),
-    schema=crd.db.schema
-)
-
 deployments = sqlalchemy.Table(
     'deployments',
     metadata,
     sqlalchemy.Column('deployment_id', sqlalchemy.Integer, primary_key=True),
     sqlalchemy.Column('node_id',       None,               sqlalchemy.ForeignKey('nodes.node_id')),
-    sqlalchemy.Column('location_id',   None,               sqlalchemy.ForeignKey('locations.location_id')),
+    sqlalchemy.Column('location',      GeometryPoint,      nullable=False),
+    sqlalchemy.Column('description',   sqlalchemy.Text,    nullable=True),
     sqlalchemy.Column('period',        TSTZRANGE,          nullable=False),
-    # sqlalchemy.Column('created_at',    sqlalchemy.TIMESTAMP(timezone=True),  nullable=False),
-    # sqlalchemy.Column('updated_at',    sqlalchemy.TIMESTAMP(timezone=True),  nullable=False),
     schema=crd.db.schema
 )
 
 data_records = sqlalchemy.Table(
     'data_records', # this is a view!
     metadata,
-    sqlalchemy.Column('record_id',   sqlalchemy.Integer),
-    sqlalchemy.Column('node_id',     sqlalchemy.Integer),
-    sqlalchemy.Column('location_id', sqlalchemy.Integer),
-    sqlalchemy.Column('type',        sqlalchemy.String(255)),
+    sqlalchemy.Column('record_id',      sqlalchemy.Integer),
+    sqlalchemy.Column('deployment_id',  sqlalchemy.Integer),
+    sqlalchemy.Column('type',           sqlalchemy.String(255)),
     schema=crd.db.schema
 )
 
@@ -156,8 +141,7 @@ files_image = sqlalchemy.Table(
     sqlalchemy.Column('object_name',    sqlalchemy.Text,                      nullable=False),
     sqlalchemy.Column('sha256',         sqlalchemy.String(64),                nullable=False),
     sqlalchemy.Column('time',           sqlalchemy.TIMESTAMP,                 nullable=False),
-    sqlalchemy.Column('node_id',        sqlalchemy.ForeignKey('nodes.node_id')),
-    sqlalchemy.Column('location_id',    sqlalchemy.ForeignKey('locations.location_id')),
+    sqlalchemy.Column('deployment_id',  sqlalchemy.ForeignKey('deployments.deployment_id')),
     sqlalchemy.Column('file_size',      sqlalchemy.Integer,                   nullable=False),
     sqlalchemy.Column('resolution',     sqlalchemy.ARRAY(sqlalchemy.Integer), nullable=False),
     sqlalchemy.Column('created_at',     sqlalchemy.TIMESTAMP(timezone=True),  nullable=False),

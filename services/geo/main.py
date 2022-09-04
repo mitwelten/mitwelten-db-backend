@@ -8,7 +8,7 @@ from fastapi import FastAPI, Response
 
 import simplekml
 
-from tables import nodes, locations, deployments
+from tables import nodes, deployments
 
 sys.path.append('../../')
 import credentials as crd
@@ -27,14 +27,29 @@ app = FastAPI(
     title='Mitwelten GEO REST API',
     description='This service provides REST endpoints to exchange geo data from [Mitwelten](https://mitwelten.org)',
     contact={'email': 'mitwelten.technik@fhnw.ch'},
-    version='1.0.0',
+    version='2.0.0',
     openapi_tags=tags_metadata,
     servers=[
-        {'url': 'https://data.mitwelten.org/geo/v1', 'description': 'Production environment'},
+        {'url': 'https://data.mitwelten.org/geo/v2', 'description': 'Production environment'},
         {'url': 'http://localhost:8000', 'description': 'Development environment'}
     ],
-    root_path='/geo/v1',
+    root_path='/geo/v2',
     root_path_in_servers=False
+)
+
+if crd.DEV == True:
+    from fastapi.middleware.cors import CORSMiddleware
+    app.root_path = '/'
+    app.root_path_in_servers=True
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=[
+            'http://localhost',              # dev environment
+            'http://localhost:4200',         # angular dev environment
+        ],
+        allow_credentials=True,
+        allow_methods=['*'],
+        allow_headers=['*'],
 )
 
 @app.on_event('startup')
@@ -46,11 +61,11 @@ async def shutdown():
     await database.disconnect()
 
 
-@app.get('/kml/{fs}/', tags=['kml'])
-async def read_kml(fs: str):
+@app.get('/kml/{fs}/', tags=['kml'], response_class=Response(media_type="application/vnd.google-earth.kml+xml"))
+async def read_kml(fs: str) -> Response(media_type="application/vnd.google-earth.kml+xml"):
     query = deployments.select()
 
-    query = select(deployments.alias('d').outerjoin(nodes.alias('n')).outerjoin(locations.alias('l'))).\
+    query = select(deployments.alias('d').outerjoin(nodes.alias('n'))).\
         set_label_style(LABEL_STYLE_TABLENAME_PLUS_COL)
 
     # if object_type != None:
@@ -66,7 +81,6 @@ async def read_kml(fs: str):
     records = []
     for r in result:
         d = { c: r['d_'+c] for c in deployments.columns.keys() }
-        d['location'] = { c: r['l_'+c] for c in locations.columns.keys() }
         d['node'] = { c: r['n_'+c] for c in nodes.columns.keys() }
         records.append(d)
 
@@ -87,7 +101,7 @@ async def read_kml(fs: str):
         p.description = f"{d['node']['platform']} ({d['node']['type']})"
         p.extendeddata = ext
         p.altitudemode = simplekml.AltitudeMode.clamptoground
-        p.coords = [(d['location']['location']['lon'],d['location']['location']['lat'],0)]
+        p.coords = [(d['location']['lon'],d['location']['lat'],0)]
         # p.tessellate = True
 
     return Response(content=kml.kml(format=True), media_type="application/vnd.google-earth.kml+xml")
