@@ -301,7 +301,10 @@ async def read_queue_detail(node_label: str):
 
 @app.get('/nodes', tags=['deployments'])
 async def read_nodes():
-    return await database.fetch_all(select(nodes).order_by(nodes.c.node_label))
+    deployments_subquery = select(func.count(deployments.c.deployment_id)).\
+        where(nodes.c.node_id == deployments.c.node_id).scalar_subquery()
+    return await database.fetch_all(select(nodes, deployments_subquery.label('deployment_count')).\
+        order_by(nodes.c.node_label))
 
 @app.put('/nodes', dependencies=[Depends(check_authentication)], tags=['deployments'])
 async def upsert_node(body: Node) -> None:
