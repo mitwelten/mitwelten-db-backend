@@ -61,8 +61,8 @@ async def shutdown():
     await database.disconnect()
 
 
-@app.get('/kml/{fs}/', tags=['kml'])
-async def read_kml(fs: str):
+@app.get('/kml/{fs}/', tags=['kml'], response_class=Response(media_type="application/vnd.google-earth.kml+xml"))
+async def read_kml(fs: str) -> Response(media_type="application/vnd.google-earth.kml+xml"):
     query = deployments.select()
 
     query = select(deployments.alias('d').outerjoin(nodes.alias('n'))).\
