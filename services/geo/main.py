@@ -37,6 +37,21 @@ app = FastAPI(
     root_path_in_servers=False
 )
 
+if crd.DEV == True:
+    from fastapi.middleware.cors import CORSMiddleware
+    app.root_path = '/'
+    app.root_path_in_servers=True
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=[
+            'http://localhost',              # dev environment
+            'http://localhost:4200',         # angular dev environment
+        ],
+        allow_credentials=True,
+        allow_methods=['*'],
+        allow_headers=['*'],
+)
+
 @app.on_event('startup')
 async def startup():
     await database.connect()

@@ -8,7 +8,6 @@ from datetime import datetime
 from typing import List, Optional
 
 from fastapi import FastAPI, Query, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
 from pydantic import conint, constr
 
 import databases
@@ -36,7 +35,6 @@ database = databases.Database(DATABASE_URL, min_size=5, max_size=10)
 origins = [
     'https://viz.mitwelten.org',    # production environment
     'http://localhost',             # dev environment
-    'http://localhost:4200',        # angular dev environment
 ]
 
 tags_metadata = [
@@ -76,12 +74,16 @@ app = FastAPI(
     openapi_tags=tags_metadata
 )
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+if crd.DEV == True:
+    from fastapi.middleware.cors import CORSMiddleware
+    app.root_path = '/'
+    app.root_path_in_servers=True
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=origins,
+        allow_credentials=True,
+        allow_methods=['*'],
+        allow_headers=['*'],
 )
 
 @app.on_event('startup')
@@ -205,16 +207,16 @@ async def add_entry(body: Entry) -> None:
     by the user.
     '''
 
-        query = entry.insert().values(
-            name=body.name,
-            description=body.description,
-            type=body.type,
+    query = entry.insert().values(
+        name=body.name,
+        description=body.description,
+        type=body.type,
         location=text(f'point(:lat,:lon)').bindparams(lat=body.location.lat, lon=body.location.lon),
-            created_at=func.now(),
-            updated_at=func.now()
-        ).returning(entry.c.entry_id, entry.c.created_at)
-        result = await database.fetch_one(query)
-        return  { **body.dict(), 'id': result.entry_id, 'date': result.created_at }
+        created_at=func.now(),
+        updated_at=func.now()
+    ).returning(entry.c.entry_id, entry.c.created_at)
+    result = await database.fetch_one(query)
+    return  { **body.dict(), 'id': result.entry_id, 'date': result.created_at }
 
 @app.get('/entry/{id}', response_model=Entry, tags=['entry'], responses={404: {"model": ApiErrorResponse}}, response_model_exclude_none=True)
 async def get_entry_by_id(id: int) -> Entry:
@@ -245,30 +247,30 @@ async def update_entry(id: int, body: PatchEntry = ...) -> None:
     '''
     update_data = body.dict(exclude_unset=True)
 
-        # 'files' not implemented
-        if 'files' in update_data:
-            del update_data['files']
+    # 'files' not implemented
+    if 'files' in update_data:
+        del update_data['files']
 
-        # 'tags' not implemented
-        if 'tags' in update_data:
-            del update_data['tags']
+    # 'tags' not implemented
+    if 'tags' in update_data:
+        del update_data['tags']
 
-        # 'comments' not implemented
-        if 'comments' in update_data:
-            del update_data['comments']
+    # 'comments' not implemented
+    if 'comments' in update_data:
+        del update_data['comments']
 
-        del update_data['id']
+    del update_data['id']
 
     update_data['location'] = text('point(:lat,:lon)').bindparams(
         lat=update_data['location']['lat'],
         lon=update_data['location']['lon']
     )
 
-        update_data['created_at'] = update_data['date']
-        del update_data['date']
+    update_data['created_at'] = update_data['date']
+    del update_data['date']
 
-        query = entry.update().where(entry.c.entry_id == id).\
-            values({**update_data, entry.c.updated_at: func.current_timestamp()})
+    query = entry.update().where(entry.c.entry_id == id).\
+        values({**update_data, entry.c.updated_at: func.current_timestamp()})
 
     return await database.execute(query)
 
