@@ -388,3 +388,19 @@ services:
       - USERNAME=${VERNEAUTH_UI_USERNAME}
       - PASSWORD_HASH=${VERNEAUTH_UI_PASSWORD_HASH}
       - VERNEAUTH_URL=http://verneauth:8080
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.services.vaui.loadbalancer.server.port=5000"
+
+      # for http
+      - "traefik.http.routers.vaui_insecure.rule=Host(`mqtt-console.mitwelten.org`)"
+      - "traefik.http.routers.vaui_insecure.entrypoints=http"
+
+      # redirect to https
+      - "traefik.http.middlewares.vaui-https.redirectscheme.scheme=https"
+      - "traefik.http.routers.vaui_insecure.middlewares=vaui-https"
+
+      # for https
+      - "traefik.http.routers.vaui.rule=Host(`mqtt-console.mitwelten.org`)"
+      - "traefik.http.routers.vaui.entrypoints=https"
+      - "traefik.http.routers.vaui.tls.certresolver=ssl"
