@@ -1,0 +1,26 @@
+listener.tcp.default = 0.0.0.0:1883
+listener.http.default = 0.0.0.0:8888
+
+accept_eula = yes
+
+log.console = both
+log.console.level = info
+
+
+plugins.vmq_acl = off
+plugins.vmq_passwd = off
+allow_anonymous=off  # uncomment if using DB-managed auth
+
+plugins.vmq_webhooks = on
+
+vmq_webhooks.authreg.hook = auth_on_register
+vmq_webhooks.authreg.no_payload = on
+vmq_webhooks.authreg.endpoint = http://verneauth:8080/webhooks/register
+
+vmq_webhooks.authsub.hook = auth_on_subscribe
+vmq_webhooks.authsub.no_payload = on
+vmq_webhooks.authsub.endpoint = http://verneauth:8080/webhooks/subscribe
+
+vmq_webhooks.authpub.hook = auth_on_publish
+vmq_webhooks.authpub.no_payload = on
+vmq_webhooks.authpub.endpoint = http://verneauth:8080/webhooks/publish

@@ -4,6 +4,7 @@ volumes:
   prometheus_data: {}
   grafana_data: {}
   alertmanager_data: {}
+  verneauth_data: {}
 
 services:
   traefik:
@@ -24,7 +25,7 @@ services:
     ports:
       - "80:80"
       - "443:443"
-    #  - "8883:8883"
+      - "8883:8883"
 
     volumes:
       - "/etc/letsencrypt:/letsencrypt"
@@ -350,3 +351,40 @@ services:
     ports:
       - 9093:9093
     restart: unless-stopped
+
+  vernemq:
+    image: erlio/docker-vernemq:1.10.0-alpine
+    container_name: vernemq
+    restart: always
+    volumes:
+      - "../services/mqtt/vernemq.conf.local:/vernemq/etc/vernemq.conf.local"
+    environment:
+      - DOCKER_VERNEMQ_ACCEPT_EULA=yes
+    #ports:
+    #  - 1883:1883
+    labels:
+      - "traefik.enable=true"
+      - "traefik.tcp.routers.vernemq.entrypoints=mqtts"
+      - "traefik.tcp.routers.vernemq.rule=HostSNI(`mqtt.mitwelten.org`)"
+      - "traefik.tcp.routers.vernemq.tls.certresolver=ssl"
+      - "traefik.tcp.services.vernemq.loadbalancer.server.port=1883"
+
+  verneauth:
+    image: cr.gitlab.fhnw.ch/mitwelten/docker-infrastructure/fhnw-verneauth:1.0
+    container_name: verneauth
+    restart: always
+    volumes:
+      - verneauth_data:/opt/verneauth/data
+
+  verneauth-ui:
+    image: cr.gitlab.fhnw.ch/mitwelten/docker-infrastructure/mitwelten-verneauth_ui:1.0
+    container_name: verneauth-ui
+    restart: always
+    depends_on:
+     - verneauth
+    #ports:
+    #  - 5005:5000
+    environment:
+      - USERNAME=${VERNEAUTH_UI_USERNAME}
+      - PASSWORD_HASH=${VERNEAUTH_UI_PASSWORD_HASH}
+      - VERNEAUTH_URL=http://verneauth:8080
