@@ -85,5 +85,3 @@ Records of `entry` and `deployment` can be tagged with multiple tags, using the 
 - **pollinator_inference_config**: Holds all model configurations used for inference
 - **flowers**: Holds predicted flowers with bounding boxes
 - **pollinators**: Holds predicted pollinators with bounding boxes
-
-Source code: https://github.com/mitwelten/pollinator-ml-backend
