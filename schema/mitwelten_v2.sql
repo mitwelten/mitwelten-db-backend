@@ -203,36 +203,36 @@ CREATE TABLE IF NOT EXISTS prod.files_entry
 
 CREATE TABLE IF NOT EXISTS prod.image_results (
   result_id serial PRIMARY KEY,
-  file_id int,
-  config_id varchar
+  file_id int NOT NULL,
+  config_id varchar NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS prod.flowers (
   flower_id serial PRIMARY KEY,
-  result_id int,
-  class varchar,
-  confidence float4,
-  x0 int,
-  y0 int,
-  x1 int,
-  y1 int
+  result_id int NOT NULL,
+  class varchar NOT NULL,
+  confidence float4 NOT NULL,
+  x0 int NOT NULL,
+  y0 int NOT NULL,
+  x1 int NOT NULL,
+  y1 int NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS prod.pollinators (
   pollinator_id serial PRIMARY KEY,
-  result_id int,
-  flower_id int,
-  class varchar,
-  confidence float4,
-  x0 int,
-  y0 int,
-  x1 int,
-  y1 int
+  result_id int NOT NULL,
+  flower_id int NOT NULL,
+  class varchar NOT NULL,
+  confidence float4 NOT NULL,
+  x0 int NOT NULL,
+  y0 int NOT NULL,
+  x1 int NOT NULL,
+  y1 int NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS prod.pollinator_inference_config (
   config_id varchar PRIMARY KEY,
-  configuration json
+  configuration json NOT NULL
 );
 
 ALTER TABLE IF EXISTS prod.files_audio
