@@ -1,10 +1,11 @@
 # Mitwelten Database Schema
 
-The schema is functionally described in [mitwelten_v2.sql](./mitwelten_v2.sql). It was developped on the previous schema ([mitwelten_v1.sql](./mitwelten_v1.sql)) and the schema built for the _ingest process_ of the project [mitwelten-ml-backend](https://github.com/mitwelten/mitwelten-ml-backend). For details see [NOTES.md](./NOTES.md).
+- The schema is functionally described in [mitwelten_v2.sql](./mitwelten_v2.sql). It was developped on the previous schema ([mitwelten_v1.sql](./mitwelten_v1.sql)) and the schema built for the _ingest process_ of the project [mitwelten-ml-backend](https://github.com/mitwelten/mitwelten-ml-backend). For details see [NOTES.md](./NOTES.md)
+- 05.12.2022: The schema V2.1 was expanded with additional tables for the pollinator model [mitwelten_v2.sql](./assets/diagram_v2.2.png) resulting in schema version V2.2
 
-![schema_v2.1](./assets/diagram_v2.1.png)
+![schema_v2.2](./assets/diagram_v2.2.png)
 
-_Source: [mitwelten_v2.1.diagram](./mitwelten_v2.1.diagram) generated with TablePlus. Other options: [mitwelten_v2.1.pgerd](./mitwelten_v2.1.pgerd) for use in pgAdmin4._
+_Source: [mitwelten_v2.2.diagram](./mitwelten_v2.2.diagram) generated with TablePlus. Other options: [mitwelten_v2.2.pgerd](./mitwelten_v2.1.pgerd) for use in pgAdmin4._
 
 ## Entities
 
@@ -77,3 +78,12 @@ Records of `entry` and `deployment` can be tagged with multiple tags, using the 
 - __configs__: inference configuration
 - __results__: identified species
 - __species occurrence__: manually maintained list of species expected to be spotted at project location
+
+### Pollinator Pipeline
+
+- **image_results**: Acts as connection table betweend different model configurations and results
+- **pollinator_inference_config**: Holds all model configurations used for inference
+- **flowers**: Holds predicted flowers with bounding boxes
+- **pollinators**: Holds predicted pollinators with bounding boxes
+
+Source code: https://github.com/mitwelten/pollinator-ml-backend

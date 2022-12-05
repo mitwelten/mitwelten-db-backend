@@ -201,6 +201,40 @@ CREATE TABLE IF NOT EXISTS prod.files_entry
     UNIQUE (object_name)
 );
 
+CREATE TABLE IF NOT EXISTS prod.image_results (
+  result_id serial PRIMARY KEY,
+  file_id int NOT NULL,
+  config_id varchar NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS prod.flowers (
+  flower_id serial PRIMARY KEY,
+  result_id int NOT NULL,
+  class varchar NOT NULL,
+  confidence float4 NOT NULL,
+  x0 int NOT NULL,
+  y0 int NOT NULL,
+  x1 int NOT NULL,
+  y1 int NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS prod.pollinators (
+  pollinator_id serial PRIMARY KEY,
+  result_id int NOT NULL,
+  flower_id int NOT NULL,
+  class varchar NOT NULL,
+  confidence float4 NOT NULL,
+  x0 int NOT NULL,
+  y0 int NOT NULL,
+  x1 int NOT NULL,
+  y1 int NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS prod.pollinator_inference_config (
+  config_id varchar PRIMARY KEY,
+  configuration json NOT NULL
+);
+
 ALTER TABLE IF EXISTS prod.files_audio
     ADD FOREIGN KEY (deployment_id)
     REFERENCES prod.deployments (deployment_id) MATCH SIMPLE
@@ -300,6 +334,42 @@ ALTER TABLE IF EXISTS prod.files_entry
     ON UPDATE NO ACTION
     ON DELETE CASCADE
     NOT VALID;
+
+ALTER TABLE IF EXISTS prod.image_results 
+  ADD FOREIGN KEY (config_id) 
+  REFERENCES prod.pollinator_inference_config (config_id) MATCH SIMPLE
+  ON UPDATE NO ACTION
+  ON DELETE NO ACTION
+  NOT VALID;
+
+ALTER TABLE IF EXISTS prod.flowers  
+  ADD FOREIGN KEY (result_id) 
+  REFERENCES  prod.image_results  (result_id) MATCH SIMPLE
+  ON UPDATE NO ACTION
+  ON DELETE NO ACTION
+  NOT VALID;
+
+ALTER TABLE IF EXISTS prod.pollinators  
+  ADD FOREIGN KEY (flower_id) 
+  REFERENCES  prod.flowers  (flower_id) MATCH SIMPLE
+  ON UPDATE NO ACTION
+  ON DELETE NO ACTION
+  NOT VALID;
+
+ALTER TABLE IF EXISTS prod.image_results  
+  ADD FOREIGN KEY (result_id) 
+  REFERENCES  prod.files_image  (file_id) MATCH SIMPLE
+  ON UPDATE NO ACTION
+  ON DELETE NO ACTION
+  NOT VALID;
+
+ALTER TABLE IF EXISTS prod.pollinators  
+  ADD FOREIGN KEY (result_id) 
+  REFERENCES  prod.image_results  (result_id) MATCH SIMPLE
+  ON UPDATE NO ACTION
+  ON DELETE NO ACTION
+  NOT VALID;
+
 
 -- fast delete queries in birdnet_tasks
 CREATE INDEX IF NOT EXISTS birdnet_results_tasks_fk_index
