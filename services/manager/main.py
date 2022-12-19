@@ -352,6 +352,10 @@ async def get_node_power(search_term: Optional[str] = None) -> List[str]:
     r = await database.fetch_all(q.order_by(nodes.c.power))
     return [v[nodes.c.power] for v in r if v[nodes.c.power] != None]
 
+@app.get('/node', response_model=Node, tags=['deployments'])
+async def read_node_by_label(label: str) -> Node:
+    return await database.fetch_one(select(nodes).where(nodes.c.node_label == label))
+
 @app.get('/node/{id}', response_model=Node, tags=['deployments'])
 async def read_node(id: int) -> Node:
     return await database.fetch_one(select(nodes).where(nodes.c.node_id == id))
