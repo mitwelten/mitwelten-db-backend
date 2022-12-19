@@ -357,7 +357,7 @@ ALTER TABLE IF EXISTS prod.pollinators
   NOT VALID;
 
 ALTER TABLE IF EXISTS prod.image_results  
-  ADD FOREIGN KEY (result_id) 
+  ADD FOREIGN KEY (file_id) 
   REFERENCES  prod.files_image  (file_id) MATCH SIMPLE
   ON UPDATE NO ACTION
   ON DELETE NO ACTION
