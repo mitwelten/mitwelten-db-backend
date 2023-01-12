@@ -123,6 +123,13 @@ class Point(BaseModel):
     lat: float = Field(..., example=47.53484943172696, title="Latitude (WGS84)")
     lon: float = Field(..., example=7.612519197679952, title="Longitude (WGS84)")
 
+class Tag(BaseModel):
+    '''
+    Annotation
+    '''
+    id: Optional[int] = None
+    name: Optional[constr(regex=r'\w+')] = None
+
 class Node(BaseModel):
     '''
     A device deployed in the field, commondly collecting and/or processing data
@@ -156,6 +163,7 @@ class DeploymentResponse(Deployment):
     '''
 
     node: Node
+    tags: Optional[List[Tag]] = None
 
 class DeploymentRequest(BaseModel):
     '''
