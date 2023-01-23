@@ -82,12 +82,12 @@ Records of `entry` and `deployment` can be tagged with multiple tags, using the 
 
 ### Pollinator Pipeline
 
-- **image_results**: Acts as connection table betweend different model configurations and results
-- **pollinator_inference_config**: Holds all model configurations used for inference
-- **flowers**: Holds predicted flowers with bounding boxes
-- **pollinators**: Holds predicted pollinators with bounding boxes
+- __image_results__: Acts as connection table betweend different model configurations and results
+- __pollinator_inference_config__: Holds all model configurations used for inference
+- __flowers__: Holds predicted flowers with bounding boxes
+- __pollinators__: Holds predicted pollinators with bounding boxes
 
-Source code: https://github.com/mitwelten/pollinator-ml-backend
+Source code: <https://github.com/mitwelten/pollinator-ml-backend>
 
 ### Environment
 
