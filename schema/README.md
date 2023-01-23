@@ -118,4 +118,5 @@ flowchart RL
   style species stroke-width:3px
 ```
 
-The taxonomy data is imported manually.
+The taxonomy data is imported manually using [taxonomy_gbif.py](../import/taxonomy_gbif.py).
+This procedure can be repeated when new species are inferred.
