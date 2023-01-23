@@ -235,6 +235,50 @@ CREATE TABLE IF NOT EXISTS prod.pollinator_inference_config (
   configuration json NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS prod.environment
+(
+    environment_id serial,
+    location point NOT NULL,
+    timestamp timestamptz NOT NULL,
+    attribute_01 real NOT NULL,
+    attribute_02 real NOT NULL,
+    attribute_03 real NOT NULL,
+    attribute_04 real NOT NULL,
+    attribute_05 real NOT NULL,
+    attribute_06 real NOT NULL,
+    attribute_07 real NOT NULL,
+    attribute_08 real NOT NULL,
+    attribute_09 real NOT NULL,
+    attribute_10 real NOT NULL,
+    created_at timestamptz NOT NULL DEFAULT current_timestamp,
+    updated_at timestamptz DEFAULT current_timestamp,
+    PRIMARY KEY (environment_id)
+);
+
+-- no foreign key constraints for taxonomy tables
+-- data is ever only imported, all taxonomy_species ids and
+-- taxonomy_labels.label_id contain the unique GBIF species_id
+-- which may also be used in our own records
+CREATE TABLE IF NOT EXISTS prod.taxonomy_species
+(
+    species_id bigint NOT NULL,
+    genus_id bigint NOT NULL,
+    family_id bigint NOT NULL,
+    class_id bigint NOT NULL,
+    phylum_id bigint NOT NULL,
+    kingdom_id bigint NOT NULL,
+    PRIMARY KEY (species_id)
+);
+
+CREATE TABLE IF NOT EXISTS prod.taxonomy_labels
+(
+    label_id bigint NOT NULL,
+    label_sci character varying(255) NOT NULL,
+    label_de character varying(255),
+    label_en character varying(255),
+    PRIMARY KEY (label_id)
+);
+
 ALTER TABLE IF EXISTS prod.files_audio
     ADD FOREIGN KEY (deployment_id)
     REFERENCES prod.deployments (deployment_id) MATCH SIMPLE

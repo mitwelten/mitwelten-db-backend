@@ -1,11 +1,12 @@
 # Mitwelten Database Schema
 
 - The schema is functionally described in [mitwelten_v2.sql](./mitwelten_v2.sql). It was developped on the previous schema ([mitwelten_v1.sql](./mitwelten_v1.sql)) and the schema built for the _ingest process_ of the project [mitwelten-ml-backend](https://github.com/mitwelten/mitwelten-ml-backend). For details see [NOTES.md](./NOTES.md)
-- 05.12.2022: The schema V2.1 was expanded with additional tables for the pollinator model [mitwelten_v2.sql](./assets/diagram_v2.2.png) resulting in schema version V2.2
+- 05.12.2022: The schema v2.1 was expanded with additional tables for the pollinator model resulting in [schema v2.2](./assets/diagram_v2.2.png) ([mitwelten_v2.sql](./mitwelten_v2.sql))
+- 23.01.2023: The schema v2.2 was expanded with additional tables for environment and imported taxonomy records resulting in [schema v2.3](./assets/diagram_v2.3.png) ([mitwelten_v2.sql](./mitwelten_v2.sql))
 
-![schema_v2.2](./assets/diagram_v2.2.png)
+![schema_v2.3](./assets/diagram_v2.3.png)
 
-_Source: [mitwelten_v2.2.diagram](./mitwelten_v2.2.diagram) generated with TablePlus. Other options: [mitwelten_v2.2.pgerd](./mitwelten_v2.1.pgerd) for use in pgAdmin4._
+_Source: [mitwelten_v2.3.diagram](./mitwelten_v2.3.diagram) generated with TablePlus. Other options: [mitwelten_v2.3.pgerd](./mitwelten_v2.3.pgerd) for use in pgAdmin4._
 
 ## Entities
 
@@ -87,3 +88,34 @@ Records of `entry` and `deployment` can be tagged with multiple tags, using the 
 - **pollinators**: Holds predicted pollinators with bounding boxes
 
 Source code: https://github.com/mitwelten/pollinator-ml-backend
+
+### Environment
+
+Parametric description (10 attributes) of an environment at a given location.
+
+### Taxonomy
+
+Taxonomy data imported from [GBIF](https://gbif.org). The levels in the taxonomy
+refer to eachother by a GBIF defined key, with the most specific instance at
+_species_ level. This data is used to associate scientific descriptors with
+translated labels.
+
+```mermaid
+flowchart RL
+  species --> genus
+  genus --> family
+  family --> c[class]
+  c --> phylum
+  phylum --> kingdom
+
+  species --> label
+  genus --> label
+  family --> label
+  c --> label
+  phylum --> label
+  kingdom --> label
+
+  style species stroke-width:3px
+```
+
+The taxonomy data is imported manually.
