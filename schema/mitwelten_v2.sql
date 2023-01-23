@@ -335,36 +335,36 @@ ALTER TABLE IF EXISTS prod.files_entry
     ON DELETE CASCADE
     NOT VALID;
 
-ALTER TABLE IF EXISTS prod.image_results 
-  ADD FOREIGN KEY (config_id) 
+ALTER TABLE IF EXISTS prod.image_results
+  ADD FOREIGN KEY (config_id)
   REFERENCES prod.pollinator_inference_config (config_id) MATCH SIMPLE
   ON UPDATE NO ACTION
   ON DELETE NO ACTION
   NOT VALID;
 
-ALTER TABLE IF EXISTS prod.flowers  
-  ADD FOREIGN KEY (result_id) 
+ALTER TABLE IF EXISTS prod.flowers
+  ADD FOREIGN KEY (result_id)
   REFERENCES  prod.image_results  (result_id) MATCH SIMPLE
   ON UPDATE NO ACTION
   ON DELETE NO ACTION
   NOT VALID;
 
-ALTER TABLE IF EXISTS prod.pollinators  
-  ADD FOREIGN KEY (flower_id) 
+ALTER TABLE IF EXISTS prod.pollinators
+  ADD FOREIGN KEY (flower_id)
   REFERENCES  prod.flowers  (flower_id) MATCH SIMPLE
   ON UPDATE NO ACTION
   ON DELETE NO ACTION
   NOT VALID;
 
-ALTER TABLE IF EXISTS prod.image_results  
-  ADD FOREIGN KEY (file_id) 
+ALTER TABLE IF EXISTS prod.image_results
+  ADD FOREIGN KEY (file_id)
   REFERENCES  prod.files_image  (file_id) MATCH SIMPLE
   ON UPDATE NO ACTION
   ON DELETE NO ACTION
   NOT VALID;
 
-ALTER TABLE IF EXISTS prod.pollinators  
-  ADD FOREIGN KEY (result_id) 
+ALTER TABLE IF EXISTS prod.pollinators
+  ADD FOREIGN KEY (result_id)
   REFERENCES  prod.image_results  (result_id) MATCH SIMPLE
   ON UPDATE NO ACTION
   ON DELETE NO ACTION
@@ -436,16 +436,52 @@ CREATE OR REPLACE VIEW prod.data_records
 
 END;
 
-GRANT USAGE ON SCHEMA prod TO  mitwelten_internal, mitwelten_rest, mitwelten_upload, mitwelten_public;
+GRANT USAGE ON SCHEMA prod TO
+  mitwelten_internal,
+  mitwelten_rest,
+  mitwelten_upload,
+  mitwelten_public;
 
 GRANT ALL ON ALL TABLES IN SCHEMA prod TO mitwelten_internal;
 GRANT UPDATE ON ALL SEQUENCES IN SCHEMA prod TO mitwelten_internal;
 
-GRANT ALL ON prod.nodes, prod.sensordata_env, prod.sensordata_pax, prod.entries, prod.tags, prod.mm_tags_entries, prod.mm_tags_deployments, prod.files_entry TO mitwelten_rest;
-GRANT SELECT ON prod.birdnet_configs, prod.files_audio, prod.files_image, prod.birdnet_results, prod.birdnet_species_occurrence, prod.birdnet_tasks TO mitwelten_rest;
-GRANT UPDATE ON prod.entries_entry_id_seq, prod.files_entry_file_id_seq, prod.nodes_node_id_seq, prod.tags_tag_id_seq TO mitwelten_rest;
+GRANT ALL ON
+  prod.nodes,
+  prod.sensordata_env,
+  prod.sensordata_pax,
+  prod.entries,
+  prod.tags,
+  prod.mm_tags_entries,
+  prod.mm_tags_deployments,
+  prod.files_entry
+TO mitwelten_rest;
 
-GRANT ALL ON prod.files_audio, prod.files_image, prod.nodes TO mitwelten_upload;
-GRANT UPDATE ON prod.files_audio_file_id_seq, prod.files_image_file_id_seq, prod.nodes_node_id_seq TO mitwelten_upload;
+GRANT SELECT ON
+  prod.birdnet_configs,
+  prod.files_audio,
+  prod.files_image,
+  prod.birdnet_results,
+  prod.birdnet_species_occurrence,
+  prod.birdnet_tasks
+TO mitwelten_rest;
+
+GRANT UPDATE ON
+  prod.entries_entry_id_seq,
+  prod.files_entry_file_id_seq,
+  prod.nodes_node_id_seq,
+  prod.tags_tag_id_seq
+TO mitwelten_rest;
+
+GRANT ALL ON
+  prod.files_audio,
+  prod.files_image,
+  prod.nodes
+TO mitwelten_upload;
+
+GRANT UPDATE ON
+  prod.files_audio_file_id_seq,
+  prod.files_image_file_id_seq,
+  prod.nodes_node_id_seq
+TO mitwelten_upload;
 
 GRANT SELECT ON ALL TABLES IN SCHEMA prod TO mitwelten_public;
