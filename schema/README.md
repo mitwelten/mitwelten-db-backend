@@ -95,10 +95,10 @@ Parametric description (10 attributes) of an environment at a given location.
 
 ### Taxonomy
 
-Taxonomy data imported from [GBIF](https://gbif.org). The levels in the taxonomy
+Taxonomy data imported from [GBIF](https://gbif.org). The levels in the taxonomy (table `taxonomy_tree`)
 refer to eachother by a GBIF defined key, with the most specific instance at
 _species_ level. This data is used to associate scientific descriptors with
-translated labels.
+translated labels (table `taxonomy_labels`).
 
 ```mermaid
 flowchart RL

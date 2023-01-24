@@ -90,7 +90,7 @@ def main():
             else: values.append(taxon[k['gbif']])
         # put usage key into species_id when present (== subspecies)
         if taxon['rank'] == 'SUBSPECIES': values[0] = taxon[keyMap[0]['gbif']]
-        cursor.execute(f'insert into prod.taxonomy_species ({dbfields}) values (%s,%s,%s,%s,%s,%s) on conflict do nothing',
+        cursor.execute(f'insert into prod.taxonomy_tree ({dbfields}) values (%s,%s,%s,%s,%s,%s) on conflict do nothing',
             tuple(values))
         connection.commit()
 

@@ -256,10 +256,10 @@ CREATE TABLE IF NOT EXISTS prod.environment
 );
 
 -- no foreign key constraints for taxonomy tables
--- data is ever only imported, all taxonomy_species ids and
+-- data is ever only imported, all taxonomy_tree ids and
 -- taxonomy_labels.label_id contain the unique GBIF species_id
 -- which may also be used in our own records
-CREATE TABLE IF NOT EXISTS prod.taxonomy_species
+CREATE TABLE IF NOT EXISTS prod.taxonomy_tree
 (
     species_id bigint,
     genus_id bigint,
