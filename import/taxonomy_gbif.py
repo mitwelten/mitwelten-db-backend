@@ -8,12 +8,14 @@ sys.path.append('../')
 import credentials as crd
 
 keyMap = [ # map db fieldnames to keys in GBIF response
-    {'db': 'species_id', 'gbif': 'speciesKey'},
-    {'db': 'genus_id',   'gbif': 'genusKey'},
-    {'db': 'family_id',  'gbif': 'familyKey'},
-    {'db': 'class_id',   'gbif': 'classKey'},
-    {'db': 'phylum_id',  'gbif': 'phylumKey'},
-    {'db': 'kingdom_id', 'gbif': 'kingdomKey'}
+    # for one speciesKey there may exist synonyms in GBIF,
+    # prefer the name that matched with the lookup (canonicalName)
+    {'db': 'species_id', 'gbif': 'speciesKey' , 'gbif_label': 'canonicalName'},
+    {'db': 'genus_id',   'gbif': 'genusKey'   , 'gbif_label': 'genus'},
+    {'db': 'family_id',  'gbif': 'familyKey'  , 'gbif_label': 'family'},
+    {'db': 'class_id',   'gbif': 'classKey'   , 'gbif_label': 'class'},
+    {'db': 'phylum_id',  'gbif': 'phylumKey'  , 'gbif_label': 'phylum'},
+    {'db': 'kingdom_id', 'gbif': 'kingdomKey' , 'gbif_label': 'kingdom'}
 ]
 dbfields = ','.join([x['db'] for x in keyMap]) # field definition for sql insert
 
@@ -61,7 +63,7 @@ def main():
                 labels = fetch_labels(taxon[k['gbif']])
                 # insert
                 cursor.execute('insert into prod.taxonomy_labels (label_id, label_sci, label_de, label_en) values (%s,%s,%s,%s)',
-                    (taxon[k['gbif']], taxon[k['gbif'][:-3]], labels.get('de'), labels.get('en')))
+                    (taxon[k['gbif']], taxon[k['gbif_label']], labels.get('de'), labels.get('en')))
             else: break # if the label exists, the parents exist, too
         cursor.execute(f'insert into prod.taxonomy_species ({dbfields}) values (%s,%s,%s,%s,%s,%s) on conflict do nothing',
             tuple((taxon[k] for k in [x['gbif'] for x in keyMap])))
