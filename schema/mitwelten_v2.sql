@@ -261,13 +261,13 @@ CREATE TABLE IF NOT EXISTS prod.environment
 -- which may also be used in our own records
 CREATE TABLE IF NOT EXISTS prod.taxonomy_species
 (
-    species_id bigint NOT NULL,
-    genus_id bigint NOT NULL,
-    family_id bigint NOT NULL,
-    class_id bigint NOT NULL,
-    phylum_id bigint NOT NULL,
+    species_id bigint,
+    genus_id bigint,
+    family_id bigint,
+    class_id bigint,
+    phylum_id bigint,
     kingdom_id bigint NOT NULL,
-    PRIMARY KEY (species_id)
+    CONSTRAINT unique_definition UNIQUE (species_id, genus_id, family_id, class_id, phylum_id, kingdom_id)
 );
 
 CREATE TABLE IF NOT EXISTS prod.taxonomy_labels
