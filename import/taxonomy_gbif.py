@@ -10,15 +10,15 @@ import credentials as crd
 keyMap = [ # map db fieldnames to keys in GBIF response
     # for one species there may exist subspecies in GBIF,
     # referred to by a usage key, which is used here as identifier in 'species_id'
-    {'db': 'species_id', 'gbif': 'usageKey'   , 'gbif_label': 'scientificName', 'rank': 'SUBSPECIES'},
+    {'db': 'species_id', 'gbif': 'usageKey',   'gbif_label': 'scientificName', 'rank': 'SUBSPECIES'},
     # for one speciesKey there may exist synonyms in GBIF,
     # prefer the name that matched with the lookup (canonicalName)
-    {'db': 'species_id', 'gbif': 'speciesKey' , 'gbif_label': 'canonicalName',  'rank': 'SPECIES'},
-    {'db': 'genus_id',   'gbif': 'genusKey'   , 'gbif_label': 'genus',          'rank': 'GENUS'},
-    {'db': 'family_id',  'gbif': 'familyKey'  , 'gbif_label': 'family',         'rank': 'FAMILY'},
-    {'db': 'class_id',   'gbif': 'classKey'   , 'gbif_label': 'class',          'rank': 'CLASS'},
-    {'db': 'phylum_id',  'gbif': 'phylumKey'  , 'gbif_label': 'phylum',         'rank': 'PHYLUM'},
-    {'db': 'kingdom_id', 'gbif': 'kingdomKey' , 'gbif_label': 'kingdom',        'rank': 'KINGDOM'}
+    {'db': 'species_id', 'gbif': 'speciesKey', 'gbif_label': 'canonicalName',  'rank': 'SPECIES'},
+    {'db': 'genus_id',   'gbif': 'genusKey',   'gbif_label': 'genus',          'rank': 'GENUS'},
+    {'db': 'family_id',  'gbif': 'familyKey',  'gbif_label': 'family',         'rank': 'FAMILY'},
+    {'db': 'class_id',   'gbif': 'classKey',   'gbif_label': 'class',          'rank': 'CLASS'},
+    {'db': 'phylum_id',  'gbif': 'phylumKey',  'gbif_label': 'phylum',         'rank': 'PHYLUM'},
+    {'db': 'kingdom_id', 'gbif': 'kingdomKey', 'gbif_label': 'kingdom',        'rank': 'KINGDOM'}
 ]
 dbfields = ','.join([x['db'] for x in keyMap[1:]]) # field definition for sql insert
 
