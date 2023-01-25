@@ -478,6 +478,7 @@ CREATE OR REPLACE VIEW prod.birdnet_inferred_species_file_taxonomy
     AS
     SELECT r.species,
         r.confidence,
+        d.location,
         f.object_name,
         f.time + ((r.time_start || ' seconds')::interval) AS time_start,
         l1.label_de  species_de,
@@ -505,6 +506,9 @@ CREATE OR REPLACE VIEW prod.birdnet_inferred_species_file_taxonomy
     LEFT JOIN prod.taxonomy_labels l4 ON t.class_id   = l4.label_id
     LEFT JOIN prod.taxonomy_labels l5 ON t.phylum_id  = l5.label_id
     LEFT JOIN prod.taxonomy_labels l6 ON t.kingdom_id = l6.label_id
+
+    -- link location data
+    LEFT JOIN prod.deployments     d ON f.deployment_id = d.deployment_id
 
     -- make sure its a species
     WHERE t.species_id IS NOT NULL;
