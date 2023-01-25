@@ -440,6 +440,10 @@ CREATE INDEX IF NOT EXISTS files_image_sha256_idx
     ON prod.files_image USING btree
     (sha256 ASC NULLS LAST);
 
+-- fast lookup of scientific names for joins of taxonomy
+CREATE INDEX IF NOT EXISTS taxonomy_labels_label_sci_idx
+    ON prod.taxonomy_labels USING btree
+    (label_sci ASC NULLS LAST);
 
 CREATE OR REPLACE VIEW prod.birdnet_input
     AS
