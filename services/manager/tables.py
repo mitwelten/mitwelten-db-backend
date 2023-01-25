@@ -81,6 +81,32 @@ species_day = sqlalchemy.Table(
     sqlalchemy.Column('date',       sqlalchemy.String)
 )
 
+results_file_taxonomy = sqlalchemy.Table(
+    'birdnet_inferred_species_file_taxonomy',
+    metadata,
+    sqlalchemy.Column('species',     sqlalchemy.String(255)),
+    sqlalchemy.Column('location',    GeometryPoint),
+    sqlalchemy.Column('confidence',  sqlalchemy.REAL),
+    sqlalchemy.Column('object_name', sqlalchemy.String),
+    sqlalchemy.Column('time_start',  sqlalchemy.TIMESTAMP),
+    sqlalchemy.Column('species_de',  sqlalchemy.String),
+    sqlalchemy.Column('species_en',  sqlalchemy.String),
+    sqlalchemy.Column('genus',       sqlalchemy.String),
+    sqlalchemy.Column('family',      sqlalchemy.String),
+    sqlalchemy.Column('class',       sqlalchemy.String),
+    sqlalchemy.Column('phylum',      sqlalchemy.String),
+    sqlalchemy.Column('kingdom',     sqlalchemy.String)
+)
+
+taxonomy_labels = sqlalchemy.Table(
+    'taxonomy_labels',
+    metadata,
+    sqlalchemy.Column('label_id',    sqlalchemy.Integer, primary_key=True),
+    sqlalchemy.Column('label_sci',   sqlalchemy.String(255)),
+    sqlalchemy.Column('label_de',    sqlalchemy.String(255)),
+    sqlalchemy.Column('label_en',    sqlalchemy.String(255))
+)
+
 tasks = sqlalchemy.Table(
     'birdnet_tasks',
     metadata,

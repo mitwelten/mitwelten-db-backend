@@ -123,6 +123,17 @@ class Point(BaseModel):
     lat: float = Field(..., example=47.53484943172696, title="Latitude (WGS84)")
     lon: float = Field(..., example=7.612519197679952, title="Longitude (WGS84)")
 
+class ResultFull(Species):
+    location: Point
+    object_name: str
+    species_de: Optional[str] = None
+    species_en: Optional[str] = None
+    genus: Optional[str] = None
+    family: Optional[str] = None
+    _class: Optional[str] = Field(None, alias='class')
+    phylum: Optional[str] = None
+    kingdom: str
+
 class Tag(BaseModel):
     '''
     Annotation

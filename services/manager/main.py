@@ -9,7 +9,7 @@ import sqlalchemy
 from sqlalchemy.sql import insert, update, select, delete, exists, func, and_, not_, desc, text, distinct, LABEL_STYLE_TABLENAME_PLUS_COL
 from sqlalchemy.sql.functions import current_timestamp
 
-from fastapi import FastAPI, Request, status, HTTPException, Depends, Header
+from fastapi import FastAPI, Request, status, HTTPException, Depends, Header, Query
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
@@ -17,8 +17,8 @@ from fastapi.responses import JSONResponse
 from asyncpg.exceptions import ExclusionViolationError, ForeignKeyViolationError
 from asyncpg.types import Range
 
-from tables import nodes, deployments, results, tasks, species, species_day, data_records, files_image, birdnet_input, tags, mm_tag_deployments
-from models import Deployment, Result, Species, DeploymentResponse, DeploymentRequest, Node, ValidationResult, NodeValidationRequest, ImageValidationRequest, ImageValidationResponse, ImageRequest, QueueInputDefinition, QueueUpdateDefinition
+from tables import nodes, deployments, results, tasks, species, species_day, data_records, files_image, birdnet_input, tags, mm_tag_deployments, results_file_taxonomy, taxonomy_labels
+from models import Deployment, Result, Species, DeploymentResponse, DeploymentRequest, Node, ValidationResult, NodeValidationRequest, ImageValidationRequest, ImageValidationResponse, ImageRequest, QueueInputDefinition, QueueUpdateDefinition, ResultFull
 
 sys.path.append('../../')
 import credentials as crd
@@ -132,13 +132,23 @@ async def read_notes():
     query = results.select().where(results.c.confidence > 0.9)
     return await database.fetch_all(query)
 
+@app.get('/results_full/', response_model=List[ResultFull], tags=['inferrence'])
+async def read_notes(offset: int = 0, pagesize: int = Query(1000, gte=0, lte=1000)):
+    query = results_file_taxonomy.select().where(results.c.confidence > 0.9).\
+        limit(pagesize).offset(offset)
+    return await database.fetch_all(query)
+
 @app.get('/species/', tags=['inferrence'])
 async def read_species(start: int = 0, end: int = 0, conf: float = 0.9):
     query = select(results.c.species, func.count(results.c.species).label('count')).\
         where(results.c.confidence >= conf).\
         group_by(results.c.species).\
-        order_by(desc('count'))
-    return await database.fetch_all(query)
+        subquery(name='species')
+    labelled_query = select(query).\
+        outerjoin(taxonomy_labels, query.c.species == taxonomy_labels.c.label_sci).\
+        order_by(desc(query.c.count)).\
+        with_only_columns(query, taxonomy_labels.c.label_de, taxonomy_labels.c.label_en)
+    return await database.fetch_all(labelled_query)
 
 @app.get('/species/{spec}', tags=['inferrence']) # , response_model=List[Species]
 async def read_species_detail(spec: str, start: int = 0, end: int = 0, conf: float = 0.9):
@@ -146,8 +156,11 @@ async def read_species_detail(spec: str, start: int = 0, end: int = 0, conf: flo
             func.max(species.c.time_start).label('latest'),
             func.count(species.c.time_start).label('count')).\
         where(and_(species.c.species == spec, species.c.confidence >= conf)).\
-        group_by(species.c.species)
-    return await database.fetch_all(query)
+        group_by(species.c.species).subquery(name='species')
+    labelled_query = select(query).\
+        outerjoin(taxonomy_labels, query.c.species == taxonomy_labels.c.label_sci).\
+        with_only_columns(query, taxonomy_labels.c.label_de, taxonomy_labels.c.label_en)
+    return await database.fetch_all(labelled_query)
 
 @app.get('/species/{spec}/day/', tags=['inferrence']) # , response_model=List[Species]
 async def read_species_day(spec: str, start: int = 0, end: int = 0, conf: float = 0.9):
@@ -155,8 +168,12 @@ async def read_species_day(spec: str, start: int = 0, end: int = 0, conf: float 
             func.count(species_day.c.species).label('count')).\
         where(and_(species_day.c.species == spec, species_day.c.confidence >= conf)).\
         group_by(species_day.c.species, species_day.c.date).\
-        order_by(species_day.c.date)
-    return await database.fetch_all(query)
+        subquery(name='species')
+    labelled_query = select(query).\
+        outerjoin(taxonomy_labels, query.c.species == taxonomy_labels.c.label_sci).\
+        order_by(query.c.date).\
+        with_only_columns(query, taxonomy_labels.c.label_de, taxonomy_labels.c.label_en)
+    return await database.fetch_all(labelled_query)
 
 @app.get('/queue/progress/', tags=['queue'])
 async def read_progress():
