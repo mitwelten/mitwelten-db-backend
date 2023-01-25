@@ -474,6 +474,41 @@ CREATE OR REPLACE VIEW prod.birdnet_inferred_species_day
         to_char(s.time_start at time zone 'UTC', 'YYYY-mm-DD') AS date
     FROM prod.birdnet_inferred_species s;
 
+CREATE OR REPLACE VIEW prod.birdnet_inferred_species_file_taxonomy
+    AS
+    SELECT r.species,
+        r.confidence,
+        f.object_name,
+        f.time + ((r.time_start || ' seconds')::interval) AS time_start,
+        l1.label_de  species_de,
+        l1.label_en  species_en,
+        l2.label_sci genus,
+        l3.label_sci family,
+        l4.label_sci class,
+        l5.label_sci phylum,
+        l6.label_sci kingdom
+
+    FROM prod.birdnet_results r
+
+    -- link file information
+    LEFT JOIN prod.files_audio     f  ON r.file_id    = f.file_id
+
+    -- link to species label (scientific name in GBIF taxonomy)
+    LEFT JOIN prod.taxonomy_labels l1 ON r.species    = l1.label_sci
+
+    -- link to species tree (species key to GBIF taxonomy tree)
+    LEFT JOIN prod.taxonomy_tree   t  ON l1.label_id  = t.species_id
+
+    -- link taxonomy tree keys to scientific labels
+    LEFT JOIN prod.taxonomy_labels l2 ON t.genus_id   = l2.label_id
+    LEFT JOIN prod.taxonomy_labels l3 ON t.family_id  = l3.label_id
+    LEFT JOIN prod.taxonomy_labels l4 ON t.class_id   = l4.label_id
+    LEFT JOIN prod.taxonomy_labels l5 ON t.phylum_id  = l5.label_id
+    LEFT JOIN prod.taxonomy_labels l6 ON t.kingdom_id = l6.label_id
+
+    -- make sure its a species
+    WHERE t.species_id IS NOT NULL;
+
 CREATE OR REPLACE VIEW prod.data_records
     AS
     SELECT file_id AS record_id, deployment_id, 'audio' AS type
