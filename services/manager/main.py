@@ -127,6 +127,10 @@ async def shutdown():
 def login(login_state: bool = Depends(check_authentication)):
     return login_state
 
+# ------------------------------------------------------------------------------
+# BIRDNET RESULTS
+# ------------------------------------------------------------------------------
+
 @app.get('/results/', response_model=List[Result], tags=['inferrence'])
 async def read_notes():
     query = results.select().where(results.c.confidence > 0.9)
@@ -174,6 +178,10 @@ async def read_species_day(spec: str, start: int = 0, end: int = 0, conf: float 
         order_by(query.c.date).\
         with_only_columns(query, taxonomy_labels.c.label_de, taxonomy_labels.c.label_en)
     return await database.fetch_all(labelled_query)
+
+# ------------------------------------------------------------------------------
+# QUEUE MANAGER
+# ------------------------------------------------------------------------------
 
 @app.get('/queue/progress/', tags=['queue'])
 async def read_progress():
@@ -331,6 +339,9 @@ async def read_queue_detail(node_label: str):
 
     return { 'node_label': node_label, 'file_stats': file_stats, 'task_stats': task_stats, 'result_stats': result_stats }
 
+# ------------------------------------------------------------------------------
+# NODES
+# ------------------------------------------------------------------------------
 
 @app.get('/nodes', tags=['deployments'])
 async def read_nodes():
@@ -401,6 +412,10 @@ async def delete_node(id: int) -> None:
         raise HTTPException(status_code=409, detail=str(e))
     else:
         return True
+
+# ------------------------------------------------------------------------------
+# DEPLOYMENTS
+# ------------------------------------------------------------------------------
 
 def from_inclusive_range(period: Range) -> Range:
     return Range(period.lower, None if period.upper == None else period.upper - timedelta(days=1))
@@ -504,6 +519,10 @@ async def upsert_deployment(body: DeploymentRequest) -> None:
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+# ------------------------------------------------------------------------------
+# VALIDATORS
+# ------------------------------------------------------------------------------
+
 @app.put('/validate/deployment', response_model=ValidationResult, tags=['deployments'])
 async def validate_deployment(body: DeploymentRequest) -> None:
     transaction = await database.transaction()
@@ -603,6 +622,10 @@ async def check_image(body: ImageValidationRequest) -> None:
                 **duplicate_result._mapping,
                 'deployment_id': None, 'node_deployed': False }
 
+# ------------------------------------------------------------------------------
+# DATA INPUT (INGEST)
+# ------------------------------------------------------------------------------
+
 @app.get('/ingest/image/{sha256}', tags=['ingest'])
 async def ingest_image(sha256: str) -> None:
     return await database.fetch_one(select(files_image).where(files_image.c.sha256 == sha256))
@@ -632,6 +655,9 @@ async def ingest_image(body: ImageRequest) -> None:
     else:
         await transaction.commit()
 
+# ------------------------------------------------------------------------------
+# ROOT
+# ------------------------------------------------------------------------------
 
 @app.get('/', include_in_schema=False)
 async def root():
