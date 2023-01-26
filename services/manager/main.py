@@ -132,12 +132,12 @@ def login(login_state: bool = Depends(check_authentication)):
 # ------------------------------------------------------------------------------
 
 @app.get('/results/', response_model=List[Result], tags=['inferrence'])
-async def read_notes():
+async def read_results():
     query = results.select().where(results.c.confidence > 0.9)
     return await database.fetch_all(query)
 
 @app.get('/results_full/', response_model=List[ResultFull], tags=['inferrence'])
-async def read_notes(offset: int = 0, pagesize: int = Query(1000, gte=0, lte=1000)):
+async def read_results_full(offset: int = 0, pagesize: int = Query(1000, gte=0, lte=1000)):
     query = results_file_taxonomy.select().where(results.c.confidence > 0.9).\
         limit(pagesize).offset(offset)
     return await database.fetch_all(query)
