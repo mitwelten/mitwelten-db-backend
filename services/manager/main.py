@@ -17,8 +17,8 @@ from fastapi.responses import JSONResponse
 from asyncpg.exceptions import ExclusionViolationError, ForeignKeyViolationError
 from asyncpg.types import Range
 
-from tables import nodes, deployments, results, tasks, species, species_day, data_records, files_image, birdnet_input, tags, mm_tag_deployments, results_file_taxonomy, taxonomy_labels
-from models import Deployment, Result, Species, DeploymentResponse, DeploymentRequest, Node, ValidationResult, NodeValidationRequest, ImageValidationRequest, ImageValidationResponse, ImageRequest, QueueInputDefinition, QueueUpdateDefinition, ResultFull
+from tables import nodes, deployments, results, tasks, species, species_day, data_records, files_image, birdnet_input, tags, mm_tag_deployments, results_file_taxonomy, taxonomy_labels, taxonomy_tree
+from models import Deployment, Result, Species, DeploymentResponse, DeploymentRequest, Node, ValidationResult, NodeValidationRequest, ImageValidationRequest, ImageValidationResponse, ImageRequest, QueueInputDefinition, QueueUpdateDefinition, ResultFull, Taxon
 
 sys.path.append('../../')
 import credentials as crd
@@ -59,6 +59,10 @@ tags_metadata = [
     {
         'name': 'inferrence',
         'description': 'Machine-Learning inference results',
+    },
+    {
+        'name': 'taxonomy',
+        'description': 'Look-up of taxonomy keywords / relationships',
     },
     {
         'name': 'queue',
@@ -178,6 +182,51 @@ async def read_species_day(spec: str, start: int = 0, end: int = 0, conf: float 
         order_by(query.c.date).\
         with_only_columns(query, taxonomy_labels.c.label_de, taxonomy_labels.c.label_en)
     return await database.fetch_all(labelled_query)
+
+# ------------------------------------------------------------------------------
+# TAXONOMY LOOKUP
+# ------------------------------------------------------------------------------
+
+@app.get('/taxonomy/id/{identifier}', response_model=List[Taxon],
+    summary='Taxonomy lookup by numeric identifier (GBIF key)',
+    description='Lookup taxonomy of a given numeric __GBIF key__, returning the taxon tree with translated labels',
+    tags=['taxonomy'])
+async def taxonomy_by_id(identifier: int) -> List[Taxon]:
+    keyMap = [ # map db fieldnames to keys in GBIF response
+        # for one species there may exist subspecies in GBIF,
+        # referred to by a usage key, which is used here as identifier in 'species_id'
+        {'db': 'species_id', 'gbif': 'usageKey',   'gbif_label': 'scientificName', 'rank': 'SUBSPECIES'},
+        # for one speciesKey there may exist synonyms in GBIF,
+        # prefer the name that matched with the lookup (canonicalName)
+        {'db': 'species_id', 'gbif': 'speciesKey', 'gbif_label': 'canonicalName',  'rank': 'SPECIES'},
+        {'db': 'genus_id',   'gbif': 'genusKey',   'gbif_label': 'genus',          'rank': 'GENUS'},
+        {'db': 'family_id',  'gbif': 'familyKey',  'gbif_label': 'family',         'rank': 'FAMILY'},
+        {'db': 'class_id',   'gbif': 'classKey',   'gbif_label': 'class',          'rank': 'CLASS'},
+        {'db': 'phylum_id',  'gbif': 'phylumKey',  'gbif_label': 'phylum',         'rank': 'PHYLUM'},
+        {'db': 'kingdom_id', 'gbif': 'kingdomKey', 'gbif_label': 'kingdom',        'rank': 'KINGDOM'}
+    ]
+    # lookup tree
+    tree_columns = ','.join(taxonomy_tree.c.keys())
+    query = select(taxonomy_tree).where(text(f':identifier IN ({tree_columns})').bindparams(identifier=identifier)).limit(1)
+    tree = await database.fetch_one(query)
+    tree = [tree._mapping[k['db']] for k in keyMap[1:]]
+    # filter tree until id matches
+    tree_offset = tree.index(identifier)
+    # query labels for remaining ids
+    label_query = select(taxonomy_labels).where(taxonomy_labels.c.label_id.in_(tuple(tree[tree_offset:])))
+    labels = await database.fetch_all(label_query)
+    labels = {label['label_id']: label for label in labels}
+    # return array of tree, with rank info added
+    return [{**dict(labels[t]), 'rank': keyMap[tree_offset+i+1]['rank']} for i,t in enumerate(tree[tree_offset:])]
+
+@app.get('/taxonomy/sci/{identifier}', response_model=List[Taxon],
+    summary='Taxonomy lookup by scientific identifier',
+    description='Lookup taxonomy of a given __scientific identifier__, returning the taxon tree with translated labels',
+    tags=['taxonomy'])
+async def taxonomy_by_sci(identifier: str) -> List[Taxon]:
+    query = select(taxonomy_labels.c.label_id).where(taxonomy_labels.c.label_sci == identifier)
+    result = await database.fetch_one(query)
+    return await taxonomy_by_id(result['label_id'])
 
 # ------------------------------------------------------------------------------
 # QUEUE MANAGER

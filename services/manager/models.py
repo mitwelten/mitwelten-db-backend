@@ -1,4 +1,5 @@
 from typing import Optional, List, Tuple, Literal
+from enum import Enum
 from datetime import datetime
 from sqlalchemy.dialects.postgresql import TSTZRANGE
 from pydantic import BaseModel, Field, constr, PositiveInt
@@ -133,6 +134,22 @@ class ResultFull(Species):
     _class: Optional[str] = Field(None, alias='class')
     phylum: Optional[str] = None
     kingdom: str
+
+class RankEnum(str, Enum):
+    kingdom = 'KINGDOM'
+    phylum = 'PHYLUM'
+    _class = 'CLASS'
+    family = 'FAMILY'
+    genus = 'GENUS'
+    species = 'SPECIES'
+    subspecies = 'SUBSPECIES'
+
+class Taxon(BaseModel):
+    label_id: int
+    label_sci: str
+    label_de: Optional[str]
+    label_en: Optional[str]
+    rank: RankEnum
 
 class Tag(BaseModel):
     '''
