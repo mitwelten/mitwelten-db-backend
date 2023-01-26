@@ -6,10 +6,15 @@ from typing import List, Optional
 import databases
 
 import sqlalchemy
-from sqlalchemy.sql import insert, update, select, delete, exists, func, and_, not_, desc, text, distinct, LABEL_STYLE_TABLENAME_PLUS_COL
+from sqlalchemy.sql import (
+    insert, update, select, delete, exists, func, and_, not_, desc,
+    text, distinct, LABEL_STYLE_TABLENAME_PLUS_COL
+)
 from sqlalchemy.sql.functions import current_timestamp
 
-from fastapi import FastAPI, Request, status, HTTPException, Depends, Header, Query
+from fastapi import (
+    FastAPI, Request, status, HTTPException, Depends, Header, Query
+)
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
@@ -17,8 +22,17 @@ from fastapi.responses import JSONResponse
 from asyncpg.exceptions import ExclusionViolationError, ForeignKeyViolationError
 from asyncpg.types import Range
 
-from tables import nodes, deployments, results, tasks, species, species_day, data_records, files_image, birdnet_input, tags, mm_tag_deployments, results_file_taxonomy, taxonomy_labels, taxonomy_tree
-from models import Deployment, Result, Species, DeploymentResponse, DeploymentRequest, Node, ValidationResult, NodeValidationRequest, ImageValidationRequest, ImageValidationResponse, ImageRequest, QueueInputDefinition, QueueUpdateDefinition, ResultFull, Taxon
+from tables import (
+    nodes, deployments, results, tasks, species, species_day, data_records,
+    files_image, birdnet_input, tags, mm_tag_deployments,
+    results_file_taxonomy, taxonomy_labels, taxonomy_tree
+)
+from models import (
+    Deployment, Result, Species, DeploymentResponse, DeploymentRequest, Node,
+    ValidationResult, NodeValidationRequest, ImageValidationRequest,
+    ImageValidationResponse, ImageRequest, QueueInputDefinition,
+    QueueUpdateDefinition, ResultFull, Taxon
+)
 
 sys.path.append('../../')
 import credentials as crd
