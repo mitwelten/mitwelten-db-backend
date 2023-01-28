@@ -1,6 +1,7 @@
 import sys
 import secrets
 from datetime import timedelta
+from itertools import filterfalse, groupby
 from typing import List, Optional
 import databases
 
@@ -16,11 +17,26 @@ from fastapi.responses import JSONResponse
 from asyncpg.exceptions import ExclusionViolationError, ForeignKeyViolationError
 from asyncpg.types import Range
 
-from tables import nodes, deployments, results, tasks, species, species_day, data_records, files_image, birdnet_input
+from tables import nodes, deployments, results, tasks, species, species_day, data_records, files_image, birdnet_input, tags, mm_tag_deployments
 from models import Deployment, Result, Species, DeploymentResponse, DeploymentRequest, Node, ValidationResult, NodeValidationRequest, ImageValidationRequest, ImageValidationResponse, ImageRequest, QueueInputDefinition, QueueUpdateDefinition
 
 sys.path.append('../../')
 import credentials as crd
+
+def unique_everseen(iterable, key=None):
+    '''List unique elements, preserving order. Remember all elements ever seen.'''
+    seen = set()
+    seen_add = seen.add
+    if key is None:
+        for element in filterfalse(seen.__contains__, iterable):
+            seen_add(element)
+            yield element
+    else:
+        for element in iterable:
+            k = key(element)
+            if k not in seen:
+                seen_add(k)
+                yield element
 
 class RecordsDependencyException(BaseException):
     ...
@@ -378,16 +394,21 @@ def to_inclusive_range(period: Range) -> Range:
 @app.get('/deployments', response_model=List[DeploymentResponse], tags=['deployments'])
 async def read_deployments(node_id: Optional[int] = None) -> List[DeploymentResponse]:
 
-    query = select(deployments.alias('d').outerjoin(nodes.alias('n'))).\
+    query = select(deployments.alias('d').outerjoin(nodes.alias('n')).\
+        outerjoin(mm_tag_deployments.alias('mm')).outerjoin(tags.alias('t'))).\
         set_label_style(LABEL_STYLE_TABLENAME_PLUS_COL)
     if node_id != None:
         query = query.where(text('d.node_id = :node_id').bindparams(node_id=node_id))
     result = await database.fetch_all(query)
     response = []
-    for r in result:
+    for key, grp in groupby(result, key=lambda x: x['d_deployment_id']):
+        grp = list(grp)
+        t_l = unique_everseen(grp, lambda x: x['t_tag_id'])
+        r = dict(grp[0])
         d = { c: r['d_'+c] for c in deployments.columns.keys() }
         d['node'] = { c: r['n_'+c] for c in nodes.columns.keys() }
         d['period'] = from_inclusive_range(d['period'])
+        d['tags'] = [{'id': t['t_tag_id'], 'name': t['t_name']} for t in t_l if t['t_tag_id'] != None]
         response.append(d)
     return response
 

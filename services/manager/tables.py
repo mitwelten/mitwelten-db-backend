@@ -3,7 +3,7 @@ import sqlalchemy
 
 from asyncpg.pgproto.types import Point as PgPoint
 
-from sqlalchemy import func
+from sqlalchemy import func, ForeignKey
 from sqlalchemy.dialects.postgresql import TSTZRANGE
 from sqlalchemy.types import UserDefinedType
 
@@ -122,6 +122,24 @@ deployments = sqlalchemy.Table(
     sqlalchemy.Column('location',      GeometryPoint,      nullable=False),
     sqlalchemy.Column('description',   sqlalchemy.Text,    nullable=True),
     sqlalchemy.Column('period',        TSTZRANGE,          nullable=False),
+    schema=crd.db.schema
+)
+
+tags = sqlalchemy.Table(
+    'tags',
+    metadata,
+    sqlalchemy.Column('tag_id',      sqlalchemy.Integer,     primary_key=True),
+    sqlalchemy.Column('name',        sqlalchemy.String(255), nullable=False),
+    sqlalchemy.Column('created_at',  sqlalchemy.TIMESTAMP,   nullable=False),
+    sqlalchemy.Column('updated_at',  sqlalchemy.TIMESTAMP,   nullable=False),
+    schema=crd.db.schema
+)
+
+mm_tag_deployments = sqlalchemy.Table(
+    'mm_tags_deployments',
+    metadata,
+    sqlalchemy.Column('tags_tag_id',               None, ForeignKey(tags.c.tag_id)),
+    sqlalchemy.Column('deployments_deployment_id', None, ForeignKey(deployments.c.deployment_id)),
     schema=crd.db.schema
 )
 
