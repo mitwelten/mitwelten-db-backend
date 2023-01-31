@@ -1,11 +1,15 @@
 import sys
 import json
 import argparse
+import requests
 import psycopg2 as pg
 from pygbif import species as species
 
 sys.path.append('../')
 import credentials as crd
+
+wikispecies_url = 'https://species.wikipedia.org/w/api.php?action=query&format=json&piprop=original&redirects&prop=pageimages&titles={}'
+wikilicense_url = 'https://commons.wikimedia.org/w/api.php?action=query&titles=File:{}&prop=imageinfo&iiprop=user|userid|canonicaltitle|url|extmetadata&format=json'
 
 keyMap = [ # map db fieldnames to keys in GBIF response
     # for one species there may exist subspecies in GBIF,
@@ -47,6 +51,24 @@ def fetch_labels(key):
         else: offset += 100
     return labels
 
+def fetch_image_url(label_sci, key):
+    res = requests.get(wikispecies_url.format(label_sci)).json()
+    page = res['query']['pages'][next(iter(res['query']['pages']))]
+    # check species.wikimedia.org
+    if 'original' in page and 'source' in page['original'] and page['original']['source']:
+        return page['original']['source']
+    else: # check gbif.org
+        gbif_images = []
+        offset = 0
+        while True:
+            data = species.name_usage(key, data='media', offset=offset)
+            gbif_images.extend(filter(lambda x: x['type'] == 'StillImage', data['results']))
+            if data['endOfRecords']: break
+            else: offset += 100
+            # TODO: incorporate fields 'license', 'rightsHolder', 'source'
+        if len(gbif_images): return gbif_images[0]['identifier']
+        else: return None
+
 def main():
     parser = argparse.ArgumentParser(description='Import taxonomy for inferred species from GBIF')
     args = parser.parse_args()
@@ -79,9 +101,10 @@ def main():
             if not len(label):
                 # query
                 labels = fetch_labels(taxon[k['gbif']])
+                image_url = fetch_image_url(taxon[k['gbif_label']], taxon[k['gbif']])
                 # insert
-                cursor.execute('insert into prod.taxonomy_data (datum_id, label_sci, label_de, label_en) values (%s,%s,%s,%s)',
-                    (taxon[k['gbif']], taxon[k['gbif_label']], labels.get('de'), labels.get('en')))
+                cursor.execute('insert into prod.taxonomy_data (datum_id, label_sci, label_de, label_en, image_url) values (%s,%s,%s,%s,%s)',
+                    (taxon[k['gbif']], taxon[k['gbif_label']], labels.get('de'), labels.get('en'), image_url))
             else: break # if the label exists, the parents exist, too
         # account for null values if higher order taxon
         values = []
