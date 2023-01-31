@@ -81,6 +81,50 @@ species_day = sqlalchemy.Table(
     sqlalchemy.Column('date',       sqlalchemy.String)
 )
 
+results_file_taxonomy = sqlalchemy.Table(
+    'birdnet_inferred_species_file_taxonomy',
+    metadata,
+    sqlalchemy.Column('species',     sqlalchemy.String(255)),
+    sqlalchemy.Column('location',    GeometryPoint),
+    sqlalchemy.Column('confidence',  sqlalchemy.REAL),
+    sqlalchemy.Column('object_name', sqlalchemy.String),
+    sqlalchemy.Column('object_time', sqlalchemy.TIMESTAMP),
+    sqlalchemy.Column('time_start_relative', sqlalchemy.REAL),
+    sqlalchemy.Column('duration',    sqlalchemy.REAL),
+    sqlalchemy.Column('time_start',  sqlalchemy.TIMESTAMP),
+    sqlalchemy.Column('image_url',   sqlalchemy.String),
+    sqlalchemy.Column('species_de',  sqlalchemy.String),
+    sqlalchemy.Column('species_en',  sqlalchemy.String),
+    sqlalchemy.Column('genus',       sqlalchemy.String),
+    sqlalchemy.Column('family',      sqlalchemy.String),
+    sqlalchemy.Column('class',       sqlalchemy.String),
+    sqlalchemy.Column('phylum',      sqlalchemy.String),
+    sqlalchemy.Column('kingdom',     sqlalchemy.String)
+)
+
+taxonomy_tree = sqlalchemy.Table(
+    'taxonomy_tree',
+    metadata,
+    sqlalchemy.Column('species_id',  sqlalchemy.Integer),
+    sqlalchemy.Column('genus_id',    sqlalchemy.Integer),
+    sqlalchemy.Column('family_id',   sqlalchemy.Integer),
+    sqlalchemy.Column('class_id',    sqlalchemy.Integer),
+    sqlalchemy.Column('phylum_id',   sqlalchemy.Integer),
+    sqlalchemy.Column('kingdom_id',  sqlalchemy.Integer),
+)
+
+taxonomy_data = sqlalchemy.Table(
+    'taxonomy_data',
+    metadata,
+    sqlalchemy.Column('datum_id',    sqlalchemy.Integer, primary_key=True),
+    sqlalchemy.Column('label_sci',   sqlalchemy.String(255)),
+    sqlalchemy.Column('label_de',    sqlalchemy.String(255)),
+    sqlalchemy.Column('label_en',    sqlalchemy.String(255)),
+    sqlalchemy.Column('image_url',   sqlalchemy.String(255)),
+    sqlalchemy.Column('created_at',  sqlalchemy.TIMESTAMP, nullable=False),
+    sqlalchemy.Column('updated_at',  sqlalchemy.TIMESTAMP, nullable=False),
+)
+
 tasks = sqlalchemy.Table(
     'birdnet_tasks',
     metadata,

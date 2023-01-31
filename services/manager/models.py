@@ -1,4 +1,5 @@
 from typing import Optional, List, Tuple, Literal
+from enum import Enum
 from datetime import datetime
 from sqlalchemy.dialects.postgresql import TSTZRANGE
 from pydantic import BaseModel, Field, constr, PositiveInt
@@ -122,6 +123,38 @@ class Point(BaseModel):
     '''
     lat: float = Field(..., example=47.53484943172696, title="Latitude (WGS84)")
     lon: float = Field(..., example=7.612519197679952, title="Longitude (WGS84)")
+
+class ResultFull(Species):
+    location: Point
+    object_name: str
+    object_time: datetime
+    time_start_relative: float
+    duration: float
+    image_url: Optional[str]
+    species_de: Optional[str] = None
+    species_en: Optional[str] = None
+    genus: Optional[str] = None
+    family: Optional[str] = None
+    _class: Optional[str] = Field(None, alias='class')
+    phylum: Optional[str] = None
+    kingdom: str
+
+class RankEnum(str, Enum):
+    kingdom = 'KINGDOM'
+    phylum = 'PHYLUM'
+    _class = 'CLASS'
+    family = 'FAMILY'
+    genus = 'GENUS'
+    species = 'SPECIES'
+    subspecies = 'SUBSPECIES'
+
+class Taxon(BaseModel):
+    datum_id: int
+    label_sci: str
+    label_de: Optional[str]
+    label_en: Optional[str]
+    image_url: Optional[str]
+    rank: RankEnum
 
 class Tag(BaseModel):
     '''

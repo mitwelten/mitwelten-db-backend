@@ -6,10 +6,15 @@ from typing import List, Optional
 import databases
 
 import sqlalchemy
-from sqlalchemy.sql import insert, update, select, delete, exists, func, and_, not_, desc, text, distinct, LABEL_STYLE_TABLENAME_PLUS_COL
+from sqlalchemy.sql import (
+    insert, update, select, delete, exists, func, and_, not_, desc,
+    text, distinct, LABEL_STYLE_TABLENAME_PLUS_COL
+)
 from sqlalchemy.sql.functions import current_timestamp
 
-from fastapi import FastAPI, Request, status, HTTPException, Depends, Header
+from fastapi import (
+    FastAPI, Request, status, HTTPException, Depends, Header, Query
+)
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
@@ -17,8 +22,17 @@ from fastapi.responses import JSONResponse
 from asyncpg.exceptions import ExclusionViolationError, ForeignKeyViolationError
 from asyncpg.types import Range
 
-from tables import nodes, deployments, results, tasks, species, species_day, data_records, files_image, birdnet_input, tags, mm_tag_deployments
-from models import Deployment, Result, Species, DeploymentResponse, DeploymentRequest, Node, ValidationResult, NodeValidationRequest, ImageValidationRequest, ImageValidationResponse, ImageRequest, QueueInputDefinition, QueueUpdateDefinition
+from tables import (
+    nodes, deployments, results, tasks, species, species_day, data_records,
+    files_image, birdnet_input, tags, mm_tag_deployments,
+    results_file_taxonomy, taxonomy_data, taxonomy_tree
+)
+from models import (
+    Deployment, Result, Species, DeploymentResponse, DeploymentRequest, Node,
+    ValidationResult, NodeValidationRequest, ImageValidationRequest,
+    ImageValidationResponse, ImageRequest, QueueInputDefinition,
+    QueueUpdateDefinition, ResultFull, Taxon
+)
 
 sys.path.append('../../')
 import credentials as crd
@@ -59,6 +73,10 @@ tags_metadata = [
     {
         'name': 'inferrence',
         'description': 'Machine-Learning inference results',
+    },
+    {
+        'name': 'taxonomy',
+        'description': 'Look-up of taxonomy keywords / relationships',
     },
     {
         'name': 'queue',
@@ -127,9 +145,20 @@ async def shutdown():
 def login(login_state: bool = Depends(check_authentication)):
     return login_state
 
+# ------------------------------------------------------------------------------
+# BIRDNET RESULTS
+# ------------------------------------------------------------------------------
+
 @app.get('/results/', response_model=List[Result], tags=['inferrence'])
-async def read_notes():
-    query = results.select().where(results.c.confidence > 0.9)
+async def read_results(offset: int = 0, pagesize: int = Query(1000, gte=0, lte=1000)):
+    query = results.select().where(results.c.confidence > 0.9).\
+        limit(pagesize).offset(offset)
+    return await database.fetch_all(query)
+
+@app.get('/results_full/', response_model=List[ResultFull], tags=['inferrence'])
+async def read_results_full(offset: int = 0, pagesize: int = Query(1000, gte=0, lte=1000)):
+    query = results_file_taxonomy.select().where(results.c.confidence > 0.9).\
+        limit(pagesize).offset(offset)
     return await database.fetch_all(query)
 
 @app.get('/species/', tags=['inferrence'])
@@ -137,8 +166,12 @@ async def read_species(start: int = 0, end: int = 0, conf: float = 0.9):
     query = select(results.c.species, func.count(results.c.species).label('count')).\
         where(results.c.confidence >= conf).\
         group_by(results.c.species).\
-        order_by(desc('count'))
-    return await database.fetch_all(query)
+        subquery(name='species')
+    labelled_query = select(query).\
+        outerjoin(taxonomy_data, query.c.species == taxonomy_data.c.label_sci).\
+        order_by(desc(query.c.count)).\
+        with_only_columns(query, taxonomy_data.c.label_de, taxonomy_data.c.label_en, taxonomy_data.c.image_url)
+    return await database.fetch_all(labelled_query)
 
 @app.get('/species/{spec}', tags=['inferrence']) # , response_model=List[Species]
 async def read_species_detail(spec: str, start: int = 0, end: int = 0, conf: float = 0.9):
@@ -146,8 +179,11 @@ async def read_species_detail(spec: str, start: int = 0, end: int = 0, conf: flo
             func.max(species.c.time_start).label('latest'),
             func.count(species.c.time_start).label('count')).\
         where(and_(species.c.species == spec, species.c.confidence >= conf)).\
-        group_by(species.c.species)
-    return await database.fetch_all(query)
+        group_by(species.c.species).subquery(name='species')
+    labelled_query = select(query).\
+        outerjoin(taxonomy_data, query.c.species == taxonomy_data.c.label_sci).\
+        with_only_columns(query, taxonomy_data.c.label_de, taxonomy_data.c.label_en, taxonomy_data.c.image_url)
+    return await database.fetch_all(labelled_query)
 
 @app.get('/species/{spec}/day/', tags=['inferrence']) # , response_model=List[Species]
 async def read_species_day(spec: str, start: int = 0, end: int = 0, conf: float = 0.9):
@@ -155,8 +191,61 @@ async def read_species_day(spec: str, start: int = 0, end: int = 0, conf: float 
             func.count(species_day.c.species).label('count')).\
         where(and_(species_day.c.species == spec, species_day.c.confidence >= conf)).\
         group_by(species_day.c.species, species_day.c.date).\
-        order_by(species_day.c.date)
-    return await database.fetch_all(query)
+        subquery(name='species')
+    labelled_query = select(query).\
+        outerjoin(taxonomy_data, query.c.species == taxonomy_data.c.label_sci).\
+        order_by(query.c.date).\
+        with_only_columns(query, taxonomy_data.c.label_de, taxonomy_data.c.label_en)
+    return await database.fetch_all(labelled_query)
+
+# ------------------------------------------------------------------------------
+# TAXONOMY LOOKUP
+# ------------------------------------------------------------------------------
+
+@app.get('/taxonomy/id/{identifier}', response_model=List[Taxon],
+    summary='Taxonomy lookup by numeric identifier (GBIF key)',
+    description='Lookup taxonomy of a given numeric __GBIF key__, returning the taxon tree with translated labels',
+    tags=['taxonomy'])
+async def taxonomy_by_id(identifier: int) -> List[Taxon]:
+    keyMap = [ # map db fieldnames to keys in GBIF response
+        # for one species there may exist subspecies in GBIF,
+        # referred to by a usage key, which is used here as identifier in 'species_id'
+        {'db': 'species_id', 'gbif': 'usageKey',   'gbif_label': 'scientificName', 'rank': 'SUBSPECIES'},
+        # for one speciesKey there may exist synonyms in GBIF,
+        # prefer the name that matched with the lookup (canonicalName)
+        {'db': 'species_id', 'gbif': 'speciesKey', 'gbif_label': 'canonicalName',  'rank': 'SPECIES'},
+        {'db': 'genus_id',   'gbif': 'genusKey',   'gbif_label': 'genus',          'rank': 'GENUS'},
+        {'db': 'family_id',  'gbif': 'familyKey',  'gbif_label': 'family',         'rank': 'FAMILY'},
+        {'db': 'class_id',   'gbif': 'classKey',   'gbif_label': 'class',          'rank': 'CLASS'},
+        {'db': 'phylum_id',  'gbif': 'phylumKey',  'gbif_label': 'phylum',         'rank': 'PHYLUM'},
+        {'db': 'kingdom_id', 'gbif': 'kingdomKey', 'gbif_label': 'kingdom',        'rank': 'KINGDOM'}
+    ]
+    # lookup tree
+    tree_columns = ','.join(taxonomy_tree.c.keys())
+    query = select(taxonomy_tree).where(text(f':identifier IN ({tree_columns})').bindparams(identifier=identifier)).limit(1)
+    tree = await database.fetch_one(query)
+    tree = [tree._mapping[k['db']] for k in keyMap[1:]]
+    # filter tree until id matches
+    tree_offset = tree.index(identifier)
+    # query data for remaining ids
+    data_query = select(taxonomy_data).where(taxonomy_data.c.datum_id.in_(tuple(tree[tree_offset:])))
+    data = await database.fetch_all(data_query)
+    data = {datum['datum_id']: datum for datum in data}
+    # return array of tree, with rank info added
+    return [{**dict(data[t]), 'rank': keyMap[tree_offset+i+1]['rank']} for i,t in enumerate(tree[tree_offset:])]
+
+@app.get('/taxonomy/sci/{identifier}', response_model=List[Taxon],
+    summary='Taxonomy lookup by scientific identifier',
+    description='Lookup taxonomy of a given __scientific identifier__, returning the taxon tree with translated labels',
+    tags=['taxonomy'])
+async def taxonomy_by_sci(identifier: str) -> List[Taxon]:
+    query = select(taxonomy_data.c.datum_id).where(taxonomy_data.c.label_sci == identifier)
+    result = await database.fetch_one(query)
+    return await taxonomy_by_id(result['datum_id'])
+
+# ------------------------------------------------------------------------------
+# QUEUE MANAGER
+# ------------------------------------------------------------------------------
 
 @app.get('/queue/progress/', tags=['queue'])
 async def read_progress():
@@ -314,6 +403,9 @@ async def read_queue_detail(node_label: str):
 
     return { 'node_label': node_label, 'file_stats': file_stats, 'task_stats': task_stats, 'result_stats': result_stats }
 
+# ------------------------------------------------------------------------------
+# NODES
+# ------------------------------------------------------------------------------
 
 @app.get('/nodes', tags=['deployments'])
 async def read_nodes():
@@ -384,6 +476,10 @@ async def delete_node(id: int) -> None:
         raise HTTPException(status_code=409, detail=str(e))
     else:
         return True
+
+# ------------------------------------------------------------------------------
+# DEPLOYMENTS
+# ------------------------------------------------------------------------------
 
 def from_inclusive_range(period: Range) -> Range:
     return Range(period.lower, None if period.upper == None else period.upper - timedelta(days=1))
@@ -487,6 +583,10 @@ async def upsert_deployment(body: DeploymentRequest) -> None:
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+# ------------------------------------------------------------------------------
+# VALIDATORS
+# ------------------------------------------------------------------------------
+
 @app.put('/validate/deployment', response_model=ValidationResult, tags=['deployments'])
 async def validate_deployment(body: DeploymentRequest) -> None:
     transaction = await database.transaction()
@@ -586,6 +686,10 @@ async def check_image(body: ImageValidationRequest) -> None:
                 **duplicate_result._mapping,
                 'deployment_id': None, 'node_deployed': False }
 
+# ------------------------------------------------------------------------------
+# DATA INPUT (INGEST)
+# ------------------------------------------------------------------------------
+
 @app.get('/ingest/image/{sha256}', tags=['ingest'])
 async def ingest_image(sha256: str) -> None:
     return await database.fetch_one(select(files_image).where(files_image.c.sha256 == sha256))
@@ -615,6 +719,9 @@ async def ingest_image(body: ImageRequest) -> None:
     else:
         await transaction.commit()
 
+# ------------------------------------------------------------------------------
+# ROOT
+# ------------------------------------------------------------------------------
 
 @app.get('/', include_in_schema=False)
 async def root():
