@@ -25,7 +25,7 @@ from asyncpg.types import Range
 from tables import (
     nodes, deployments, results, tasks, species, species_day, data_records,
     files_image, birdnet_input, tags, mm_tag_deployments,
-    results_file_taxonomy, taxonomy_labels, taxonomy_tree
+    results_file_taxonomy, taxonomy_data, taxonomy_tree
 )
 from models import (
     Deployment, Result, Species, DeploymentResponse, DeploymentRequest, Node,
@@ -167,9 +167,9 @@ async def read_species(start: int = 0, end: int = 0, conf: float = 0.9):
         group_by(results.c.species).\
         subquery(name='species')
     labelled_query = select(query).\
-        outerjoin(taxonomy_labels, query.c.species == taxonomy_labels.c.label_sci).\
+        outerjoin(taxonomy_data, query.c.species == taxonomy_data.c.label_sci).\
         order_by(desc(query.c.count)).\
-        with_only_columns(query, taxonomy_labels.c.label_de, taxonomy_labels.c.label_en)
+        with_only_columns(query, taxonomy_data.c.label_de, taxonomy_data.c.label_en, taxonomy_data.c.image_url)
     return await database.fetch_all(labelled_query)
 
 @app.get('/species/{spec}', tags=['inferrence']) # , response_model=List[Species]
@@ -180,8 +180,8 @@ async def read_species_detail(spec: str, start: int = 0, end: int = 0, conf: flo
         where(and_(species.c.species == spec, species.c.confidence >= conf)).\
         group_by(species.c.species).subquery(name='species')
     labelled_query = select(query).\
-        outerjoin(taxonomy_labels, query.c.species == taxonomy_labels.c.label_sci).\
-        with_only_columns(query, taxonomy_labels.c.label_de, taxonomy_labels.c.label_en)
+        outerjoin(taxonomy_data, query.c.species == taxonomy_data.c.label_sci).\
+        with_only_columns(query, taxonomy_data.c.label_de, taxonomy_data.c.label_en, taxonomy_data.c.image_url)
     return await database.fetch_all(labelled_query)
 
 @app.get('/species/{spec}/day/', tags=['inferrence']) # , response_model=List[Species]
@@ -192,9 +192,9 @@ async def read_species_day(spec: str, start: int = 0, end: int = 0, conf: float 
         group_by(species_day.c.species, species_day.c.date).\
         subquery(name='species')
     labelled_query = select(query).\
-        outerjoin(taxonomy_labels, query.c.species == taxonomy_labels.c.label_sci).\
+        outerjoin(taxonomy_data, query.c.species == taxonomy_data.c.label_sci).\
         order_by(query.c.date).\
-        with_only_columns(query, taxonomy_labels.c.label_de, taxonomy_labels.c.label_en)
+        with_only_columns(query, taxonomy_data.c.label_de, taxonomy_data.c.label_en)
     return await database.fetch_all(labelled_query)
 
 # ------------------------------------------------------------------------------
@@ -226,21 +226,21 @@ async def taxonomy_by_id(identifier: int) -> List[Taxon]:
     tree = [tree._mapping[k['db']] for k in keyMap[1:]]
     # filter tree until id matches
     tree_offset = tree.index(identifier)
-    # query labels for remaining ids
-    label_query = select(taxonomy_labels).where(taxonomy_labels.c.label_id.in_(tuple(tree[tree_offset:])))
-    labels = await database.fetch_all(label_query)
-    labels = {label['label_id']: label for label in labels}
+    # query data for remaining ids
+    data_query = select(taxonomy_data).where(taxonomy_data.c.datum_id.in_(tuple(tree[tree_offset:])))
+    data = await database.fetch_all(data_query)
+    data = {datum['datum_id']: datum for datum in data}
     # return array of tree, with rank info added
-    return [{**dict(labels[t]), 'rank': keyMap[tree_offset+i+1]['rank']} for i,t in enumerate(tree[tree_offset:])]
+    return [{**dict(data[t]), 'rank': keyMap[tree_offset+i+1]['rank']} for i,t in enumerate(tree[tree_offset:])]
 
 @app.get('/taxonomy/sci/{identifier}', response_model=List[Taxon],
     summary='Taxonomy lookup by scientific identifier',
     description='Lookup taxonomy of a given __scientific identifier__, returning the taxon tree with translated labels',
     tags=['taxonomy'])
 async def taxonomy_by_sci(identifier: str) -> List[Taxon]:
-    query = select(taxonomy_labels.c.label_id).where(taxonomy_labels.c.label_sci == identifier)
+    query = select(taxonomy_data.c.datum_id).where(taxonomy_data.c.label_sci == identifier)
     result = await database.fetch_one(query)
-    return await taxonomy_by_id(result['label_id'])
+    return await taxonomy_by_id(result['datum_id'])
 
 # ------------------------------------------------------------------------------
 # QUEUE MANAGER

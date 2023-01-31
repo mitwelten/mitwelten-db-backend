@@ -127,6 +127,10 @@ class Point(BaseModel):
 class ResultFull(Species):
     location: Point
     object_name: str
+    object_time: datetime
+    time_start_relative: float
+    duration: float
+    image_url: Optional[str]
     species_de: Optional[str] = None
     species_en: Optional[str] = None
     genus: Optional[str] = None
@@ -145,10 +149,11 @@ class RankEnum(str, Enum):
     subspecies = 'SUBSPECIES'
 
 class Taxon(BaseModel):
-    label_id: int
+    datum_id: int
     label_sci: str
     label_de: Optional[str]
     label_en: Optional[str]
+    image_url: Optional[str]
     rank: RankEnum
 
 class Tag(BaseModel):

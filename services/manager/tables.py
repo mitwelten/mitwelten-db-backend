@@ -88,7 +88,11 @@ results_file_taxonomy = sqlalchemy.Table(
     sqlalchemy.Column('location',    GeometryPoint),
     sqlalchemy.Column('confidence',  sqlalchemy.REAL),
     sqlalchemy.Column('object_name', sqlalchemy.String),
+    sqlalchemy.Column('object_time', sqlalchemy.TIMESTAMP),
+    sqlalchemy.Column('time_start_relative', sqlalchemy.REAL),
+    sqlalchemy.Column('duration',    sqlalchemy.REAL),
     sqlalchemy.Column('time_start',  sqlalchemy.TIMESTAMP),
+    sqlalchemy.Column('image_url',   sqlalchemy.String),
     sqlalchemy.Column('species_de',  sqlalchemy.String),
     sqlalchemy.Column('species_en',  sqlalchemy.String),
     sqlalchemy.Column('genus',       sqlalchemy.String),
@@ -109,13 +113,16 @@ taxonomy_tree = sqlalchemy.Table(
     sqlalchemy.Column('kingdom_id',  sqlalchemy.Integer),
 )
 
-taxonomy_labels = sqlalchemy.Table(
-    'taxonomy_labels',
+taxonomy_data = sqlalchemy.Table(
+    'taxonomy_data',
     metadata,
-    sqlalchemy.Column('label_id',    sqlalchemy.Integer, primary_key=True),
+    sqlalchemy.Column('datum_id',    sqlalchemy.Integer, primary_key=True),
     sqlalchemy.Column('label_sci',   sqlalchemy.String(255)),
     sqlalchemy.Column('label_de',    sqlalchemy.String(255)),
-    sqlalchemy.Column('label_en',    sqlalchemy.String(255))
+    sqlalchemy.Column('label_en',    sqlalchemy.String(255)),
+    sqlalchemy.Column('image_url',   sqlalchemy.String(255)),
+    sqlalchemy.Column('created_at',  sqlalchemy.TIMESTAMP, nullable=False),
+    sqlalchemy.Column('updated_at',  sqlalchemy.TIMESTAMP, nullable=False),
 )
 
 tasks = sqlalchemy.Table(

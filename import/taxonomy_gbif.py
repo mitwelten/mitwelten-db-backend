@@ -74,13 +74,13 @@ def main():
         entrypoint = next((i for (i, d) in enumerate(keyMap) if d['rank'] == taxon['rank']), 0)
         # check if label record exist in db, query and insert if not
         for k in keyMap[entrypoint:]:
-            cursor.execute('select * from prod.taxonomy_labels where label_id = %s', (taxon[k['gbif']],))
+            cursor.execute('select * from prod.taxonomy_data where datum_id = %s', (taxon[k['gbif']],))
             label = cursor.fetchall()
             if not len(label):
                 # query
                 labels = fetch_labels(taxon[k['gbif']])
                 # insert
-                cursor.execute('insert into prod.taxonomy_labels (label_id, label_sci, label_de, label_en) values (%s,%s,%s,%s)',
+                cursor.execute('insert into prod.taxonomy_data (datum_id, label_sci, label_de, label_en) values (%s,%s,%s,%s)',
                     (taxon[k['gbif']], taxon[k['gbif_label']], labels.get('de'), labels.get('en')))
             else: break # if the label exists, the parents exist, too
         # account for null values if higher order taxon
