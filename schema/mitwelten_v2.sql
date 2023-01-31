@@ -270,13 +270,16 @@ CREATE TABLE IF NOT EXISTS prod.taxonomy_tree
     CONSTRAINT unique_definition UNIQUE (species_id, genus_id, family_id, class_id, phylum_id, kingdom_id)
 );
 
-CREATE TABLE IF NOT EXISTS prod.taxonomy_labels
+CREATE TABLE IF NOT EXISTS prod.taxonomy_data
 (
-    label_id bigint NOT NULL,
+    datum_id bigint NOT NULL,
     label_sci character varying(255) NOT NULL,
     label_de character varying(255),
     label_en character varying(255),
-    PRIMARY KEY (label_id)
+    image_url character varying(255),
+    created_at timestamptz NOT NULL DEFAULT current_timestamp,
+    updated_at timestamptz NOT NULL DEFAULT current_timestamp,
+    PRIMARY KEY (datum_id)
 );
 
 ALTER TABLE IF EXISTS prod.files_audio
@@ -480,14 +483,18 @@ CREATE OR REPLACE VIEW prod.birdnet_inferred_species_file_taxonomy
         r.confidence,
         d.location,
         f.object_name,
+        f.time AS object_time,
+        r.time_start AS time_start_relative,
+        f.duration AS duration,
         f.time + ((r.time_start || ' seconds')::interval) AS time_start,
-        l1.label_de  species_de,
-        l1.label_en  species_en,
-        l2.label_sci genus,
-        l3.label_sci family,
-        l4.label_sci class,
-        l5.label_sci phylum,
-        l6.label_sci kingdom
+        d1.image_url,
+        d1.label_de  species_de,
+        d1.label_en  species_en,
+        d2.label_sci genus,
+        d3.label_sci family,
+        d4.label_sci class,
+        d5.label_sci phylum,
+        d6.label_sci kingdom
 
     FROM prod.birdnet_results r
 
@@ -495,17 +502,17 @@ CREATE OR REPLACE VIEW prod.birdnet_inferred_species_file_taxonomy
     LEFT JOIN prod.files_audio     f  ON r.file_id    = f.file_id
 
     -- link to species label (scientific name in GBIF taxonomy)
-    LEFT JOIN prod.taxonomy_labels l1 ON r.species    = l1.label_sci
+    LEFT JOIN prod.taxonomy_data d1 ON r.species    = d1.label_sci
 
     -- link to species tree (species key to GBIF taxonomy tree)
-    LEFT JOIN prod.taxonomy_tree   t  ON l1.label_id  = t.species_id
+    LEFT JOIN prod.taxonomy_tree   t  ON d1.datum_id  = t.species_id
 
     -- link taxonomy tree keys to scientific labels
-    LEFT JOIN prod.taxonomy_labels l2 ON t.genus_id   = l2.label_id
-    LEFT JOIN prod.taxonomy_labels l3 ON t.family_id  = l3.label_id
-    LEFT JOIN prod.taxonomy_labels l4 ON t.class_id   = l4.label_id
-    LEFT JOIN prod.taxonomy_labels l5 ON t.phylum_id  = l5.label_id
-    LEFT JOIN prod.taxonomy_labels l6 ON t.kingdom_id = l6.label_id
+    LEFT JOIN prod.taxonomy_data d2 ON t.genus_id   = d2.datum_id
+    LEFT JOIN prod.taxonomy_data d3 ON t.family_id  = d3.datum_id
+    LEFT JOIN prod.taxonomy_data d4 ON t.class_id   = d4.datum_id
+    LEFT JOIN prod.taxonomy_data d5 ON t.phylum_id  = d5.datum_id
+    LEFT JOIN prod.taxonomy_data d6 ON t.kingdom_id = d6.datum_id
 
     -- link location data
     LEFT JOIN prod.deployments     d ON f.deployment_id = d.deployment_id
