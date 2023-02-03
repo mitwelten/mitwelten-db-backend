@@ -31,7 +31,7 @@ from models import (
     Deployment, Result, Species, DeploymentResponse, DeploymentRequest, Node,
     ValidationResult, NodeValidationRequest, ImageValidationRequest,
     ImageValidationResponse, ImageRequest, QueueInputDefinition,
-    QueueUpdateDefinition, ResultFull, Taxon
+    QueueUpdateDefinition, ResultFull, Taxon, Tag
 )
 
 sys.path.append('../../')
@@ -511,16 +511,19 @@ async def read_deployments(node_id: Optional[int] = None) -> List[DeploymentResp
 @app.get('/deployment/{id}', response_model=DeploymentResponse, tags=['deployments'])
 async def read_deployment(id: int) -> DeploymentResponse:
 
-    query = select(deployments.alias('d').outerjoin(nodes.alias('n'))).\
+    query = select(deployments.alias('d').outerjoin(nodes.alias('n')).\
+        outerjoin(mm_tag_deployments.alias('mm')).outerjoin(tags.alias('t'))).\
         where(text('deployment_id = :id').bindparams(id=id)).set_label_style(LABEL_STYLE_TABLENAME_PLUS_COL)
 
-    r = await database.fetch_one(query)
+    r = await database.fetch_all(query)
     if r == None:
         raise HTTPException(status_code=404, detail='Deployment not found')
 
-    d = { c: r['d_'+c] for c in deployments.columns.keys() }
-    d['node'] = { c: r['n_'+c] for c in nodes.columns.keys() }
+    t_l = unique_everseen(r, lambda x: x['t_tag_id'])
+    d = { c: r[0]['d_'+c] for c in deployments.columns.keys() }
+    d['node'] = { c: r[0]['n_'+c] for c in nodes.columns.keys() }
     d['period'] = from_inclusive_range(d['period'])
+    d['tags'] = [{'tag_id': t['t_tag_id'], 'name': t['t_name']} for t in t_l if t['t_tag_id'] != None]
     return d
 
 @app.delete('/deployment/{id}', response_model=None, dependencies=[Depends(check_authentication)], tags=['deployments'])
