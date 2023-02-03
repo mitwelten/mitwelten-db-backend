@@ -160,8 +160,9 @@ class Tag(BaseModel):
     '''
     Annotation
     '''
-    id: Optional[int] = None
-    name: Optional[constr(regex=r'\w+')] = None
+
+    tag_id: int
+    name: constr(regex=r'\w+')
 
 class Node(BaseModel):
     '''
