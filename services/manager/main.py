@@ -586,6 +586,14 @@ async def upsert_deployment(body: DeploymentRequest) -> None:
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+
+@app.get('/tags', response_model=List[Tag], tags=['deployments', 'tags'])
+async def read_tags(deployment_id: Optional[int] = None) -> List[Tag]:
+    query = select(tags)
+    if deployment_id != None:
+        query = query.outerjoin(mm_tag_deployments).where(mm_tag_deployments.c.deployments_deployment_id == deployment_id)
+    return await database.fetch_all(query)
+
 # ------------------------------------------------------------------------------
 # VALIDATORS
 # ------------------------------------------------------------------------------
