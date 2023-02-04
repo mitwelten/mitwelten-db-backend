@@ -7,7 +7,7 @@ import databases
 
 import sqlalchemy
 from sqlalchemy.sql import (
-    insert, update, select, delete, exists, func, and_, not_, desc,
+    insert, update, select, delete, exists, func, and_, or_, not_, desc,
     text, distinct, LABEL_STYLE_TABLENAME_PLUS_COL
 )
 from sqlalchemy.sql.functions import current_timestamp
@@ -549,42 +549,127 @@ async def delete_deployment(id: int) -> None:
         return True
 
 @app.post('/deployments', response_model=None, dependencies=[Depends(check_authentication)], tags=['deployments'])
-async def add_deployment(body: Deployment) -> None:
+async def add_deployment(body: DeploymentRequest) -> None:
+    '''
+    Add a deployment
+
+    _please use `PUT /deployments` / `upsert_deployment` instead_
+    '''
     try:
-        await database.fetch_one(deployments.insert().values({
+        transaction = await database.transaction()
+        d = await database.fetch_one(deployments.insert().values({
             deployments.c.node_id: body.node_id,
-            deployments.c.location: body.location,
+            deployments.c.location: text('point(:lat,:lon)').\
+                bindparams(lat=body.location.lat,lon=body.location.lon),
             deployments.c.description: body.description,
-            deployments.c.period: to_inclusive_range(body.period),
+            deployments.c.period: to_inclusive_range(body.period)
         }))
+        # select from tags where name in list from request
+        r = await database.fetch_all(select(tags.c.tag_id, tags.c.name).\
+            where(tags.c.name.in_(body.tags)))
+        # find the ones that don't exist
+        nt = [t for t in body.tags if t not in [rt['name'] for rt in r]]
+        # insert those and collect the returned ids
+        nti = await database.fetch_all(tags.insert().values([{'name': n} for n in nt]).\
+            returning(tags.c.tag_id, tags.c.name))
+        # combine existing with new ones
+        ant = [x['tag_id'] for x in r] + [x['tag_id'] for x in nti]
+        # insert join records
+        await database.fetch_all(mm_tag_deployments.insert().values(
+            [{'tags_tag_id': t, 'deployments_deployment_id': d['deployment_id']} for t in ant]))
+        await transaction.commit()
     except ExclusionViolationError as e:
         raise HTTPException(status_code=409, detail=str(e))
 
 @app.put('/deployments', response_model=None, dependencies=[Depends(check_authentication)], tags=['deployments'])
 async def upsert_deployment(body: DeploymentRequest) -> None:
+    '''
+    Update a deployment
+    '''
+
     try:
         values = {
             deployments.c.node_id: body.node_id,
-            deployments.c.location: text('point(:lat,:lon)').bindparams(lat=body.location.lat,lon=body.location.lon),
+            deployments.c.location: text('point(:lat,:lon)').\
+                bindparams(lat=body.location.lat,lon=body.location.lon),
             deployments.c.period: to_inclusive_range(body.period),
         }
         if hasattr(body, 'description') and body.description != None:
             values[deployments.c.description] = body.description
 
+        transaction = await database.transaction()
         if hasattr(body, 'deployment_id') and body.deployment_id != None:
             # this is an update
             # update the record to see if it conflicts
             await database.execute(deployments.update().\
                 where(deployments.c.deployment_id == body.deployment_id).\
                 values(values))
+
+            # deal with tags
+            if hasattr(body, 'tags') and body.tags != None and isinstance(body.tags, list):
+                tu = set(body.tags) # tags, unique
+                # select from tags where name in list from request or assoc with deployment_id
+                r = await database.fetch_all(select(tags.c.tag_id, tags.c.name, mm_tag_deployments.c.deployments_deployment_id.label('deployment_id')).\
+                    outerjoin(mm_tag_deployments, mm_tag_deployments.c.tags_tag_id == tags.c.tag_id).\
+                    where(or_(tags.c.name.in_(tu), mm_tag_deployments.c.deployments_deployment_id == body.deployment_id)))
+
+                # split tags in already assoc and unassoc
+                pred = lambda x: x['deployment_id'] != body.deployment_id
+
+                at = list(filterfalse(pred, r))                           # Associated Tags: don't do anything with those, used for delete filter
+                ut = [t for t in filter(pred, r) if t['tag_id'] not in [a['tag_id'] for a in at]] # Unassociated Tags: assoc these
+                nt = [t for t in tu if t not in [rt['name'] for rt in r]] # New Tags: add these and assoc
+                dt = [t for t in at if t['name'] not in tu]               # Delete Tags: delete these from nm table
+
+                # deassoc Delete Tags (previously associated)
+                if len(dt):
+                    await database.execute(mm_tag_deployments.delete().where(and_(
+                        mm_tag_deployments.c.tags_tag_id.in_([t['tag_id'] for t in dt]),
+                        mm_tag_deployments.c.deployments_deployment_id == body.deployment_id)))
+
+                # insert New Tags
+                unt = []
+                if len(nt):
+                    nti = await database.fetch_all(tags.insert().values([{'name': n} for n in nt]).\
+                        returning(tags.c.tag_id, tags.c.name))
+                    # combine existing (u) with new (n) tags
+                    if len(nti): unt.extend([x['tag_id'] for x in nti])
+
+                # insert join records
+                if len(ut): unt.extend(set([x['tag_id'] for x in ut]))
+                if len(unt):
+                    await database.fetch_all(mm_tag_deployments.insert().values(
+                        [{'tags_tag_id': t, 'deployments_deployment_id': body.deployment_id} for t in set(unt)]))
+            await transaction.commit()
+
         else:
             # this is a new record, try to insert
-            await database.execute(deployments.insert().\
+            d = await database.fetch_one(deployments.insert().\
                 values(values))
+
+            # deal with tags
+            if hasattr(body, 'tags') and body.tags != None and isinstance(body.tags, list):
+                # select from tags where name in list from request
+                r = await database.fetch_all(select(tags.c.tag_id, tags.c.name).\
+                    where(tags.c.name.in_(body.tags)))
+                # find the ones that don't exist
+                nt = [t for t in body.tags if t not in [rt['name'] for rt in r]]
+                # insert those and collect the returned ids
+                nti = await database.fetch_all(tags.insert().values([{'name': n} for n in nt]).\
+                    returning(tags.c.tag_id, tags.c.name))
+                # combine existing with new ones
+                ant = [x['tag_id'] for x in r] + [x['tag_id'] for x in nti]
+                # insert join records
+                await database.fetch_all(mm_tag_deployments.insert().values(
+                    [{'tags_tag_id': t, 'deployments_deployment_id': d['deployment_id']} for t in ant]))
+            await transaction.commit()
+
     except ExclusionViolationError as e:
+        await transaction.rollback()
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        await transaction.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get('/tags', response_model=List[Tag], tags=['deployments', 'tags'])
