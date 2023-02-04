@@ -649,19 +649,23 @@ async def upsert_deployment(body: DeploymentRequest) -> None:
 
             # deal with tags
             if hasattr(body, 'tags') and body.tags != None and isinstance(body.tags, list):
+                tu = set(body.tags) # tags, unique
                 # select from tags where name in list from request
                 r = await database.fetch_all(select(tags.c.tag_id, tags.c.name).\
-                    where(tags.c.name.in_(body.tags)))
+                    where(tags.c.name.in_(tu)))
                 # find the ones that don't exist
-                nt = [t for t in body.tags if t not in [rt['name'] for rt in r]]
+                nt = [t for t in tu if t not in [rt['name'] for rt in r]]
                 # insert those and collect the returned ids
-                nti = await database.fetch_all(tags.insert().values([{'name': n} for n in nt]).\
-                    returning(tags.c.tag_id, tags.c.name))
-                # combine existing with new ones
-                ant = [x['tag_id'] for x in r] + [x['tag_id'] for x in nti]
+                ant = [x['tag_id'] for x in r]
+                if len(nt):
+                    nti = await database.fetch_all(tags.insert().values([{'name': n} for n in nt]).\
+                        returning(tags.c.tag_id, tags.c.name))
+                    # combine existing with new ones
+                    ant.extend([x['tag_id'] for x in nti])
                 # insert join records
-                await database.fetch_all(mm_tag_deployments.insert().values(
-                    [{'tags_tag_id': t, 'deployments_deployment_id': d['deployment_id']} for t in ant]))
+                if len(ant):
+                    await database.fetch_all(mm_tag_deployments.insert().values(
+                        [{'tags_tag_id': t, 'deployments_deployment_id': d['deployment_id']} for t in ant]))
             await transaction.commit()
 
     except ExclusionViolationError as e:
