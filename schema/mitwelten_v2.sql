@@ -365,14 +365,14 @@ ALTER TABLE IF EXISTS prod.mm_tags_deployments
     ADD FOREIGN KEY (tags_tag_id)
     REFERENCES prod.tags (tag_id) MATCH SIMPLE
     ON UPDATE NO ACTION
-    ON DELETE NO ACTION
+    ON DELETE RESTRICT
     NOT VALID;
 
 ALTER TABLE IF EXISTS prod.mm_tags_deployments
     ADD FOREIGN KEY (deployments_deployment_id)
     REFERENCES prod.deployments (deployment_id) MATCH SIMPLE
     ON UPDATE NO ACTION
-    ON DELETE NO ACTION
+    ON DELETE CASCADE
     NOT VALID;
 
 ALTER TABLE IF EXISTS prod.files_entry
