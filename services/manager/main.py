@@ -549,42 +549,10 @@ async def delete_deployment(id: int) -> None:
         return True
 
 @app.post('/deployments', response_model=None, dependencies=[Depends(check_authentication)], tags=['deployments'])
-async def add_deployment(body: DeploymentRequest) -> None:
-    '''
-    Add a deployment
-
-    _please use `PUT /deployments` / `upsert_deployment` instead_
-    '''
-    try:
-        transaction = await database.transaction()
-        d = await database.fetch_one(deployments.insert().values({
-            deployments.c.node_id: body.node_id,
-            deployments.c.location: text('point(:lat,:lon)').\
-                bindparams(lat=body.location.lat,lon=body.location.lon),
-            deployments.c.description: body.description,
-            deployments.c.period: to_inclusive_range(body.period)
-        }))
-        # select from tags where name in list from request
-        r = await database.fetch_all(select(tags.c.tag_id, tags.c.name).\
-            where(tags.c.name.in_(body.tags)))
-        # find the ones that don't exist
-        nt = [t for t in body.tags if t not in [rt['name'] for rt in r]]
-        # insert those and collect the returned ids
-        nti = await database.fetch_all(tags.insert().values([{'name': n} for n in nt]).\
-            returning(tags.c.tag_id, tags.c.name))
-        # combine existing with new ones
-        ant = [x['tag_id'] for x in r] + [x['tag_id'] for x in nti]
-        # insert join records
-        await database.fetch_all(mm_tag_deployments.insert().values(
-            [{'tags_tag_id': t, 'deployments_deployment_id': d['deployment_id']} for t in ant]))
-        await transaction.commit()
-    except ExclusionViolationError as e:
-        raise HTTPException(status_code=409, detail=str(e))
-
 @app.put('/deployments', response_model=None, dependencies=[Depends(check_authentication)], tags=['deployments'])
 async def upsert_deployment(body: DeploymentRequest) -> None:
     '''
-    Update a deployment
+    Insert or update a deployment
     '''
 
     try:
