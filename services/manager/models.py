@@ -164,6 +164,16 @@ class Tag(BaseModel):
     tag_id: int
     name: constr(regex=r'\w+')
 
+class TagStats(Tag):
+    '''
+    Annotation with assignment count
+    '''
+
+    deployments: int
+    entries: int
+    created_at: datetime
+    updated_at: datetime
+
 class Node(BaseModel):
     '''
     A device deployed in the field, commondly collecting and/or processing data

@@ -24,14 +24,14 @@ from asyncpg.types import Range
 
 from tables import (
     nodes, deployments, results, tasks, species, species_day, data_records,
-    files_image, birdnet_input, tags, mm_tag_deployments,
+    files_image, birdnet_input, tags, mm_tag_deployments, mm_tag_entries,
     results_file_taxonomy, taxonomy_data, taxonomy_tree
 )
 from models import (
     Deployment, Result, Species, DeploymentResponse, DeploymentRequest, Node,
     ValidationResult, NodeValidationRequest, ImageValidationRequest,
     ImageValidationResponse, ImageRequest, QueueInputDefinition,
-    QueueUpdateDefinition, ResultFull, Taxon, Tag
+    QueueUpdateDefinition, ResultFull, Taxon, Tag, TagStats
 )
 
 sys.path.append('../../')
@@ -643,6 +643,9 @@ async def upsert_deployment(body: DeploymentRequest) -> None:
         await transaction.rollback()
         raise HTTPException(status_code=500, detail=str(e))
 
+# ------------------------------------------------------------------------------
+# TAGS
+# ------------------------------------------------------------------------------
 
 @app.get('/tags', response_model=List[Tag], tags=['deployments', 'tags'])
 async def read_tags(deployment_id: Optional[int] = None) -> List[Tag]:
@@ -650,6 +653,39 @@ async def read_tags(deployment_id: Optional[int] = None) -> List[Tag]:
     if deployment_id != None:
         query = query.outerjoin(mm_tag_deployments).where(mm_tag_deployments.c.deployments_deployment_id == deployment_id)
     return await database.fetch_all(query)
+
+@app.get('/tags_stats', response_model=List[TagStats], tags=['deployments', 'tags'])
+async def read_tags_stats(deployment_id: Optional[int] = None) -> List[TagStats]:
+    subquery = select(tags.c.tag_id,
+            func.count(mm_tag_deployments.c.tags_tag_id).label('deployments'),
+            func.count(mm_tag_entries.c.tags_tag_id).label('entries')).\
+        outerjoin(mm_tag_deployments).\
+        outerjoin(mm_tag_entries).\
+        group_by(tags.c.tag_id).subquery()
+
+    query = select(subquery, tags.c.name, tags.c.created_at, tags.c.updated_at).\
+        outerjoin(tags, tags.c.tag_id == subquery.c.tag_id).\
+        order_by(tags.c.name)
+    return await database.fetch_all(query)
+
+@app.put('/tags', dependencies=[Depends(check_authentication)], tags=['tags'])
+async def upsert_tag(body: Tag) -> None:
+    if hasattr(body, 'tag_id') and body.tag_id != None:
+        return await database.execute(update(tags).where(tags.c.tag_id == body.tag_id).\
+            values({**body.dict(exclude_none=True), tags.c.updated_at: current_timestamp()}).\
+            returning(tags.c.tag_id))
+
+@app.delete('/tag/{tag_id}', response_model=None, dependencies=[Depends(check_authentication)], tags=['tags'])
+async def delete_tag(tag_id: int) -> None:
+    transaction = await database.transaction()
+    try:
+        await database.execute(delete(tags).where(tags.c.tag_id == tag_id))
+    except Exception as e:
+        await transaction.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    else:
+        await transaction.commit()
+        return True
 
 # ------------------------------------------------------------------------------
 # VALIDATORS

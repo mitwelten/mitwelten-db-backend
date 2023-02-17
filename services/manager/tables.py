@@ -169,6 +169,19 @@ deployments = sqlalchemy.Table(
     schema=crd.db.schema
 )
 
+entries = sqlalchemy.Table(
+    'entries',
+    metadata,
+    sqlalchemy.Column('entry_id',    sqlalchemy.Integer,     primary_key=True),
+    sqlalchemy.Column('location',    GeometryPoint,          nullable=False),
+    sqlalchemy.Column('name',        sqlalchemy.String(255), nullable=False),
+    sqlalchemy.Column('description', sqlalchemy.Text,        nullable=True),
+    sqlalchemy.Column('type',        sqlalchemy.String(255), nullable=True),
+    sqlalchemy.Column('created_at',  sqlalchemy.TIMESTAMP,   nullable=False),
+    sqlalchemy.Column('updated_at',  sqlalchemy.TIMESTAMP,   nullable=False),
+    schema=crd.db.schema
+)
+
 tags = sqlalchemy.Table(
     'tags',
     metadata,
@@ -184,6 +197,14 @@ mm_tag_deployments = sqlalchemy.Table(
     metadata,
     sqlalchemy.Column('tags_tag_id',               None, ForeignKey(tags.c.tag_id)),
     sqlalchemy.Column('deployments_deployment_id', None, ForeignKey(deployments.c.deployment_id)),
+    schema=crd.db.schema
+)
+
+mm_tag_entries = sqlalchemy.Table(
+    'mm_tags_entries',
+    metadata,
+    sqlalchemy.Column('tags_tag_id',               None, ForeignKey(tags.c.tag_id)),
+    sqlalchemy.Column('entries_entry_id',          None, ForeignKey(entries.c.entry_id)),
     schema=crd.db.schema
 )
 
