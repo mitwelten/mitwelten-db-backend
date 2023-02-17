@@ -674,6 +674,9 @@ async def upsert_tag(body: Tag) -> None:
         return await database.execute(update(tags).where(tags.c.tag_id == body.tag_id).\
             values({**body.dict(exclude_none=True), tags.c.updated_at: current_timestamp()}).\
             returning(tags.c.tag_id))
+    else:
+        return await database.execute(insert(tags).values(body.dict(exclude_none=True)).\
+            returning(tags.c.tag_id))
 
 @app.delete('/tag/{tag_id}', response_model=None, dependencies=[Depends(check_authentication)], tags=['tags'])
 async def delete_tag(tag_id: int) -> None:
