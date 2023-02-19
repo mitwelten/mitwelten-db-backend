@@ -58,7 +58,8 @@ class RecordsDependencyException(BaseException):
 class NodeNotDeployedException(BaseException):
     ...
 
-DATABASE_URL = f'postgresql://{crd.db.user}:{crd.db.password}@{crd.db.host}/{crd.db.database}'
+DATABASE_URL = f'postgresql://{crd.db.user}:{crd.db.password}@{crd.db.host}:{crd.db.port}/{crd.db.database}'
+print(DATABASE_URL)
 database = databases.Database(DATABASE_URL, min_size=5, max_size=10)
 
 tags_metadata = [
@@ -149,12 +150,15 @@ def login(login_state: bool = Depends(check_authentication)):
 # BIRDNET RESULTS
 # ------------------------------------------------------------------------------
 
+# todo: give endOfRecords (select +1, see if array is full)
+# todo: adjustable confidence
 @app.get('/results/', response_model=List[Result], tags=['inferrence'])
 async def read_results(offset: int = 0, pagesize: int = Query(1000, gte=0, lte=1000)):
     query = results.select().where(results.c.confidence > 0.9).\
         limit(pagesize).offset(offset)
     return await database.fetch_all(query)
 
+# todo: adjustable confidence
 @app.get('/results_full/', response_model=List[ResultFull], tags=['inferrence'])
 async def read_results_full(offset: int = 0, pagesize: int = Query(1000, gte=0, lte=1000)):
     query = results_file_taxonomy.select().where(results.c.confidence > 0.9).\
@@ -737,6 +741,16 @@ async def validate_node(body: NodeValidationRequest) -> ValidationResult:
         r = await database.fetch_one(select(nodes).where(nodes.c.node_label == body.node_label))
     return True if r == None else False
 
+@app.put('/validate/tag', response_model=ValidationResult, tags=['deployments'])
+async def validate_tag(body: Tag) -> ValidationResult:
+    r = None
+    if hasattr(body, 'tag_id') and body.tag_id != None:
+        r = await database.fetch_one(select(tags).\
+            where(tags.c.name == body.name, tags.c.tag_id != body.tag_id))
+    else:
+        r = await database.fetch_one(select(tags).where(tags.c.name == body.name))
+    return True if r == None else False
+
 
 @app.post('/validate/image', response_model=ImageValidationResponse, tags=['ingest'])
 async def check_image(body: ImageValidationRequest) -> None:
@@ -801,6 +815,7 @@ async def check_image(body: ImageValidationRequest) -> None:
 async def ingest_image(sha256: str) -> None:
     return await database.fetch_one(select(files_image).where(files_image.c.sha256 == sha256))
 
+# todo: auth!?
 @app.post('/ingest/image', tags=['ingest'])
 async def ingest_image(body: ImageRequest) -> None:
 
