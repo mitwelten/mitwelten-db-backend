@@ -431,7 +431,7 @@ services:
 
 
   viz-dashboard-client:
-    image: cr.gitlab.fhnw.ch/mitwelten/docker-infrastructure/mitwelten-viz_dashboard_client:0.1
+    image: cr.gitlab.fhnw.ch/mitwelten/docker-infrastructure/mitwelten-viz_dashboard_client:0.2
     restart: always
     container_name: viz-dashboard-client
     labels:
