@@ -198,3 +198,36 @@ files_image = sqlalchemy.Table(
     sqlalchemy.Column('created_at',     sqlalchemy.TIMESTAMP(timezone=True),  nullable=False),
     sqlalchemy.Column('updated_at',     sqlalchemy.TIMESTAMP(timezone=True),  nullable=False),
 )
+
+files_entry = sqlalchemy.Table(
+    'files_entry',
+    metadata,
+    sqlalchemy.Column('file_id',     sqlalchemy.Integer,     primary_key=True),
+    sqlalchemy.Column('entry_id',    None,                   ForeignKey(entries.c.entry_id, ondelete='CASCADE')),
+    sqlalchemy.Column('object_name', sqlalchemy.String(255), nullable=False), # file url in S3
+    sqlalchemy.Column('name',        sqlalchemy.String(255), nullable=False),
+    sqlalchemy.Column('type',        sqlalchemy.String(255), nullable=False),
+    sqlalchemy.Column('created_at',  sqlalchemy.TIMESTAMP,   nullable=True),
+    sqlalchemy.Column('updated_at',  sqlalchemy.TIMESTAMP,   nullable=True),
+    schema=crd.db.schema
+)
+
+data_pax = sqlalchemy.Table(
+    'sensordata_pax',
+    metadata,
+    sqlalchemy.Column('time', sqlalchemy.TIMESTAMP, nullable=False),
+    sqlalchemy.Column('deployment_id', None, ForeignKey(deployments.c.deployment_id)),
+    sqlalchemy.Column('pax', sqlalchemy.Integer, nullable=False),
+    sqlalchemy.Column('voltage', sqlalchemy.Float, nullable=False),
+)
+
+data_env = sqlalchemy.Table(
+    'sensordata_env',
+    metadata,
+    sqlalchemy.Column('time', sqlalchemy.TIMESTAMP, nullable=False),
+    sqlalchemy.Column('deployment_id', None, ForeignKey(deployments.c.deployment_id)),
+    sqlalchemy.Column('temperature', sqlalchemy.Float, nullable=False),
+    sqlalchemy.Column('humidity', sqlalchemy.Float, nullable=False),
+    sqlalchemy.Column('moisture', sqlalchemy.Float, nullable=False),
+    sqlalchemy.Column('voltage', sqlalchemy.Float, nullable=False),
+)
