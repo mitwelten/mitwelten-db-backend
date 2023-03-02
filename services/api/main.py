@@ -1,6 +1,6 @@
 from api.database import database
 from api.dependencies import check_authentication, crd
-from api.routers import birdnet, deployments, entries, ingest, nodes, queue, tags, taxonomy, validators
+from api.routers import birdnet, deployments, geo, entries, ingest, nodes, queue, tags, taxonomy, validators
 
 from fastapi import Depends, FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
@@ -26,6 +26,10 @@ tags_metadata = [
     {
         'name': 'queue',
         'description': 'Machine-Learning queue monitoring and management',
+    },
+    {
+        'name': 'kml',
+        'description': 'Layers for map display',
     },
 ]
 
@@ -61,6 +65,7 @@ if crd.DEV == True:
 
 app.include_router(birdnet.router,     tags=['inferrence'])
 app.include_router(deployments.router, tags=['deployments'])
+app.include_router(geo.router)
 app.include_router(entries.router,     tags=['entries'])
 app.include_router(ingest.router,      tags=['inferrence'])
 app.include_router(nodes.router,       tags=['nodes'])
