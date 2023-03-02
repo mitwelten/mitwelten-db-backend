@@ -36,7 +36,7 @@ async def read_deployments(node_id: Optional[int] = None) -> List[DeploymentResp
         d['node'] = { c: r['n_'+c] for c in nodes.columns.keys() }
         d['period'] = from_inclusive_range(d['period'])
         d['tags'] = [{'tag_id': t['t_tag_id'], 'name': t['t_name']} for t in t_l if t['t_tag_id'] != None]
-        response.routerend(d)
+        response.append(d)
     return response
 
 @router.get('/deployment/{id}', response_model=DeploymentResponse)
