@@ -86,17 +86,17 @@ if crd.DEV == True:
         allow_headers=['*'],
 )
 
-app.include_router(birdnet.router,     tags=['inferrence'])
+app.include_router(birdnet.router)
 app.include_router(data.router)
-app.include_router(deployments.router, tags=['deployments'])
+app.include_router(deployments.router)
 app.include_router(entries.router)
 app.include_router(geo.router)
-app.include_router(ingest.router,      tags=['inferrence'])
-app.include_router(nodes.router,       tags=['nodes'])
-app.include_router(queue.router,       tags=['queue'])
-app.include_router(tags.router,        tags=['deployments', 'entries'])
-app.include_router(taxonomy.router,    tags=['taxonomy'])
-app.include_router(validators.router,  tags=['validators'])
+app.include_router(ingest.router)
+app.include_router(nodes.router)
+app.include_router(queue.router)
+app.include_router(tags.router)
+app.include_router(taxonomy.router)
+app.include_router(validators.router)
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):

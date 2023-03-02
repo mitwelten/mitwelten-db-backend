@@ -11,20 +11,20 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.sql import delete, insert, distinct, select, func, update, text, LABEL_STYLE_TABLENAME_PLUS_COL
 from sqlalchemy.sql.functions import current_timestamp
 
-router = APIRouter()
+router = APIRouter(tags=['nodes'])
 
 # ------------------------------------------------------------------------------
 # NODES
 # ------------------------------------------------------------------------------
 
-@router.get('/nodes', tags=['deployments'])
+@router.get('/nodes')
 async def read_nodes():
     deployments_subquery = select(func.count(deployments.c.deployment_id)).\
         where(nodes.c.node_id == deployments.c.node_id).scalar_subquery()
     return await database.fetch_all(select(nodes, deployments_subquery.label('deployment_count')).\
         order_by(nodes.c.node_label))
 
-@router.put('/nodes', dependencies=[Depends(check_authentication)], tags=['deployments'])
+@router.put('/nodes', dependencies=[Depends(check_authentication)])
 async def upsert_node(body: Node) -> None:
     if hasattr(body, 'node_id') and body.node_id != None:
         return await database.execute(update(nodes).where(nodes.c.node_id == body.node_id).\
@@ -34,8 +34,8 @@ async def upsert_node(body: Node) -> None:
         return await database.execute(insert(nodes).values(body.dict(exclude_none=True)).\
             returning(nodes.c.node_id))
 
-@router.get('/node/type_options', tags=['deployments'])
-@router.get('/node/type_options/{search_term}', tags=['deployments'])
+@router.get('/node/type_options')
+@router.get('/node/type_options/{search_term}')
 async def get_node_type(search_term: Optional[str] = None) -> List[str]:
     q = select(distinct(nodes.c.type))
     if search_term != None:
@@ -43,8 +43,8 @@ async def get_node_type(search_term: Optional[str] = None) -> List[str]:
     r = await database.fetch_all(q.order_by(nodes.c.type))
     return [v[nodes.c.type] for v in r if v[nodes.c.type] != None]
 
-@router.get('/node/platform_options', tags=['deployments'])
-@router.get('/node/platform_options/{search_term}', tags=['deployments'])
+@router.get('/node/platform_options')
+@router.get('/node/platform_options/{search_term}')
 async def get_node_platform(search_term: Optional[str] = None) -> List[str]:
     q = select(distinct(nodes.c.platform))
     if search_term != None:
@@ -52,8 +52,8 @@ async def get_node_platform(search_term: Optional[str] = None) -> List[str]:
     r = await database.fetch_all(q.order_by(nodes.c.platform))
     return [v[nodes.c.platform] for v in r if v[nodes.c.platform] != None]
 
-@router.get('/node/connectivity_options', tags=['deployments'])
-@router.get('/node/connectivity_options/{search_term}', tags=['deployments'])
+@router.get('/node/connectivity_options')
+@router.get('/node/connectivity_options/{search_term}')
 async def get_node_connectivity(search_term: Optional[str] = None) -> List[str]:
     q = select(distinct(nodes.c.connectivity))
     if search_term != None:
@@ -61,8 +61,8 @@ async def get_node_connectivity(search_term: Optional[str] = None) -> List[str]:
     r = await database.fetch_all(q.order_by(nodes.c.connectivity))
     return [v[nodes.c.connectivity] for v in r if v[nodes.c.connectivity] != None]
 
-@router.get('/node/power_options', tags=['deployments'])
-@router.get('/node/power_options/{search_term}', tags=['deployments'])
+@router.get('/node/power_options')
+@router.get('/node/power_options/{search_term}')
 async def get_node_power(search_term: Optional[str] = None) -> List[str]:
     q = select(distinct(nodes.c.power))
     if search_term != None:
@@ -70,15 +70,15 @@ async def get_node_power(search_term: Optional[str] = None) -> List[str]:
     r = await database.fetch_all(q.order_by(nodes.c.power))
     return [v[nodes.c.power] for v in r if v[nodes.c.power] != None]
 
-@router.get('/node', response_model=Node, tags=['deployments'])
+@router.get('/node', response_model=Node)
 async def read_node_by_label(label: str) -> Node:
     return await database.fetch_one(select(nodes).where(nodes.c.node_label == label))
 
-@router.get('/node/{id}', response_model=Node, tags=['deployments'])
+@router.get('/node/{id}', response_model=Node)
 async def read_node(id: int) -> Node:
     return await database.fetch_one(select(nodes).where(nodes.c.node_id == id))
 
-@router.delete('/node/{id}', response_model=None, dependencies=[Depends(check_authentication)], tags=['deployments'])
+@router.delete('/node/{id}', response_model=None, dependencies=[Depends(check_authentication)])
 async def delete_node(id: int) -> None:
     try:
         await database.fetch_one(delete(nodes).where(nodes.c.node_id == id))
@@ -89,7 +89,7 @@ async def delete_node(id: int) -> None:
 
 # ----------------------------
 
-@router.get('/viz/nodes', response_model=List[DeployedNode], tags=['nodes', 'deployments', 'viz'],
+@router.get('/viz/nodes', response_model=List[DeployedNode], tags=['deployments', 'viz'],
     summary='Deployed nodes for viz dashboard')
 async def list_viz_nodes(
     time_from: Optional[datetime] = Query(None, alias='from', example='2021-09-01T00:00:00.000Z'),

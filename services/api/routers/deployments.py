@@ -12,13 +12,13 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import LABEL_STYLE_TABLENAME_PLUS_COL
 from sqlalchemy.sql import and_, delete, exists, not_, or_, select, text
 
-router = APIRouter()
+router = APIRouter(tags=['deployments'])
 
 # ------------------------------------------------------------------------------
 # DEPLOYMENTS
 # ------------------------------------------------------------------------------
 
-@router.get('/deployments', response_model=List[DeploymentResponse], tags=['deployments'])
+@router.get('/deployments', response_model=List[DeploymentResponse])
 async def read_deployments(node_id: Optional[int] = None) -> List[DeploymentResponse]:
 
     query = select(deployments.alias('d').outerjoin(nodes.alias('n')).\
@@ -39,7 +39,7 @@ async def read_deployments(node_id: Optional[int] = None) -> List[DeploymentResp
         response.routerend(d)
     return response
 
-@router.get('/deployment/{id}', response_model=DeploymentResponse, tags=['deployments'])
+@router.get('/deployment/{id}', response_model=DeploymentResponse)
 async def read_deployment(id: int) -> DeploymentResponse:
 
     query = select(deployments.alias('d').outerjoin(nodes.alias('n')).\
@@ -57,7 +57,7 @@ async def read_deployment(id: int) -> DeploymentResponse:
     d['tags'] = [{'tag_id': t['t_tag_id'], 'name': t['t_name']} for t in t_l if t['t_tag_id'] != None]
     return d
 
-@router.delete('/deployment/{id}', response_model=None, dependencies=[Depends(check_authentication)], tags=['deployments'])
+@router.delete('/deployment/{id}', response_model=None, dependencies=[Depends(check_authentication)])
 async def delete_deployment(id: int) -> None:
     transaction = await database.transaction()
     try:
@@ -79,8 +79,8 @@ async def delete_deployment(id: int) -> None:
         await transaction.commit()
         return True
 
-@router.post('/deployments', response_model=None, dependencies=[Depends(check_authentication)], tags=['deployments'])
-@router.put('/deployments', response_model=None, dependencies=[Depends(check_authentication)], tags=['deployments'])
+@router.post('/deployments', response_model=None, dependencies=[Depends(check_authentication)])
+@router.put('/deployments', response_model=None, dependencies=[Depends(check_authentication)])
 async def upsert_deployment(body: DeploymentRequest) -> None:
     '''
     Insert or update a deployment

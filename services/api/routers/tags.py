@@ -11,20 +11,20 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.sql import between, delete, func, insert, select, update
 from sqlalchemy.sql.functions import current_timestamp
 
-router = APIRouter()
+router = APIRouter(tags=['tags'])
 
 # ------------------------------------------------------------------------------
 # TAGS
 # ------------------------------------------------------------------------------
 
-@router.get('/tags', response_model=List[Tag], tags=['deployments', 'tags'])
+@router.get('/tags', response_model=List[Tag], tags=['deployments'])
 async def read_tags(deployment_id: Optional[int] = None) -> List[Tag]:
     query = select(tags)
     if deployment_id != None:
         query = query.outerjoin(mm_tags_deployments).where(mm_tags_deployments.c.deployments_deployment_id == deployment_id)
     return await database.fetch_all(query)
 
-@router.get('/tags_stats', response_model=List[TagStats], tags=['deployments', 'tags'])
+@router.get('/tags_stats', response_model=List[TagStats], tags=['deployments'])
 async def read_tags_stats(deployment_id: Optional[int] = None) -> List[TagStats]:
     subquery = select(tags.c.tag_id,
             func.count(mm_tags_deployments.c.tags_tag_id).label('deployments'),
@@ -38,7 +38,7 @@ async def read_tags_stats(deployment_id: Optional[int] = None) -> List[TagStats]
         order_by(tags.c.name)
     return await database.fetch_all(query)
 
-@router.put('/tags', dependencies=[Depends(check_authentication)], tags=['tags'])
+@router.put('/tags', dependencies=[Depends(check_authentication)])
 async def upsert_tag(body: Tag) -> None:
     if hasattr(body, 'tag_id') and body.tag_id != None:
         return await database.execute(update(tags).where(tags.c.tag_id == body.tag_id).\
@@ -48,7 +48,7 @@ async def upsert_tag(body: Tag) -> None:
         return await database.execute(insert(tags).values(body.dict(exclude_none=True)).\
             returning(tags.c.tag_id))
 
-@router.delete('/tag/{tag_id}', response_model=None, dependencies=[Depends(check_authentication)], tags=['tags'])
+@router.delete('/tag/{tag_id}', response_model=None, dependencies=[Depends(check_authentication)])
 async def delete_tag(tag_id: int) -> None:
     transaction = await database.transaction()
     try:
@@ -60,7 +60,7 @@ async def delete_tag(tag_id: int) -> None:
         await transaction.commit()
         return True
 
-@router.put('/viz/tag', response_model=None, tags=['tags', 'viz'], responses={
+@router.put('/viz/tag', response_model=None, tags=['viz'], responses={
         400: {"model": ApiErrorResponse},
         404: {"model": ApiErrorResponse},
         409: {"model": ApiErrorResponse}})
@@ -104,7 +104,7 @@ async def put_viz_tag(body: Tag) -> None:
         raise e
 
 
-@router.get('/viz/tag/{id}', response_model=Tag, tags=['tags', 'viz'], responses={404: {"model": ApiErrorResponse}})
+@router.get('/viz/tag/{id}', response_model=Tag, tags=['viz'], responses={404: {"model": ApiErrorResponse}})
 async def get_viz_tag_by_id(id: int) -> Tag:
     '''
     Find tag by ID
@@ -116,7 +116,7 @@ async def get_viz_tag_by_id(id: int) -> Tag:
         return { 'id': result.tag_id, 'name': result.name }
 
 
-@router.delete('/viz/tag/{id}', response_model=None, tags=['tags', 'viz'])
+@router.delete('/viz/tag/{id}', response_model=None, tags=['viz'])
 async def delete_viz_tag(id: int) -> None:
     '''
     Deletes a tag
@@ -127,7 +127,7 @@ async def delete_viz_tag(id: int) -> None:
     except ForeignKeyViolationError:
         raise HTTPException(status_code=400, detail='Tag is referred to by one or more entries')
 
-@router.get('/viz/tags', response_model=List[Tag], tags=['tags', 'viz'])
+@router.get('/viz/tags', response_model=List[Tag], tags=['viz'])
 async def list_viz_tags(
     time_from: Optional[datetime] = Query(None, alias='from', example='2022-06-22T18:00:00.000Z'),
     time_to: Optional[datetime] = Query(None, alias='to', example='2022-06-22T20:00:00.000Z'),

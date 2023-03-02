@@ -7,13 +7,13 @@ from fastapi import APIRouter
 from sqlalchemy.sql import insert, func, select, text
 from sqlalchemy.sql.functions import current_timestamp
 
-router = APIRouter()
+router = APIRouter(tags=['queue'])
 
 # ------------------------------------------------------------------------------
 # QUEUE MANAGER
 # ------------------------------------------------------------------------------
 
-@router.get('/queue/progress/', tags=['queue'])
+@router.get('/queue/progress/')
 async def read_progress():
     query = select(birdnet_input.c.node_label, tasks.c.state,
             func.sum(birdnet_input.c.file_size).label('size'),
@@ -60,7 +60,7 @@ async def read_progress():
 
     return list(map(lambda i: {'node_label': i[0], **i[1]}, node_progress.items()))
 
-@router.get('/queue/input/', tags=['queue'])
+@router.get('/queue/input/')
 async def read_input():
     query = f'''
     select node_label, count(node_label) as count, min(time) as date_start, max(time) as date_end, sum(file_size) as size
@@ -69,7 +69,7 @@ async def read_input():
     '''
     return await database.execute(query).fetchall()
 
-@router.post('/queue/input/', tags=['queue'])
+@router.post('/queue/input/')
 async def queue_input(definition: QueueInputDefinition):
 
     select_query = select(birdnet_input.c.file_id, 1, 0, current_timestamp()).\
@@ -82,7 +82,7 @@ async def queue_input(definition: QueueInputDefinition):
 
     return await database.execute(insert_query)
 
-@router.patch('/queue/input/', tags=['queue'])
+@router.patch('/queue/input/')
 async def queue_input(definition: QueueUpdateDefinition):
 
     transition_query = text(f'''
@@ -135,7 +135,7 @@ async def queue_input(definition: QueueUpdateDefinition):
         await database.execute(delete_results_query.bindparams(node_label=definition.node_label))
         return await database.execute(reset_query.bindparams(node_label=definition.node_label))
 
-@router.get('/queue/detail/{node_label}', tags=['queue'])
+@router.get('/queue/detail/{node_label}')
 async def read_queue_detail(node_label: str):
 
     # file stats

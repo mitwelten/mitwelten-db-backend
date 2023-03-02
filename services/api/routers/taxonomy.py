@@ -7,7 +7,7 @@ from api.tables import taxonomy_data, taxonomy_tree
 from fastapi import APIRouter
 from sqlalchemy.sql import select, text
 
-router = APIRouter()
+router = APIRouter(tags=['taxonomy'])
 
 # ------------------------------------------------------------------------------
 # TAXONOMY LOOKUP
@@ -15,8 +15,7 @@ router = APIRouter()
 
 @router.get('/taxonomy/id/{identifier}', response_model=List[Taxon],
     summary='Taxonomy lookup by numeric identifier (GBIF key)',
-    description='Lookup taxonomy of a given numeric __GBIF key__, returning the taxon tree with translated labels',
-    tags=['taxonomy'])
+    description='Lookup taxonomy of a given numeric __GBIF key__, returning the taxon tree with translated labels')
 async def taxonomy_by_id(identifier: int) -> List[Taxon]:
     keyMap = [ # map db fieldnames to keys in GBIF response
         # for one species there may exist subspecies in GBIF,
@@ -47,8 +46,7 @@ async def taxonomy_by_id(identifier: int) -> List[Taxon]:
 
 @router.get('/taxonomy/sci/{identifier}', response_model=List[Taxon],
     summary='Taxonomy lookup by scientific identifier',
-    description='Lookup taxonomy of a given __scientific identifier__, returning the taxon tree with translated labels',
-    tags=['taxonomy'])
+    description='Lookup taxonomy of a given __scientific identifier__, returning the taxon tree with translated labels')
 async def taxonomy_by_sci(identifier: str) -> List[Taxon]:
     query = select(taxonomy_data.c.datum_id).where(taxonomy_data.c.label_sci == identifier)
     result = await database.fetch_one(query)

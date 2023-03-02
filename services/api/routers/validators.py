@@ -8,7 +8,7 @@ from asyncpg.exceptions import ExclusionViolationError
 from fastapi import APIRouter
 from sqlalchemy.sql import select, text
 
-router = APIRouter()
+router = APIRouter(tags=['validators'])
 
 # ------------------------------------------------------------------------------
 # VALIDATORS
@@ -47,7 +47,7 @@ async def validate_deployment(body: DeploymentRequest) -> None:
         await transaction.rollback()
         return False
 
-@router.put('/validate/node', response_model=ValidationResult, tags=['deployments'])
+@router.put('/validate/node', response_model=ValidationResult, tags=['nodes'])
 async def validate_node(body: NodeValidationRequest) -> ValidationResult:
     r = None
     if hasattr(body, 'node_id') and body.node_id != None:
@@ -57,7 +57,7 @@ async def validate_node(body: NodeValidationRequest) -> ValidationResult:
         r = await database.fetch_one(select(nodes).where(nodes.c.node_label == body.node_label))
     return True if r == None else False
 
-@router.put('/validate/tag', response_model=ValidationResult, tags=['deployments'])
+@router.put('/validate/tag', response_model=ValidationResult, tags=['tags'])
 async def validate_tag(body: Tag) -> ValidationResult:
     r = None
     if hasattr(body, 'tag_id') and body.tag_id != None:

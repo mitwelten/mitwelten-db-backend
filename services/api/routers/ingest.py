@@ -5,19 +5,18 @@ from api.tables import files_image
 from fastapi import APIRouter, HTTPException
 from sqlalchemy.sql import insert, select
 
-router = APIRouter()
-
+router = APIRouter(tags=['inferrence', 'ingest'])
 
 # ------------------------------------------------------------------------------
 # DATA INPUT (INGEST)
 # ------------------------------------------------------------------------------
 
-@router.get('/ingest/image/{sha256}', tags=['ingest'])
+@router.get('/ingest/image/{sha256}')
 async def ingest_image(sha256: str) -> None:
     return await database.fetch_one(select(files_image).where(files_image.c.sha256 == sha256))
 
 # todo: auth!?
-@router.post('/ingest/image', tags=['ingest'])
+@router.post('/ingest/image')
 async def ingest_image(body: ImageRequest) -> None:
 
     transaction = await database.transaction()
