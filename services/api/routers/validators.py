@@ -1,11 +1,11 @@
 from api.config import crd
 from api.database import database
-from api.dependencies import to_inclusive_range
+from api.dependencies import to_inclusive_range, check_authentication
 from api.models import DeploymentRequest, ValidationResult, NodeValidationRequest, Tag, ImageValidationResponse, ImageValidationRequest
 from api.tables import deployments, nodes, tags
 
 from asyncpg.exceptions import ExclusionViolationError
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from sqlalchemy.sql import select, text
 
 router = APIRouter(tags=['validators'])
@@ -14,7 +14,7 @@ router = APIRouter(tags=['validators'])
 # VALIDATORS
 # ------------------------------------------------------------------------------
 
-@router.put('/validate/deployment', response_model=ValidationResult, tags=['deployments'])
+@router.put('/validate/deployment', dependencies=[Depends(check_authentication)], response_model=ValidationResult, tags=['deployments'])
 async def validate_deployment(body: DeploymentRequest) -> None:
     transaction = await database.transaction()
     try:
@@ -47,7 +47,7 @@ async def validate_deployment(body: DeploymentRequest) -> None:
         await transaction.rollback()
         return False
 
-@router.put('/validate/node', response_model=ValidationResult, tags=['nodes'])
+@router.put('/validate/node', dependencies=[Depends(check_authentication)], response_model=ValidationResult, tags=['nodes'])
 async def validate_node(body: NodeValidationRequest) -> ValidationResult:
     r = None
     if hasattr(body, 'node_id') and body.node_id != None:
@@ -57,7 +57,7 @@ async def validate_node(body: NodeValidationRequest) -> ValidationResult:
         r = await database.fetch_one(select(nodes).where(nodes.c.node_label == body.node_label))
     return True if r == None else False
 
-@router.put('/validate/tag', response_model=ValidationResult, tags=['tags'])
+@router.put('/validate/tag', dependencies=[Depends(check_authentication)], response_model=ValidationResult, tags=['tags'])
 async def validate_tag(body: Tag) -> ValidationResult:
     r = None
     if hasattr(body, 'tag_id') and body.tag_id != None:
@@ -68,7 +68,7 @@ async def validate_tag(body: Tag) -> ValidationResult:
     return True if r == None else False
 
 
-@router.post('/validate/image', response_model=ImageValidationResponse, tags=['ingest'])
+@router.post('/validate/image', dependencies=[Depends(check_authentication)], response_model=ImageValidationResponse, tags=['ingest'])
 async def check_image(body: ImageValidationRequest) -> None:
 
     duplicate_query = text(f'''

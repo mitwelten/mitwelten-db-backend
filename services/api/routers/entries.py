@@ -3,12 +3,12 @@ from typing import List, Optional
 from datetime import datetime
 
 from api.database import database
-from api.dependencies import unique_everseen
+from api.dependencies import unique_everseen, check_authentication
 from api.models import ApiErrorResponse, Entry, PatchEntry, Tag, File
 from api.tables import entries, files_entry, mm_tags_entries, tags
 
 from asyncpg import UniqueViolationError
-from fastapi import APIRouter, Query, HTTPException
+from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.sql import and_, between, select, text, func
 
 router = APIRouter(tags=['entries', 'viz'])
@@ -52,7 +52,7 @@ async def list_entries(
     return output
 
 
-@router.post('/entries', response_model=Entry)
+@router.post('/entries', dependencies=[Depends(check_authentication)], response_model=Entry)
 async def add_entry(body: Entry) -> None:
     '''
     ## Add a new entry to the map
@@ -95,7 +95,7 @@ async def get_entry_by_id(id: int) -> Entry:
         e['tags'] = [{'id': t['tag_id'], 'name': t['tag_name']} for t in t_l if t['tag_id'] != None]
         return e
 
-@router.patch('/entry/{id}', response_model=None)
+@router.patch('/entry/{id}', response_model=None, dependencies=[Depends(check_authentication)])
 async def update_entry(id: int, body: PatchEntry = ...) -> None:
     '''
     ## Updates an entry
@@ -132,7 +132,7 @@ async def update_entry(id: int, body: PatchEntry = ...) -> None:
     return await database.execute(query)
 
 
-@router.delete('/entry/{id}', response_model=None)
+@router.delete('/entry/{id}', response_model=None, dependencies=[Depends(check_authentication)])
 async def delete_entry(id: int) -> None:
     '''
     ## Deletes an entry
@@ -153,7 +153,7 @@ async def delete_entry(id: int) -> None:
         await transaction.commit()
 
 
-@router.post('/entry/{id}/tag',tags=['tags'], response_model=None, responses={'404': {"model": ApiErrorResponse}})
+@router.post('/entry/{id}/tag',tags=['tags'], response_model=None, dependencies=[Depends(check_authentication)], responses={'404': {"model": ApiErrorResponse}})
 async def add_tag_to_entry(id: int, body: Tag) -> None:
     '''
     Adds a tag for an entry
@@ -199,7 +199,7 @@ async def add_tag_to_entry(id: int, body: Tag) -> None:
         await transaction.commit()
 
 
-@router.delete('/entry/{id}/tag',tags=['tags'], response_model=None)
+@router.delete('/entry/{id}/tag', dependencies=[Depends(check_authentication)], response_model=None, tags=['tags'])
 async def delete_tag_from_entry(id: int, body: Tag) -> None:
     '''
     Deletes a tag from an entry
@@ -219,7 +219,7 @@ async def delete_tag_from_entry(id: int, body: Tag) -> None:
         and_(mm_tags_entries.c.tags_tag_id == delete_id, mm_tags_entries.c.entries_entry_id == id)))
 
 
-@router.post('/entry/{entry_id}/file', response_model=None, tags=['files'])
+@router.post('/entry/{entry_id}/file', dependencies=[Depends(check_authentication)], response_model=None, tags=['files'])
 async def add_file_to_entry(entry_id: int, body: File) -> None:
     '''
     Adds a file for an entry
@@ -242,7 +242,7 @@ async def add_file_to_entry(entry_id: int, body: File) -> None:
         raise HTTPException(status_code=409, detail='File with same S3 URL already exists')
 
 
-@router.delete('/file/{id}', response_model=None, tags=['files'])
+@router.delete('/file/{id}', dependencies=[Depends(check_authentication)], response_model=None, tags=['files'])
 async def delete_file(file_id: int) -> None:
     '''
     Deletes a file

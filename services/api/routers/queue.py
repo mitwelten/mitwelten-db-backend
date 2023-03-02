@@ -1,9 +1,10 @@
 from api.config import crd
 from api.database import database
+from api.dependencies import check_authentication
 from api.models import QueueInputDefinition, QueueUpdateDefinition
 from api.tables import birdnet_input, tasks
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from sqlalchemy.sql import insert, func, select, text
 from sqlalchemy.sql.functions import current_timestamp
 
@@ -69,7 +70,7 @@ async def read_input():
     '''
     return await database.execute(query).fetchall()
 
-@router.post('/queue/input/')
+@router.post('/queue/input/', dependencies=[Depends(check_authentication)])
 async def queue_input(definition: QueueInputDefinition):
 
     select_query = select(birdnet_input.c.file_id, 1, 0, current_timestamp()).\
@@ -82,7 +83,7 @@ async def queue_input(definition: QueueInputDefinition):
 
     return await database.execute(insert_query)
 
-@router.patch('/queue/input/')
+@router.patch('/queue/input/', dependencies=[Depends(check_authentication)])
 async def queue_input(definition: QueueUpdateDefinition):
 
     transition_query = text(f'''

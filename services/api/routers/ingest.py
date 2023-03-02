@@ -1,8 +1,9 @@
 from api.database import database
+from api.dependencies import check_authentication
 from api.models import ImageRequest
 from api.tables import files_image
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.sql import insert, select
 
 router = APIRouter(tags=['inferrence', 'ingest'])
@@ -15,8 +16,7 @@ router = APIRouter(tags=['inferrence', 'ingest'])
 async def ingest_image(sha256: str) -> None:
     return await database.fetch_one(select(files_image).where(files_image.c.sha256 == sha256))
 
-# todo: auth!?
-@router.post('/ingest/image')
+@router.post('/ingest/image', dependencies=[Depends(check_authentication)])
 async def ingest_image(body: ImageRequest) -> None:
 
     transaction = await database.transaction()

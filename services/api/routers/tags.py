@@ -60,7 +60,7 @@ async def delete_tag(tag_id: int) -> None:
         await transaction.commit()
         return True
 
-@router.put('/viz/tag', response_model=None, tags=['viz'], responses={
+@router.put('/viz/tag', response_model=None, dependencies=[Depends(check_authentication)], tags=['viz'], responses={
         400: {"model": ApiErrorResponse},
         404: {"model": ApiErrorResponse},
         409: {"model": ApiErrorResponse}})
@@ -116,7 +116,7 @@ async def get_viz_tag_by_id(id: int) -> Tag:
         return { 'id': result.tag_id, 'name': result.name }
 
 
-@router.delete('/viz/tag/{id}', response_model=None, tags=['viz'])
+@router.delete('/viz/tag/{id}', response_model=None, dependencies=[Depends(check_authentication)], tags=['viz'])
 async def delete_viz_tag(id: int) -> None:
     '''
     Deletes a tag
