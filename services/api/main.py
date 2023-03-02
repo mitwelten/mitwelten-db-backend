@@ -31,6 +31,26 @@ tags_metadata = [
         'name': 'kml',
         'description': 'Layers for map display',
     },
+    {
+        'name': 'entries',
+        'description': 'Pins, added to the map',
+    },
+    {
+        'name': 'nodes',
+        'description': 'Data collection devices',
+    },
+    {
+        'name': 'tags',
+        'description': 'Tags',
+    },
+    {
+        'name': 'data',
+        'description': 'Sensor / Capture Data',
+    },
+    {
+        'name': 'files',
+        'description': 'Files uploaded for / added to entries',
+    },
 ]
 
 app = FastAPI(
