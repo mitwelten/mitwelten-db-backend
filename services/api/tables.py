@@ -3,10 +3,8 @@ import sqlalchemy
 from api.config import crd
 from api.dependencies import GeometryPoint
 
-from asyncpg.pgproto.types import Point as PgPoint
-from sqlalchemy import ForeignKey, func
+from sqlalchemy import ForeignKey
 from sqlalchemy.dialects.postgresql import TSTZRANGE
-from sqlalchemy.types import UserDefinedType
 
 metadata = sqlalchemy.MetaData(schema=crd.db.schema)
 
