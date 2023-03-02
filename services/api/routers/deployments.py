@@ -5,7 +5,7 @@ from api.database import database
 from api.dependencies import check_authentication, from_inclusive_range, to_inclusive_range, unique_everseen
 from api.exceptions import RecordsDependencyException
 from api.models import DeploymentRequest, DeploymentResponse
-from api.tables import data_records, deployments, mm_tag_deployments, nodes, tags
+from api.tables import data_records, deployments, mm_tags_deployments, nodes, tags
 
 from asyncpg.exceptions import ExclusionViolationError
 from fastapi import APIRouter, Depends, HTTPException
@@ -22,7 +22,7 @@ router = APIRouter()
 async def read_deployments(node_id: Optional[int] = None) -> List[DeploymentResponse]:
 
     query = select(deployments.alias('d').outerjoin(nodes.alias('n')).\
-        outerjoin(mm_tag_deployments.alias('mm')).outerjoin(tags.alias('t'))).\
+        outerjoin(mm_tags_deployments.alias('mm')).outerjoin(tags.alias('t'))).\
         set_label_style(LABEL_STYLE_TABLENAME_PLUS_COL)
     if node_id != None:
         query = query.where(text('d.node_id = :node_id').bindparams(node_id=node_id))
@@ -43,7 +43,7 @@ async def read_deployments(node_id: Optional[int] = None) -> List[DeploymentResp
 async def read_deployment(id: int) -> DeploymentResponse:
 
     query = select(deployments.alias('d').outerjoin(nodes.alias('n')).\
-        outerjoin(mm_tag_deployments.alias('mm')).outerjoin(tags.alias('t'))).\
+        outerjoin(mm_tags_deployments.alias('mm')).outerjoin(tags.alias('t'))).\
         where(text('deployment_id = :id').bindparams(id=id)).set_label_style(LABEL_STYLE_TABLENAME_PLUS_COL)
 
     r = await database.fetch_all(query)
@@ -108,9 +108,9 @@ async def upsert_deployment(body: DeploymentRequest) -> None:
             if hasattr(body, 'tags') and body.tags != None and isinstance(body.tags, list):
                 tu = set(body.tags) # tags, unique
                 # select from tags where name in list from request or assoc with deployment_id
-                r = await database.fetch_all(select(tags.c.tag_id, tags.c.name, mm_tag_deployments.c.deployments_deployment_id.label('deployment_id')).\
-                    outerjoin(mm_tag_deployments, mm_tag_deployments.c.tags_tag_id == tags.c.tag_id).\
-                    where(or_(tags.c.name.in_(tu), mm_tag_deployments.c.deployments_deployment_id == body.deployment_id)))
+                r = await database.fetch_all(select(tags.c.tag_id, tags.c.name, mm_tags_deployments.c.deployments_deployment_id.label('deployment_id')).\
+                    outerjoin(mm_tags_deployments, mm_tags_deployments.c.tags_tag_id == tags.c.tag_id).\
+                    where(or_(tags.c.name.in_(tu), mm_tags_deployments.c.deployments_deployment_id == body.deployment_id)))
 
                 # split tags in already assoc and unassoc
                 pred = lambda x: x['deployment_id'] != body.deployment_id
@@ -122,9 +122,9 @@ async def upsert_deployment(body: DeploymentRequest) -> None:
 
                 # deassoc Delete Tags (previously associated)
                 if len(dt):
-                    await database.execute(mm_tag_deployments.delete().where(and_(
-                        mm_tag_deployments.c.tags_tag_id.in_([t['tag_id'] for t in dt]),
-                        mm_tag_deployments.c.deployments_deployment_id == body.deployment_id)))
+                    await database.execute(mm_tags_deployments.delete().where(and_(
+                        mm_tags_deployments.c.tags_tag_id.in_([t['tag_id'] for t in dt]),
+                        mm_tags_deployments.c.deployments_deployment_id == body.deployment_id)))
 
                 # insert New Tags
                 unt = []
@@ -137,7 +137,7 @@ async def upsert_deployment(body: DeploymentRequest) -> None:
                 # insert join records
                 if len(ut): unt.extend(set([x['tag_id'] for x in ut]))
                 if len(unt):
-                    await database.fetch_all(mm_tag_deployments.insert().values(
+                    await database.fetch_all(mm_tags_deployments.insert().values(
                         [{'tags_tag_id': t, 'deployments_deployment_id': body.deployment_id} for t in set(unt)]))
             await transaction.commit()
 
@@ -163,7 +163,7 @@ async def upsert_deployment(body: DeploymentRequest) -> None:
                     ant.extend([x['tag_id'] for x in nti])
                 # insert join records
                 if len(ant):
-                    await database.fetch_all(mm_tag_deployments.insert().values(
+                    await database.fetch_all(mm_tags_deployments.insert().values(
                         [{'tags_tag_id': t, 'deployments_deployment_id': d['deployment_id']} for t in ant]))
             await transaction.commit()
 

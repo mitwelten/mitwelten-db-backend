@@ -3,7 +3,7 @@ from typing import List, Optional
 from api.database import database
 from api.dependencies import check_authentication
 from api.models import Tag, TagStats
-from api.tables import mm_tag_deployments, mm_tag_entries, tags
+from api.tables import mm_tags_deployments, mm_tags_entries, tags
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.sql import delete, select, func, update, insert
@@ -20,16 +20,16 @@ router = APIRouter()
 async def read_tags(deployment_id: Optional[int] = None) -> List[Tag]:
     query = select(tags)
     if deployment_id != None:
-        query = query.outerjoin(mm_tag_deployments).where(mm_tag_deployments.c.deployments_deployment_id == deployment_id)
+        query = query.outerjoin(mm_tags_deployments).where(mm_tags_deployments.c.deployments_deployment_id == deployment_id)
     return await database.fetch_all(query)
 
 @router.get('/tags_stats', response_model=List[TagStats], tags=['deployments', 'tags'])
 async def read_tags_stats(deployment_id: Optional[int] = None) -> List[TagStats]:
     subquery = select(tags.c.tag_id,
-            func.count(mm_tag_deployments.c.tags_tag_id).label('deployments'),
-            func.count(mm_tag_entries.c.tags_tag_id).label('entries')).\
-        outerjoin(mm_tag_deployments).\
-        outerjoin(mm_tag_entries).\
+            func.count(mm_tags_deployments.c.tags_tag_id).label('deployments'),
+            func.count(mm_tags_entries.c.tags_tag_id).label('entries')).\
+        outerjoin(mm_tags_deployments).\
+        outerjoin(mm_tags_entries).\
         group_by(tags.c.tag_id).subquery()
 
     query = select(subquery, tags.c.name, tags.c.created_at, tags.c.updated_at).\

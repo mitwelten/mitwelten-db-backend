@@ -162,7 +162,7 @@ tags = sqlalchemy.Table(
     schema=crd.db.schema
 )
 
-mm_tag_deployments = sqlalchemy.Table(
+mm_tags_deployments = sqlalchemy.Table(
     'mm_tags_deployments',
     metadata,
     sqlalchemy.Column('tags_tag_id',               None, ForeignKey(tags.c.tag_id)),
@@ -170,7 +170,7 @@ mm_tag_deployments = sqlalchemy.Table(
     schema=crd.db.schema
 )
 
-mm_tag_entries = sqlalchemy.Table(
+mm_tags_entries = sqlalchemy.Table(
     'mm_tags_entries',
     metadata,
     sqlalchemy.Column('tags_tag_id',               None, ForeignKey(tags.c.tag_id)),
