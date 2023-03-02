@@ -39,7 +39,7 @@ app = FastAPI(
         {'url': 'https://data.mitwelten.org/api/v3', 'description': 'Production environment'},
         {'url': 'http://localhost:8000', 'description': 'Development environment'}
     ],
-    root_path='/manager/v2',
+    root_path='/api/v3',
     root_path_in_servers=False,
     # dependencies=[Depends(check_authentication)]
 )
