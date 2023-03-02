@@ -114,7 +114,7 @@ async def shutdown():
     await database.disconnect()
 
 @app.get('/login', tags=['authentication'])
-def login(login_state: bool = Depends(check_authentication)):
+async def login(login_state: bool = Depends(check_authentication)):
     return login_state
 
 @app.get('/', include_in_schema=False)
