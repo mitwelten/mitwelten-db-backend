@@ -66,7 +66,7 @@ services:
 
       # CORS
       - "traefik.http.middlewares.viz-api-cors.headers.accesscontrolallowmethods=GET,OPTIONS,PUT,POST,PATCH,DELETE"
-      - "traefik.http.middlewares.viz-api-cors.headers.accessControlAllowOriginList=https://viz.mitwelten.org;http://localhost"
+      - "traefik.http.middlewares.viz-api-cors.headers.accessControlAllowOriginList=https://discover.mitwelten.org;http://localhost"
       - "traefik.http.middlewares.viz-api-cors.headers.accessControlAllowHeaders=*"
       - "traefik.http.middlewares.viz-api-cors.headers.accessControlExposeHeaders=*"
       - "traefik.http.middlewares.viz-api-cors.headers.accesscontrolmaxage=100"
@@ -104,7 +104,7 @@ services:
 
       # CORS
       - traefik.http.middlewares.viz_api_v2_cors.headers.accesscontrolallowmethods=GET,OPTIONS,PUT,POST,PATCH,DELETE
-      - traefik.http.middlewares.viz_api_v2_cors.headers.accessControlAllowOriginList=https://viz.mitwelten.org;http://localhost
+      - traefik.http.middlewares.viz_api_v2_cors.headers.accessControlAllowOriginList=https://discover.mitwelten.org;http://localhost
       - traefik.http.middlewares.viz_api_v2_cors.headers.accessControlAllowHeaders=*
       - traefik.http.middlewares.viz_api_v2_cors.headers.accessControlExposeHeaders=*
       - traefik.http.middlewares.viz_api_v2_cors.headers.accesscontrolmaxage=100
@@ -442,7 +442,7 @@ services:
       - "traefik.http.services.dashboardsrv.loadbalancer.server.port=8080"
 
       # for http
-      - "traefik.http.routers.dashboardsrv_insecure.rule=(Host(`viz.mitwelten.org`) && PathPrefix(`/api`))"
+      - "traefik.http.routers.dashboardsrv_insecure.rule=(Host(`discover.mitwelten.org`) && PathPrefix(`/api`))"
       - "traefik.http.routers.dashboardsrv_insecure.entrypoints=http"
 
       # redirect to https
@@ -450,7 +450,7 @@ services:
       - "traefik.http.routers.dashboardsrv_insecure.middlewares=dashboardsrv-https"
 
       # for https
-      - "traefik.http.routers.dashboardsrv.rule=(Host(`viz.mitwelten.org`) && PathPrefix(`/api`))"
+      - "traefik.http.routers.dashboardsrv.rule=(Host(`discover.mitwelten.org`) && PathPrefix(`/api`))"
       - "traefik.http.routers.dashboardsrv.entrypoints=https"
       - "traefik.http.routers.dashboardsrv.tls.certresolver=ssl"
 
@@ -464,7 +464,7 @@ services:
       - "traefik.http.services.dashboardclient.loadbalancer.server.port=3000"
 
       # for http
-      - "traefik.http.routers.dashboardclient_insecure.rule=(Host(`viz.mitwelten.org`) && PathPrefix(`/`))"
+      - "traefik.http.routers.dashboardclient_insecure.rule=(Host(`discover.mitwelten.org`) && PathPrefix(`/`))"
       - "traefik.http.routers.dashboardclient_insecure.entrypoints=http"
 
       # redirect to https
@@ -472,6 +472,6 @@ services:
       - "traefik.http.routers.dashboardclient_insecure.middlewares=dashboardclient-https"
 
       # for https
-      - "traefik.http.routers.dashboardclient.rule=(Host(`viz.mitwelten.org`) && PathPrefix(`/`))"
+      - "traefik.http.routers.dashboardclient.rule=(Host(`discover.mitwelten.org`) && PathPrefix(`/`))"
       - "traefik.http.routers.dashboardclient.entrypoints=https"
       - "traefik.http.routers.dashboardclient.tls.certresolver=ssl"
