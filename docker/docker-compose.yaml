@@ -33,6 +33,37 @@ services:
 
     restart: always
 
+  keycloak:
+    container_name: keycloak
+    image: quay.io/keycloak/keycloak:legacy
+    restart: unless-stopped
+    environment:
+      KEYCLOAK_USER: ${KC_USERNAME}
+      KEYCLOAK_PASSWORD: ${KC_PASSWORD}
+      DB_VENDOR: POSTGRES
+      DB_ADDR: ${KC_DB_HOST}
+      DB_DATABASE: ${KC_DATABASE}
+      DB_USER: ${KC_DB_USERNAME}
+      DB_PASSWORD: ${KC_DB_PASSWORD}
+      DB_SCHEMA: ${KC_DB_SCHEMA}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.services.kc.loadbalancer.server.port=8080"
+
+      # for http
+      - "traefik.http.routers.kc_insecure.rule=Host(`auth.mitwelten.org`)"
+      - "traefik.http.routers.kc_insecure.entrypoints=http"
+
+      # redirect to https
+      - "traefik.http.middlewares.kc-https.redirectscheme.scheme=https"
+      - "traefik.http.routers.kc_insecure.middlewares=kc-https"
+
+      # for https
+      - "traefik.http.routers.kc.rule=Host(`auth.mitwelten.org`)"
+      - "traefik.http.routers.kc.entrypoints=https"
+      - "traefik.http.routers.kc.tls.certresolver=ssl"
+
+
   viz-api:
     image: mitwelten-viz:0.1
     container_name: "mitwelten-viz-api-v1"
