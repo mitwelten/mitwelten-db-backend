@@ -46,7 +46,7 @@ services:
       DB_USER: ${KC_DB_USERNAME}
       DB_PASSWORD: ${KC_DB_PASSWORD}
       DB_SCHEMA: ${KC_DB_SCHEMA}
-      KC_HOSTNAME: ${KC_HOSTNAME}
+      PROXY_ADDRESS_FORWARDING: "true"
     labels:
       - "traefik.enable=true"
       - "traefik.http.services.kc.loadbalancer.server.port=8080"
