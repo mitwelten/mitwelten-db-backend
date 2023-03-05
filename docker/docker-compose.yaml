@@ -142,6 +142,41 @@ services:
       - traefik.http.middlewares.manager_api_v2_cors.headers.accesscontrolmaxage=100
       - traefik.http.middlewares.manager_api_v2_cors.headers.addvaryheader=true
 
+  data-api:
+    image: mitwelten-data-api:3.2
+    container_name: mitwelten-data-api-v3
+    restart: unless-stopped
+    volumes:
+      - /opt/mitwelten-db-backend/services/api:/app
+      - /opt/mitwelten-db-backend/credentials.py:/app/credentials.py
+    labels:
+      - traefik.enable=true
+      - traefik.http.services.data_api_v3.loadbalancer.server.port=80
+
+      # http entrypoint
+      - traefik.http.routers.data_api_v3_http.rule=Host(`data.mitwelten.org`)&&PathPrefix(`/data/v3/`)
+      - traefik.http.routers.data_api_v3_http.entrypoints=http
+      # redirect to https
+      - traefik.http.middlewares.data_api_v3_https.redirectscheme.scheme=https
+      - traefik.http.routers.data_api_v3_http.middlewares=data_api_v3_https
+      # https entrypoint
+      - traefik.http.routers.data_api_v3.rule=Host(`data.mitwelten.org`)&&PathPrefix(`/data/v3/`)
+      - traefik.http.routers.data_api_v3.entrypoints=https
+      - traefik.http.routers.data_api_v3.tls.certresolver=ssl
+      #  middlewares for https
+      - traefik.http.routers.data_api_v3.middlewares=data_api_v3_cors,data_api_v3_stripprefix
+
+      # strip prefix /data/v3
+      - traefik.http.middlewares.data_api_v3_stripprefix.stripprefix.prefixes=/data/v3
+
+      # CORS
+      - traefik.http.middlewares.data_api_v3_cors.headers.accesscontrolallowmethods=GET,OPTIONS,PUT,POST,PATCH,DELETE
+      - traefik.http.middlewares.data_api_v3_cors.headers.accessControlAllowOriginList=*
+      - traefik.http.middlewares.data_api_v3_cors.headers.accessControlAllowHeaders=*
+      - traefik.http.middlewares.data_api_v3_cors.headers.accessControlExposeHeaders=*
+      - traefik.http.middlewares.data_api_v3_cors.headers.accesscontrolmaxage=100
+      - traefik.http.middlewares.data_api_v3_cors.headers.addvaryheader=true
+
   deployment-frontend:
     image: nginx:alpine
     container_name: "deployment-frontend"
