@@ -143,12 +143,12 @@ services:
       - traefik.http.middlewares.manager_api_v2_cors.headers.addvaryheader=true
 
   data-api:
-    image: mitwelten-data-api:3.2
+    image: mitwelten-data-api:3.3
     container_name: mitwelten-data-api-v3
     restart: unless-stopped
     volumes:
-      - /opt/mitwelten-db-backend/services/api:/app
-      - /opt/mitwelten-db-backend/credentials.py:/app/credentials.py
+      - /opt/mitwelten-db-backend/services/api:/service/api
+      - /opt/mitwelten-db-backend/credentials.py:/service/credentials.py
     labels:
       - traefik.enable=true
       - traefik.http.services.data_api_v3.loadbalancer.server.port=80
