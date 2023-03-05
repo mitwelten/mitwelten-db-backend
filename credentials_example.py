@@ -11,7 +11,14 @@ class BasicAuth(object):
     username = 'username'
     password = 'password'
 
+class OidcConfig(object):
+    KC_SERVER_URL = 'https://identityprovider.tld/auth/'
+    KC_CLIENT_ID = 'client_id'
+    KC_REALM_NAME = 'realm'
+    KC_CLIENT_SECRET = 'secret'
+
 db = DbConfig()
 ba = BasicAuth()
+oidc = OidcConfig()
 
 DEV = False

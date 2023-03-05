@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import List, Optional
 
 from api.database import database
-from api.dependencies import check_authentication
+from api.dependencies import check_oid_authentication
 from api.models import ApiErrorResponse, Tag, TagStats
 from api.tables import mm_tags_deployments, mm_tags_entries, tags
 
@@ -38,7 +38,7 @@ async def read_tags_stats(deployment_id: Optional[int] = None) -> List[TagStats]
         order_by(tags.c.name)
     return await database.fetch_all(query)
 
-@router.put('/tags', dependencies=[Depends(check_authentication)])
+@router.put('/tags', dependencies=[Depends(check_oid_authentication)])
 async def upsert_tag(body: Tag) -> None:
     if hasattr(body, 'tag_id') and body.tag_id != None:
         return await database.execute(update(tags).where(tags.c.tag_id == body.tag_id).\
@@ -48,7 +48,7 @@ async def upsert_tag(body: Tag) -> None:
         return await database.execute(insert(tags).values(body.dict(exclude_none=True)).\
             returning(tags.c.tag_id))
 
-@router.delete('/tag/{tag_id}', response_model=None, dependencies=[Depends(check_authentication)])
+@router.delete('/tag/{tag_id}', response_model=None, dependencies=[Depends(check_oid_authentication)])
 async def delete_tag(tag_id: int) -> None:
     transaction = await database.transaction()
     try:
@@ -60,7 +60,7 @@ async def delete_tag(tag_id: int) -> None:
         await transaction.commit()
         return True
 
-@router.put('/viz/tag', response_model=None, dependencies=[Depends(check_authentication)], tags=['viz'], responses={
+@router.put('/viz/tag', response_model=None, dependencies=[Depends(check_oid_authentication)], tags=['viz'], responses={
         400: {"model": ApiErrorResponse},
         404: {"model": ApiErrorResponse},
         409: {"model": ApiErrorResponse}})
@@ -116,7 +116,7 @@ async def get_viz_tag_by_id(id: int) -> Tag:
         return { 'id': result.tag_id, 'name': result.name }
 
 
-@router.delete('/viz/tag/{id}', response_model=None, dependencies=[Depends(check_authentication)], tags=['viz'])
+@router.delete('/viz/tag/{id}', response_model=None, dependencies=[Depends(check_oid_authentication)], tags=['viz'])
 async def delete_viz_tag(id: int) -> None:
     '''
     Deletes a tag

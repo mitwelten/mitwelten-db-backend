@@ -2,7 +2,7 @@ from typing import List, Optional
 from datetime import datetime
 
 from api.database import database
-from api.dependencies import check_authentication
+from api.dependencies import check_oid_authentication
 from api.models import Node, DeployedNode
 from api.tables import deployments, nodes
 
@@ -24,7 +24,7 @@ async def read_nodes():
     return await database.fetch_all(select(nodes, deployments_subquery.label('deployment_count')).\
         order_by(nodes.c.node_label))
 
-@router.put('/nodes', dependencies=[Depends(check_authentication)])
+@router.put('/nodes', dependencies=[Depends(check_oid_authentication)])
 async def upsert_node(body: Node) -> None:
     if hasattr(body, 'node_id') and body.node_id != None:
         return await database.execute(update(nodes).where(nodes.c.node_id == body.node_id).\
@@ -78,7 +78,7 @@ async def read_node_by_label(label: str) -> Node:
 async def read_node(id: int) -> Node:
     return await database.fetch_one(select(nodes).where(nodes.c.node_id == id))
 
-@router.delete('/node/{id}', response_model=None, dependencies=[Depends(check_authentication)])
+@router.delete('/node/{id}', response_model=None, dependencies=[Depends(check_oid_authentication)])
 async def delete_node(id: int) -> None:
     try:
         await database.fetch_one(delete(nodes).where(nodes.c.node_id == id))

@@ -3,7 +3,7 @@ from typing import List, Optional
 from datetime import datetime
 
 from api.database import database
-from api.dependencies import unique_everseen, check_authentication
+from api.dependencies import unique_everseen, check_oid_authentication
 from api.models import ApiErrorResponse, Entry, PatchEntry, Tag, File
 from api.tables import entries, files_entry, mm_tags_entries, tags
 
@@ -52,7 +52,7 @@ async def list_entries(
     return output
 
 
-@router.post('/entries', dependencies=[Depends(check_authentication)], response_model=Entry)
+@router.post('/entries', dependencies=[Depends(check_oid_authentication)], response_model=Entry)
 async def add_entry(body: Entry) -> None:
     '''
     ## Add a new entry to the map
@@ -136,7 +136,7 @@ async def update_entry(entry_id: int, body: PatchEntry = ...) -> Entry:
     return await database.fetch_one(query)
 
 
-@router.delete('/entry/{entry_id}', response_model=None, dependencies=[Depends(check_authentication)])
+@router.delete('/entry/{entry_id}', response_model=None, dependencies=[Depends(check_oid_authentication)])
 async def delete_entry(entry_id: int) -> None:
     '''
     ## Deletes an entry
@@ -157,7 +157,7 @@ async def delete_entry(entry_id: int) -> None:
         await transaction.commit()
 
 
-@router.post('/entry/{entry_id}/tag',tags=['tags'], response_model=None, dependencies=[Depends(check_authentication)], responses={'404': {'model': ApiErrorResponse}})
+@router.post('/entry/{entry_id}/tag',tags=['tags'], response_model=None, dependencies=[Depends(check_oid_authentication)], responses={'404': {'model': ApiErrorResponse}})
 async def add_tag_to_entry(entry_id: int, body: Tag) -> None:
     '''
     Adds a tag for an entry
@@ -203,7 +203,7 @@ async def add_tag_to_entry(entry_id: int, body: Tag) -> None:
         await transaction.commit()
 
 
-@router.delete('/entry/{entry_id}/tag', dependencies=[Depends(check_authentication)], response_model=None, tags=['tags'])
+@router.delete('/entry/{entry_id}/tag', dependencies=[Depends(check_oid_authentication)], response_model=None, tags=['tags'])
 async def delete_tag_from_entry(entry_id: int, body: Tag) -> None:
     '''
     Deletes a tag from an entry
@@ -223,7 +223,7 @@ async def delete_tag_from_entry(entry_id: int, body: Tag) -> None:
         and_(mm_tags_entries.c.tags_tag_id == delete_id, mm_tags_entries.c.entries_entry_id == entry_id)))
 
 
-@router.post('/entry/{entry_id}/file', dependencies=[Depends(check_authentication)], response_model=None, tags=['files'])
+@router.post('/entry/{entry_id}/file', dependencies=[Depends(check_oid_authentication)], response_model=None, tags=['files'])
 async def add_file_to_entry(entry_id: int, body: File) -> None:
     '''
     Adds a file for an entry
@@ -246,7 +246,7 @@ async def add_file_to_entry(entry_id: int, body: File) -> None:
         raise HTTPException(status_code=409, detail='File with same S3 URL already exists')
 
 
-@router.delete('/file/{id}', dependencies=[Depends(check_authentication)], response_model=None, tags=['files'])
+@router.delete('/file/{id}', dependencies=[Depends(check_oid_authentication)], response_model=None, tags=['files'])
 async def delete_file(file_id: int) -> None:
     '''
     Deletes a file

@@ -2,7 +2,7 @@ from itertools import filterfalse, groupby
 from typing import List, Optional
 
 from api.database import database
-from api.dependencies import check_authentication, from_inclusive_range, to_inclusive_range, unique_everseen
+from api.dependencies import check_oid_authentication, from_inclusive_range, to_inclusive_range, unique_everseen
 from api.exceptions import RecordsDependencyException
 from api.models import DeploymentRequest, DeploymentResponse
 from api.tables import data_records, deployments, mm_tags_deployments, nodes, tags
@@ -57,7 +57,7 @@ async def read_deployment(id: int) -> DeploymentResponse:
     d['tags'] = [{'tag_id': t['t_tag_id'], 'name': t['t_name']} for t in t_l if t['t_tag_id'] != None]
     return d
 
-@router.delete('/deployment/{id}', response_model=None, dependencies=[Depends(check_authentication)])
+@router.delete('/deployment/{id}', response_model=None, dependencies=[Depends(check_oid_authentication)])
 async def delete_deployment(id: int) -> None:
     transaction = await database.transaction()
     try:
@@ -79,8 +79,8 @@ async def delete_deployment(id: int) -> None:
         await transaction.commit()
         return True
 
-@router.post('/deployments', response_model=None, dependencies=[Depends(check_authentication)])
-@router.put('/deployments', response_model=None, dependencies=[Depends(check_authentication)])
+@router.post('/deployments', response_model=None, dependencies=[Depends(check_oid_authentication)])
+@router.put('/deployments', response_model=None, dependencies=[Depends(check_oid_authentication)])
 async def upsert_deployment(body: DeploymentRequest) -> None:
     '''
     Insert or update a deployment

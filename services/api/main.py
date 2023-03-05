@@ -1,5 +1,5 @@
 from api.database import database
-from api.dependencies import check_authentication, crd
+from api.dependencies import check_oid_authentication, crd
 from api.routers import (
     birdnet, data, deployments, geo, entries, ingest, nodes, queue, tags,
     taxonomy, validators
@@ -114,8 +114,8 @@ async def shutdown():
     await database.disconnect()
 
 @app.get('/login', tags=['authentication'])
-async def login(login_state: bool = Depends(check_authentication)):
-    return login_state
+async def login(auth: dict = Depends(check_oid_authentication)):
+    return auth
 
 @app.get('/', include_in_schema=False)
 async def root():

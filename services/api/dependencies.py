@@ -8,9 +8,46 @@ from api.config import crd
 from asyncpg.pgproto.types import Point as PgPoint
 from asyncpg.types import Range
 from fastapi import Depends, Header, HTTPException, status
-from fastapi.security import HTTPBasic, HTTPBasicCredentials
+from fastapi.security import HTTPBasic, HTTPBasicCredentials, OAuth2AuthorizationCodeBearer
+from keycloak import KeycloakOpenID
 from sqlalchemy import func
 from sqlalchemy.types import UserDefinedType
+
+keycloak_openid = KeycloakOpenID(
+    server_url=crd.oidc.KC_SERVER_URL,
+    client_id=crd.oidc.KC_CLIENT_ID,
+    realm_name=crd.oidc.KC_REALM_NAME,
+    client_secret_key=crd.oidc.KC_CLIENT_SECRET,
+)
+
+crd.oidc.KC_PUBLIC_KEY = (
+    '-----BEGIN PUBLIC KEY-----\n'
+    + keycloak_openid.public_key()
+    + '\n-----END PUBLIC KEY-----'
+)
+
+oauth2_scheme = OAuth2AuthorizationCodeBearer(
+    authorizationUrl=f'{crd.oidc.KC_SERVER_URL}realms/{crd.oidc.KC_REALM_NAME}/protocol/openid-connect/auth',
+    tokenUrl=f'{crd.oidc.KC_SERVER_URL}realms/{crd.oidc.KC_REALM_NAME}/protocol/openid-connect/token',
+)
+
+async def check_oid_authentication(token: str = Depends(oauth2_scheme)):
+    try:
+        auth = keycloak_openid.decode_token(
+            token,
+            key=crd.oidc.KC_PUBLIC_KEY,
+            options={'verify_signature': True, 'verify_aud': False, 'exp': True},
+        )
+        if 'internal' not in auth['realm_access']['roles']:
+            raise
+    except:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail='Authentication failed',
+            headers={'WWW-Authenticate': 'Bearer'},
+        )
+    else:
+        return auth
 
 security = HTTPBasic()
 
