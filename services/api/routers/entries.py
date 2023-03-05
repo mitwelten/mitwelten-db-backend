@@ -29,7 +29,7 @@ async def list_entries(
     or unbounded ranges as a combination of `to` and `from` query parameters.
     '''
 
-    query = select(entries, entries.c.entry_id.label('id'), entries.c.created_at.label('date'), tags.c.tag_id, tags.c.name.label('tag_name'), files_entry.c.file_id, files_entry.c.object_name, files_entry.c.name.label('file_name'), files_entry.c.type.label('file_type')).\
+    query = select(entries, entries.c.created_at.label('date'), tags.c.tag_id, tags.c.name.label('tag_name'), files_entry.c.file_id, files_entry.c.object_name, files_entry.c.name.label('file_name'), files_entry.c.type.label('file_type')).\
         select_from(entries.outerjoin(mm_tags_entries).outerjoin(tags).outerjoin(files_entry))
 
     if time_from and time_to:
@@ -41,13 +41,13 @@ async def list_entries(
 
     result = await database.fetch_all(query=query)
     output = []
-    for key, grp in groupby(result, key=lambda x: x['id']):
+    for key, grp in groupby(result, key=lambda x: x['entry_id']):
         grp = list(grp)
         f_l = unique_everseen(grp, lambda x: x['file_id'])
         t_l = unique_everseen(grp, lambda x: x['tag_id'])
         e = dict(grp[0])
         e['files'] = [{'name': f['file_name'], 'link': f['object_name'], 'type': f['file_type']} for f in f_l if f['file_id'] != None]
-        e['tags'] = [{'id': t['tag_id'], 'name': t['tag_name']} for t in t_l if t['tag_id'] != None]
+        e['tags'] = [{'tag_id': t['tag_id'], 'name': t['tag_name']} for t in t_l if t['tag_id'] != None]
         output.append(e)
     return output
 
@@ -67,22 +67,21 @@ async def add_entry(body: Entry) -> None:
     query = entries.insert().values(
         name=body.name,
         description=body.description,
-        type=body.type,
+        type=body.entry_type,
         location=text(f'point(:lat,:lon)').bindparams(lat=body.location.lat, lon=body.location.lon),
-        created_at=func.now(),
+        created_at=body.date or func.now(),
         updated_at=func.now()
-    ).returning(entries.c.entry_id, entries.c.created_at)
-    result = await database.fetch_one(query)
-    return  { **body.dict(), 'id': result.entry_id, 'date': result.created_at }
+    ).returning(entries, entries.c.created_at.label('date'), entries.c.type.label('entry_type'))
+    return await database.fetch_one(query)
 
-@router.get('/entry/{id}', response_model=Entry, responses={404: {"model": ApiErrorResponse}}, response_model_exclude_none=True)
-async def get_entry_by_id(id: int) -> Entry:
+@router.get('/entry/{entry_id}', response_model=Entry, responses={404: {"model": ApiErrorResponse}}, response_model_exclude_none=True)
+async def get_entry_by_id(entry_id: int) -> Entry:
     '''
     Find entry by ID
     '''
-    query = select(entries, entries.c.entry_id.label('id'), entries.c.created_at.label('date'), tags.c.tag_id, tags.c.name.label('tag_name'),
+    query = select(entries, entries.c.entry_id, entries.c.created_at.label('date'), tags.c.tag_id, tags.c.name.label('tag_name'),
         files_entry.c.file_id, files_entry.c.name.label('file_name'), files_entry.c.object_name, files_entry.c.type.label('file_type')).\
-        select_from(entries.outerjoin(mm_tags_entries).outerjoin(tags).outerjoin(files_entry)).where(entries.c.entry_id == id)
+        select_from(entries.outerjoin(mm_tags_entries).outerjoin(tags).outerjoin(files_entry)).where(entries.c.entry_id == entry_id)
     result = await database.fetch_all(query=query)
 
     if result == None or len(result) == 0:
@@ -95,8 +94,8 @@ async def get_entry_by_id(id: int) -> Entry:
         e['tags'] = [{'id': t['tag_id'], 'name': t['tag_name']} for t in t_l if t['tag_id'] != None]
         return e
 
-@router.patch('/entry/{id}', response_model=None, dependencies=[Depends(check_authentication)])
-async def update_entry(id: int, body: PatchEntry = ...) -> None:
+@router.patch('/entry/{entry_id}', response_model=Entry, dependencies=[Depends(check_oid_authentication)])
+async def update_entry(entry_id: int, body: PatchEntry = ...) -> Entry:
     '''
     ## Updates an entry
 
@@ -116,24 +115,29 @@ async def update_entry(id: int, body: PatchEntry = ...) -> None:
     if 'comments' in update_data:
         del update_data['comments']
 
-    del update_data['id']
+    if 'entry_type' in update_data:
+        update_data['type'] = update_data['entry_type']
+        del update_data['entry_type']
+
+    del update_data['entry_id']
 
     update_data['location'] = text('point(:lat,:lon)').bindparams(
         lat=update_data['location']['lat'],
         lon=update_data['location']['lon']
     )
 
-    update_data['created_at'] = update_data['date']
-    del update_data['date']
+    if 'date' in update_data:
+        update_data['created_at'] = update_data['date']
+        del update_data['date']
 
-    query = entries.update().where(entries.c.entry_id == id).\
+    query = entries.update().returning(entries, entries.c.created_at.label('date')).where(entries.c.entry_id == entry_id).\
         values({**update_data, entries.c.updated_at: func.current_timestamp()})
 
-    return await database.execute(query)
+    return await database.fetch_one(query)
 
 
-@router.delete('/entry/{id}', response_model=None, dependencies=[Depends(check_authentication)])
-async def delete_entry(id: int) -> None:
+@router.delete('/entry/{entry_id}', response_model=None, dependencies=[Depends(check_authentication)])
+async def delete_entry(entry_id: int) -> None:
     '''
     ## Deletes an entry
 
@@ -144,8 +148,8 @@ async def delete_entry(id: int) -> None:
     transaction = await database.transaction()
 
     try:
-        await database.execute(mm_tags_entries.delete().where(mm_tags_entries.c.entries_entry_id == id))
-        await database.execute(entries.delete().where(entries.c.entry_id == id))
+        await database.execute(mm_tags_entries.delete().where(mm_tags_entries.c.entries_entry_id == entry_id))
+        await database.execute(entries.delete().where(entries.c.entry_id == entry_id))
     except Exception as e:
         await transaction.rollback()
         raise e
@@ -153,8 +157,8 @@ async def delete_entry(id: int) -> None:
         await transaction.commit()
 
 
-@router.post('/entry/{id}/tag',tags=['tags'], response_model=None, dependencies=[Depends(check_authentication)], responses={'404': {"model": ApiErrorResponse}})
-async def add_tag_to_entry(id: int, body: Tag) -> None:
+@router.post('/entry/{entry_id}/tag',tags=['tags'], response_model=None, dependencies=[Depends(check_authentication)], responses={'404': {'model': ApiErrorResponse}})
+async def add_tag_to_entry(entry_id: int, body: Tag) -> None:
     '''
     Adds a tag for an entry
     '''
@@ -162,7 +166,7 @@ async def add_tag_to_entry(id: int, body: Tag) -> None:
     transaction = await database.transaction()
 
     try:
-        check = await database.fetch_one(entries.select().where(entries.c.entry_id == id))
+        check = await database.fetch_one(entries.select().where(entries.c.entry_id == entry_id))
         if check == None:
             raise HTTPException(status_code=404, detail='Entry not found')
 
@@ -171,7 +175,7 @@ async def add_tag_to_entry(id: int, body: Tag) -> None:
         insert_tag = None
 
         if body.id:
-            existing_by_id = await database.fetch_one(tags.select().where(tags.c.tag_id == body.id))
+            existing_by_id = await database.fetch_one(tags.select().where(tags.c.tag_id == body.tag_id))
 
         if body.name:
             existing_by_name = await database.fetch_one(tags.select().where(tags.c.name == body.name))
@@ -186,7 +190,7 @@ async def add_tag_to_entry(id: int, body: Tag) -> None:
         elif existing_by_name:
             insert_tag = existing_by_name
 
-        query = mm_tags_entries.insert().values({mm_tags_entries.c.tags_tag_id: insert_tag.tag_id, mm_tags_entries.c.entries_entry_id: id})
+        query = mm_tags_entries.insert().values({mm_tags_entries.c.tags_tag_id: insert_tag.tag_id, mm_tags_entries.c.entries_entry_id: entry_id})
         await database.execute(query=query)
 
     except UniqueViolationError:
@@ -199,8 +203,8 @@ async def add_tag_to_entry(id: int, body: Tag) -> None:
         await transaction.commit()
 
 
-@router.delete('/entry/{id}/tag', dependencies=[Depends(check_authentication)], response_model=None, tags=['tags'])
-async def delete_tag_from_entry(id: int, body: Tag) -> None:
+@router.delete('/entry/{entry_id}/tag', dependencies=[Depends(check_authentication)], response_model=None, tags=['tags'])
+async def delete_tag_from_entry(entry_id: int, body: Tag) -> None:
     '''
     Deletes a tag from an entry
     '''
@@ -216,7 +220,7 @@ async def delete_tag_from_entry(id: int, body: Tag) -> None:
         delete_id = body.id
 
     await database.execute(mm_tags_entries.delete().where(
-        and_(mm_tags_entries.c.tags_tag_id == delete_id, mm_tags_entries.c.entries_entry_id == id)))
+        and_(mm_tags_entries.c.tags_tag_id == delete_id, mm_tags_entries.c.entries_entry_id == entry_id)))
 
 
 @router.post('/entry/{entry_id}/file', dependencies=[Depends(check_authentication)], response_model=None, tags=['files'])

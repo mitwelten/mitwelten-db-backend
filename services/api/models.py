@@ -335,7 +335,7 @@ class Entry(BaseModel):
     '''
     A user generated "pin" on the map to which `files`, `tags` and `comments` can be associated
     '''
-    id: Optional[int] = None
+    entry_id: Optional[int] = None
     date: Optional[datetime] = Field(None, example='2022-12-31T23:59:59.999Z', description='Date of creation')
     name: str = Field(
         ..., example='Interesting Observation', description='Title of this entry'
@@ -346,7 +346,7 @@ class Entry(BaseModel):
         description='Details for this entry'
     )
     location: Point
-    type: Optional[str] = Field(None, example='A walk in the park')
+    entry_type: Optional[str] = Field(None, example='A walk in the park', alias='type')
     tags: Optional[List[Tag]] = None
     comments: Optional[List[Comment]] = None
     files: Optional[List[File]] = None
