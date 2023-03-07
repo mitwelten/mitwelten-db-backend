@@ -1,4 +1,7 @@
 ---
+# tasks file for postgresql
+# add databases, users to postgres and pg_hba.conf
+# configure network access
 
 - name: "[{{ db.postgres_database_name }}] database | ensure database exists"
   become: true
