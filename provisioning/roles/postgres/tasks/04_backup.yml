@@ -17,13 +17,12 @@
     mode: '755'
   tags: configure
 
-
 - name: install crontab entry
   become: true
   cron:
     name: database backup
-    minute: "11"
-    hour: "15"
+    minute: "42"
+    hour: "5"
     user: postgres
     state: present
     job: "systemd-cat -t \"db-backup-cron\" {{ backup_script_path }}"
