@@ -24,8 +24,6 @@
 
     - name: list packages to upgrade (1/2)
       shell: apt-get upgrade -s -V | awk '/=>/{print $1}'
-      args:
-        warn: no
       register: updates
       changed_when: False
       check_mode: no
