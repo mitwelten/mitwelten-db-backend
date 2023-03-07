@@ -1,7 +1,6 @@
 ---
 # tasks file for postgresql
-# configure network access
-# add db, users to db and pg_hba.conf
+# configure postgresql and superuser
 
 - name: network access | configure listening address to public
   lineinfile:
@@ -9,6 +8,8 @@
     line: listen_addresses = '*'
     insertafter: EOF
     state: present
+  register: config_check
+  tags: configure
 
 - name: super user | configure password for postgres superuser
   become: true
@@ -17,4 +18,21 @@
     name: "{{ postgres_super_user }}"
     password: "{{ postgres_super_password }}"
     state: present
+  tags: configure
+
+- name: timescaledb | configure shared preload libraries
+  lineinfile:
+    path: /etc/postgresql/{{postgres_version}}/main/postgresql.conf
+    line: shared_preload_libraries = 'timescaledb'
+    insertafter: EOF
+    state: present
+  register: config_check
+  tags: configure
+
+- name: restart PostgreSQL service after configuration
+  become: true
+  service:
+    name: postgresql
+    state: restarted
+  when: config_check.changed
   tags: configure

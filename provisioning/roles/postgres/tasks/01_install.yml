@@ -39,6 +39,37 @@
   loop: "{{ postgres_dependencies }}"
   tags: install
 
+- name: add timescale GPG signing key
+  become: true
+  apt_key:
+    url: "https://packagecloud.io/timescale/timescaledb/gpgkey"
+    state: present
+    validate_certs: true
+  tags: install
+
+- name: add timescale repository
+  become: true
+  apt_repository:
+    repo: "deb https://packagecloud.io/timescale/timescaledb/debian/ bullseye main"
+    state: present
+    filename: timescaledb
+  register: timescale_repo
+  tags: install
+
+- name: udpate apt cache
+  become: true
+  when: timescale_repo.changed
+  apt:
+    update_cache: true
+  tags: install
+
+- name: install timescaledb and dependencies
+  become: true
+  apt:
+    name: timescaledb-2-postgresql-{{postgres_version}}
+    state: present
+  tags: install
+
 - name: ensure the PostgreSQL service is running and enabled
   become: true
   service:
