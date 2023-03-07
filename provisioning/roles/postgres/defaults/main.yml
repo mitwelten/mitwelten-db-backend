@@ -2,3 +2,6 @@
 # defaults file for postgres
 
 postgres_version: 14
+
+backup_script_path: /usr/local/bin/database-backup
+backup_dir: /var/local/backups

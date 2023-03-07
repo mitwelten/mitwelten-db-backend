@@ -11,3 +11,5 @@
     loop_var: db
   include_tasks: 03_database.yml
   tags: configure
+
+- import_tasks: 04_backup.yml
