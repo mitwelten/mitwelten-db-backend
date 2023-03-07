@@ -23,6 +23,7 @@
     name: database backup
     minute: "42"
     hour: "5"
+    weekday: "1"
     user: postgres
     state: present
     job: "systemd-cat -t \"db-backup-cron\" {{ backup_script_path }}"
