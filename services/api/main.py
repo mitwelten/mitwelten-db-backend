@@ -1,7 +1,7 @@
 from api.database import database
 from api.dependencies import check_oid_authentication, crd
 from api.routers import (
-    birdnet, data, deployments, geo, entries, ingest, nodes, queue, tags,
+    birdnet, data, deployments, geo, entries, ingest, minio, nodes, queue, tags,
     taxonomy, validators
 )
 
@@ -52,7 +52,7 @@ tags_metadata = [
     },
     {
         'name': 'files',
-        'description': 'Files uploaded for / added to entries',
+        'description': 'File up- and download (images, audio, etc.)',
     },
 ]
 
@@ -92,6 +92,7 @@ app.include_router(deployments.router)
 app.include_router(entries.router)
 app.include_router(geo.router)
 app.include_router(ingest.router)
+app.include_router(minio.router)
 app.include_router(nodes.router)
 app.include_router(queue.router)
 app.include_router(tags.router)

@@ -17,8 +17,15 @@ class OidcConfig(object):
     KC_REALM_NAME = 'realm'
     KC_CLIENT_SECRET = 'secret'
 
+class MinioConfig(object):
+    host = ''
+    bucket = ''
+    access_key = ''
+    secret_key = ''
+
 db = DbConfig()
 ba = BasicAuth()
 oidc = OidcConfig()
+minio = MinioConfig()
 
 DEV = False
