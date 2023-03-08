@@ -28,10 +28,10 @@ async def read_nodes():
 async def upsert_node(body: Node) -> None:
     if hasattr(body, 'node_id') and body.node_id != None:
         return await database.execute(update(nodes).where(nodes.c.node_id == body.node_id).\
-            values({**body.dict(exclude_none=True), nodes.c.updated_at: current_timestamp()}).\
+            values({**body.dict(exclude_none=True, by_alias=True), nodes.c.updated_at: current_timestamp()}).\
             returning(nodes.c.node_id))
     else:
-        return await database.execute(insert(nodes).values(body.dict(exclude_none=True)).\
+        return await database.execute(insert(nodes).values(body.dict(exclude_none=True, by_alias=True)).\
             returning(nodes.c.node_id))
 
 @router.get('/node/type_options')
