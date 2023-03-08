@@ -211,9 +211,6 @@ The tables are defined in [mitwelten_cache_v1.sql](./mitwelten_cache_v1.sql)
 
 [^gbif_l10n]: Die Namen der entsprechenden Klassen können wir via Mitwelten DB übersetzen. Sonst müssten hier auch sciName, nameDE, nameEN vorhanden sein.
 
-[^gbif_references]: Falls nicht vorhanden, könnte der Link auf den entsprechenden GBIF Eintrag `https://www.gbif.org/occurrence/{key}` gesetzt werden. Den GBIF Eintrag gibt es immer. Beispiele des selben Eintrags auf iNaturalist und auf GBIF:
-
-- <https://www.gbif.org/occurrence/4011857148>
-- <https://www.inaturalist.org/observations/145573896>
+[^gbif_references]: Falls nicht vorhanden, könnte der Link auf den entsprechenden GBIF Eintrag `https://www.gbif.org/occurrence/{key}` gesetzt werden. Den GBIF Eintrag gibt es immer. Beispiele des selben Eintrags auf iNaturalist und auf GBIF: <https://www.gbif.org/occurrence/4011857148>, <https://www.inaturalist.org/observations/145573896>
 
 [^gbif_mediaType]: [MediaType](https://gbif.github.io/gbif-api/apidocs/org/gbif/api/vocabulary/MediaType.html), Eine Beobachtung kann über mehrere Formate verfügen.
