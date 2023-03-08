@@ -127,7 +127,7 @@ This procedure can be repeated when new species are inferred.
 
 ### Foreign Tables
 
-To let the REST endpoints link user-data to records, the table user_entity of Keykloak is added as foreign table. The user mappings need to be updated manually with the corresponding password set for the unprivileged role durding provisioning:
+To let the REST endpoints link user-data to records, the table `user_entity` of Keykloak is added as foreign table. The user mappings need to be updated manually with the corresponding password set for the _unprivileged role_ during provisioning:
 
 ```sql
 ALTER USER MAPPING FOR mitwelten_admin SERVER auth
@@ -221,7 +221,7 @@ The tables are defined in [mitwelten_cache_v1.sql](./mitwelten_cache_v1.sql)
 
 [^gbif_levels]: Es kann sein, dass eine Beobachtung nur bis zu einem bestimmten Level bestimmt werden, deshalb können die folgenden Keys auch Null sein.
 
-[^gbif_l10n]: Die Namen der entsprechenden Klassen können wir via Mitwelten DB übersetzen. Sonst müssten hier auch sciName, nameDE, nameEN vorhanden sein.
+[^gbif_l10n]: Die Namen der entsprechenden Klassen können wir via [Mitwelten DB](#taxonomy) übersetzen. Sonst müssten hier auch `sciName`, `nameDE`, `nameEN` vorhanden sein.
 
 [^gbif_references]: Falls nicht vorhanden, könnte der Link auf den entsprechenden GBIF Eintrag `https://www.gbif.org/occurrence/{key}` gesetzt werden. Den GBIF Eintrag gibt es immer. Beispiele des selben Eintrags auf iNaturalist und auf GBIF: <https://www.gbif.org/occurrence/4011857148>, <https://www.inaturalist.org/observations/145573896>
 
