@@ -125,6 +125,18 @@ flowchart RL
 The taxonomy data is imported manually using [taxonomy_gbif.py](../import/taxonomy_gbif.py).
 This procedure can be repeated when new species are inferred.
 
+### Foreign Tables
+
+To let the REST endpoints link user-data to records, the table user_entity of Keykloak is added as foreign table. The user mappings need to be updated manually with the corresponding password set for the unprivileged role durding provisioning:
+
+```sql
+ALTER USER MAPPING FOR mitwelten_admin SERVER auth
+    OPTIONS (ADD password '******');
+
+ALTER USER MAPPING FOR mitwelten_internal SERVER auth
+    OPTIONS (ADD password '******');
+```
+
 ----
 
 ## Mitwelten Auth

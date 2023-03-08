@@ -1,5 +1,5 @@
 --
--- Mitwelten Database - Schema V2.2
+-- Mitwelten Database - Schema V2.3
 --
 
 BEGIN;
@@ -9,6 +9,7 @@ CREATE SCHEMA IF NOT EXISTS prod
 
 CREATE EXTENSION IF NOT EXISTS btree_gist;
 CREATE EXTENSION IF NOT EXISTS timescaledb;
+CREATE EXTENSION IF NOT EXISTS postgres_fdw;
 
 CREATE TABLE IF NOT EXISTS prod.birdnet_configs
 (
@@ -528,6 +529,23 @@ CREATE OR REPLACE VIEW prod.data_records
     UNION
     SELECT file_id AS record_id, deployment_id, 'image' AS type
     FROM prod.files_image;
+
+CREATE SERVER IF NOT EXISTS auth;
+FOREIGN DATA WRAPPER postgres_fdw
+OPTIONS (host 'localhost', dbname 'mitwelten_auth', port '5432');
+
+CREATE USER MAPPING IF NOT EXISTS
+FOR mitwelten_internal
+SERVER auth
+OPTIONS (user 'mw_data_auth_fdw');
+
+CREATE USER MAPPING IF NOT EXISTS
+FOR mitwelten_admin
+SERVER auth
+OPTIONS (user 'mw_data_auth_fdw');
+
+IMPORT FOREIGN SCHEMA public LIMIT TO (user_entity)
+    FROM SERVER auth INTO prod;
 
 END;
 
