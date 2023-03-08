@@ -1,0 +1,32 @@
+---
+# tasks file for postgresql
+# setup backup procedure
+
+- name: create backup script
+  become: true
+  template:
+    src: database-backup.j2
+    dest: "{{ backup_script_path }}"
+    mode: '755'
+  tags: configure
+
+- name: create backup directory
+  file:
+    path: "{{ backup_dir }}"
+    state: directory
+    owner: postgres
+    group: postgres
+    mode: '755'
+  tags: configure
+
+- name: install crontab entry
+  become: true
+  cron:
+    name: database backup
+    minute: "42"
+    hour: "5"
+    weekday: "1"
+    user: postgres
+    state: present
+    job: "systemd-cat -t \"db-backup-cron\" {{ backup_script_path }}"
+  tags: configure

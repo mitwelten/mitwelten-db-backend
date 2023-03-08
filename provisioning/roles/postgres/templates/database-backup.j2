@@ -1,0 +1,9 @@
+#/bin/bash
+
+{% for db in mitwelten_databases %}
+# backup for {{db.postgres_database_name}}
+filename={{backup_dir}}/$(date +"%Y%m%d%H%M%S")_backup.{{db.postgres_database_name}}.{{db.postgres_database_schema}}
+echo "creating backup for db {{db.postgres_database_name}} in $filename"
+pg_dump -w -n {{db.postgres_database_schema}} -Fc -f $filename {{db.postgres_database_name}}
+
+{% endfor %}

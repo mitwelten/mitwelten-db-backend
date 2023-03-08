@@ -1,0 +1,83 @@
+---
+# tasks file for postgresql
+# add databases, users to postgres and pg_hba.conf
+# configure network access
+
+- name: "[{{ db.postgres_database_name }}] database | ensure database exists"
+  become: true
+  become_user: "{{ postgres_super_user }}"
+  postgresql_db:
+    name: "{{ db.postgres_database_name }}"
+    owner: "{{ postgres_super_user }}"
+    state: present
+  tags: configure
+
+- name: "[{{ db.postgres_database_name }}] admin users | add admin user"
+  become: true
+  become_user: "{{ postgres_super_user }}"
+  postgresql_user:
+    db: "{{ db.postgres_database_name }}"
+    name: "{{ db.postgres_admin_user }}"
+    password: "{{ db.postgres_admin_password }}"
+    priv: "ALL"
+    role_attr_flags: SUPERUSER,CREATEROLE,CREATEDB,INHERIT,LOGIN,REPLICATION,BYPASSRLS
+    state: present
+  tags: configure
+
+- name: "[{{ db.postgres_database_name }}] database | change owner"
+  become: true
+  become_user: "{{ postgres_super_user }}"
+  postgresql_db:
+    name: "{{ db.postgres_database_name }}"
+    owner: "{{ db.postgres_admin_user }}"
+    state: present
+  tags: configure
+
+- name: "[{{ db.postgres_database_name }}] admin users | grant network access to admin user"
+  postgresql_pg_hba:
+    dest: /etc/postgresql/{{ postgres_version }}/main/pg_hba.conf
+    contype: host
+    users: "{{ db.postgres_admin_user }}"
+    source: samehost
+    databases: "{{ db.postgres_database_name }}"
+    method: scram-sha-256
+    create: true
+  tags: configure
+
+- name: "[{{ db.postgres_database_name }}] databases | set owner to admin user"
+  become: true
+  become_user: "{{ postgres_super_user }}"
+  postgresql_owner:
+    db: "{{ db.postgres_database_name }}"
+    new_owner: "{{ db.postgres_admin_user }}"
+    obj_name: "{{ db.postgres_database_name }}"
+    obj_type: database
+  tags: configure
+
+- name: "[{{ db.postgres_database_name }}] users | create users"
+  become: true
+  become_user: "{{ postgres_super_user }}"
+  postgresql_user:
+    db: "{{ db.postgres_database_name }}"
+    name: "{{ item.username }}"
+    password: "{{ item.password }}"
+    priv: "CONNECT"
+    state: present
+  when: db.postgres_users is defined
+  loop: "{{ db.postgres_users }}"
+  loop_control:
+    label: "{{ item.username }}"
+  no_log: true # do not output passwords to log
+  tags: configure
+
+- name: "[{{ db.postgres_database_name }}] users | grant network access to users"
+  postgresql_pg_hba:
+    dest: /etc/postgresql/{{ postgres_version }}/main/pg_hba.conf
+    contype: host
+    users: "{{ db.postgres_users | map(attribute='username') | join(',') }}"
+    source: all
+    databases: "{{ db.postgres_database_name }}"
+    method: scram-sha-256
+    create: true
+  when: db.postgres_users is defined
+  tags: configure

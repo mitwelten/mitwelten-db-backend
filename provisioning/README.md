@@ -18,24 +18,31 @@ xyz.fhnw.ch
 `host_vars/<hostname>.yml`, supply credentials and configuration for the db:
 
 ```yml
-postgres_database_name: mitwelten
-postgres_database_schema: public
+postgres_super_user: postgres
+postgres_super_password: ***
 
-postgres_database_user: postgres
-postgres_database_password: ***
+mitwelten_databases:
+  - mitwelten_data:
+    postgres_database_name: mitwelten
+    postgres_database_schema: public
 
-postgres_admin_user: mitwelten_admin
-postgres_admin_password: ***
+    postgres_admin_user: mitwelten_admin
+    postgres_admin_password: ***
 
-postgres_users:
-  - username: mitwelten_internal # all access to tables
-    password: ***
-  - username: mitwelten_upload   # write acccess to some
-    password: ***
-  - username: mitwelten_rest     # write acccess to some
-    password: ***
-  - username: mitwelten_public   # read only
-    password: ***
+    postgres_users:
+      - username: mitwelten_internal # all access to tables
+        password: ***
+      - username: mitwelten_upload   # write acccess to some
+        password: ***
+      - username: mitwelten_rest     # write acccess to some
+        password: ***
+      - username: mitwelten_public   # read only
+        password: ***
+
+  - mitwelten_auth:
+    postgres_database_name: mitwelten_auth
+    ...etc
+
 ```
 
 ## Setup

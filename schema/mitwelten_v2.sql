@@ -1,5 +1,5 @@
 --
--- Mitwelten Database - Schema V2.1
+-- Mitwelten Database - Schema V2.2
 --
 
 BEGIN;
@@ -8,6 +8,7 @@ CREATE SCHEMA IF NOT EXISTS prod
     AUTHORIZATION mitwelten_admin;
 
 CREATE EXTENSION IF NOT EXISTS btree_gist;
+CREATE EXTENSION IF NOT EXISTS timescaledb;
 
 CREATE TABLE IF NOT EXISTS prod.birdnet_configs
 (

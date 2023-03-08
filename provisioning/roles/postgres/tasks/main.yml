@@ -4,3 +4,12 @@
 - import_tasks: 01_install.yml
 
 - import_tasks: 02_configure.yml
+
+- name: Create and configure databases and roles
+  loop: "{{ mitwelten_databases }}"
+  loop_control:
+    loop_var: db
+  include_tasks: 03_database.yml
+  tags: configure
+
+- import_tasks: 04_backup.yml
