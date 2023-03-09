@@ -1,6 +1,6 @@
 import sys
 import secrets
-from datetime import timedelta
+from datetime import timedelta, date
 from itertools import filterfalse, groupby
 from typing import List, Optional
 import databases
@@ -164,6 +164,24 @@ async def read_results_full(offset: int = 0, pagesize: int = Query(1000, gte=0, 
     query = results_file_taxonomy.select().where(results.c.confidence > 0.9).\
         limit(pagesize).offset(offset)
     return await database.fetch_all(query)
+
+@app.get('/results_full/{filter}', response_model=List[ResultFull], tags=['inferrence'])
+async def read_results_full(filter: str, offset: int = 0, pagesize: int = Query(1000, gte=0, lte=1000)):
+    filter = filter.replace("|", "/")
+    query = results_file_taxonomy.select().where(results_file_taxonomy.c.object_name == filter)\
+            .filter(pagesize).offset(offset)
+    results = await database.fetch_all(query)
+    return results
+
+@app.get('/results_full/grouped/{from_date}', response_model=List[str], tags=['inferrence'])
+async def read_grouped_full(from_date: date, offset: int = 0, pagesize: int = Query(1000, gte=0, lte=1000)):
+    query = select(results_file_taxonomy.c.object_name, func.count(results_file_taxonomy.c.object_name))\
+        .filter(results_file_taxonomy.c.object_time >= from_date)\
+        .group_by(results_file_taxonomy.c.object_name, results_file_taxonomy.c.object_time)\
+        .limit(pagesize).offset(offset)
+
+    results = await database.fetch_all(query)
+    return [result.object_name for result in results]
 
 @app.get('/species/', tags=['inferrence'])
 async def read_species(start: int = 0, end: int = 0, conf: float = 0.9):
