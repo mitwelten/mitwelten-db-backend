@@ -28,6 +28,8 @@ mitwelten_databases:
 
     postgres_admin_user: mitwelten_admin
     postgres_admin_password: ***
+    postgres_admin_network_source:
+      - samehost
 
     postgres_users:
       - username: mitwelten_internal # all access to tables

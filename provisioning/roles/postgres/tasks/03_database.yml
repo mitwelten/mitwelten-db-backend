@@ -38,10 +38,12 @@
     dest: /etc/postgresql/{{ postgres_version }}/main/pg_hba.conf
     contype: host
     users: "{{ db.postgres_admin_user }}"
-    source: samehost
+    source: "{{ item }}"
     databases: "{{ db.postgres_database_name }}"
     method: scram-sha-256
     create: true
+  when: db.postgres_admin_network_source is defined
+  loop: "{{ db.postgres_admin_network_source }}"
   tags: configure
 
 - name: "[{{ db.postgres_database_name }}] databases | set owner to admin user"

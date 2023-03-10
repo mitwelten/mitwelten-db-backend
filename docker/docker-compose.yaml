@@ -6,9 +6,18 @@ volumes:
   alertmanager_data: {}
   verneauth_data: {}
 
+networks:
+  mitwelten:
+    external: false
+    ipam:
+      config:
+        - subnet: 192.168.0.0/16
+
 services:
   traefik:
     image: "traefik:v2.7"
+    networks:
+      - mitwelten
     container_name: "traefik"
     command:
       - "--log.level=INFO"
@@ -36,6 +45,8 @@ services:
   keycloak:
     container_name: keycloak
     image: quay.io/keycloak/keycloak:legacy
+    networks:
+      - mitwelten
     restart: unless-stopped
     environment:
       KEYCLOAK_USER: ${KC_USERNAME}
@@ -67,6 +78,8 @@ services:
 
   viz-api-v2:
     image: mitwelten-viz:0.1
+    networks:
+      - mitwelten
     container_name: mitwelten-viz-api-v2
     restart: unless-stopped
     volumes:
@@ -106,6 +119,8 @@ services:
 
   manager-api-v2:
     image: mitwelten-manager:0.1
+    networks:
+      - mitwelten
     container_name: mitwelten-manager-api-v2
     restart: unless-stopped
     volumes:
@@ -144,6 +159,8 @@ services:
 
   data-api:
     image: mitwelten-data-api:3.3
+    networks:
+      - mitwelten
     container_name: mitwelten-data-api-v3
     restart: unless-stopped
     volumes:
@@ -179,6 +196,8 @@ services:
 
   deployment-frontend:
     image: nginx:alpine
+    networks:
+      - mitwelten
     container_name: "deployment-frontend"
     volumes:
       - "/opt/deployment-frontend/public:/usr/share/nginx/html"
@@ -204,6 +223,8 @@ services:
 
   datawalk-webapp:
     image: nginx:alpine
+    networks:
+      - mitwelten
     container_name: "datawalk-webapp"
     volumes:
       - "/opt/datawalk-webapp/public:/usr/share/nginx/html"
@@ -229,6 +250,8 @@ services:
 
   pipeline-frontend:
     image: nginx:alpine
+    networks:
+      - mitwelten
     container_name: "pipeline-frontend"
     volumes:
       - "/opt/pipeline-frontend/public:/usr/share/nginx/html"
@@ -254,6 +277,8 @@ services:
 
   geo:
     image: mitwelten-geo:0.1
+    networks:
+      - mitwelten
     container_name: "geo"
     volumes:
       - "/opt/mitwelten-db-backend/services/geo:/app"
@@ -297,6 +322,8 @@ services:
 
   prometheus:
     image: prom/prometheus:latest
+    networks:
+      - mitwelten
     hostname: prometheus
     container_name: prometheus
     volumes:
@@ -321,6 +348,8 @@ services:
     hostname: grafana
     container_name: grafana
     image: grafana/grafana:latest
+    networks:
+      - mitwelten
     volumes:
       - ../monitoring/grafana/grafana.ini:/etc/grafana/grafana.ini
       - ../monitoring/grafana/provisioning/datasources/datasource.yml:/etc/grafana/provisioning/datasources/datasource.yml
@@ -354,6 +383,8 @@ services:
     container_name: alertmanager
     hostname: alertmanager
     image: prom/alertmanager:latest
+    networks:
+      - mitwelten
     volumes:
       - ../monitoring/alertmanager/:/etc/alertmanager/
       - alertmanager_data:/alertmanager
@@ -366,6 +397,8 @@ services:
 
   vernemq:
     image: erlio/docker-vernemq:1.10.0-alpine
+    networks:
+      - mitwelten
     container_name: vernemq
     restart: always
     volumes:
@@ -383,6 +416,8 @@ services:
 
   verneauth:
     image: cr.gitlab.fhnw.ch/mitwelten/docker-infrastructure/fhnw-verneauth:1.0
+    networks:
+      - mitwelten
     container_name: verneauth
     restart: always
     volumes:
@@ -390,6 +425,8 @@ services:
 
   verneauth-ui:
     image: cr.gitlab.fhnw.ch/mitwelten/docker-infrastructure/mitwelten-verneauth_ui:1.0
+    networks:
+      - mitwelten
     container_name: verneauth-ui
     restart: always
     depends_on:
@@ -422,6 +459,8 @@ services:
     restart: always
     container_name: viz-dashboard-server
     image: cr.gitlab.fhnw.ch/mitwelten/docker-infrastructure/mitwelten-viz_dashboard_api:0.1
+    networks:
+      - mitwelten
     volumes:
       - "${VIZ_DASHBOARD_SQLITE_FILE}:/usr/src/app/users.sqlite"
     labels:
@@ -444,6 +483,8 @@ services:
 
   viz-dashboard-client:
     image: cr.gitlab.fhnw.ch/mitwelten/docker-infrastructure/mitwelten-viz_dashboard_client:0.2
+    networks:
+      - mitwelten
     restart: always
     container_name: viz-dashboard-client
     labels:
