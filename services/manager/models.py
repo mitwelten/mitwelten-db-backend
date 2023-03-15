@@ -4,6 +4,7 @@ from datetime import datetime
 from sqlalchemy.dialects.postgresql import TSTZRANGE
 from pydantic import BaseModel, Field, constr, PositiveInt
 from asyncpg.types import Range
+from datetime import date
 
 class TimeStampRange(BaseModel):
     '''
@@ -138,6 +139,11 @@ class ResultFull(Species):
     _class: Optional[str] = Field(None, alias='class')
     phylum: Optional[str] = None
     kingdom: str
+
+class SpeciesByDate(BaseModel):
+    genus: Optional[str] = None
+    family: Optional[str] = None
+    object_time: Optional[date] = None
 
 class RankEnum(str, Enum):
     kingdom = 'KINGDOM'
