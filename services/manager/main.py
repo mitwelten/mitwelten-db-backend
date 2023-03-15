@@ -31,7 +31,7 @@ from models import (
     Deployment, Result, Species, DeploymentResponse, DeploymentRequest, Node,
     ValidationResult, NodeValidationRequest, ImageValidationRequest,
     ImageValidationResponse, ImageRequest, QueueInputDefinition,
-    QueueUpdateDefinition, ResultFull, SpeciesByDate, Taxon, Tag, TagStats
+    QueueUpdateDefinition, ResultFull, ResultsGrouped, SpeciesByDate, Taxon, Tag, TagStats
 )
 
 sys.path.append('../../')
@@ -165,11 +165,13 @@ async def read_results_full(offset: int = 0, pagesize: int = Query(1000, gte=0, 
         limit(pagesize).offset(offset)
     return await database.fetch_all(query)
 
-@app.get('/results_full/{filter}', response_model=List[ResultFull], tags=['inferrence'])
+@app.get('/results_full/{filter}', response_model=List[ResultsGrouped], tags=['inferrence'])
 async def read_results_full(filter: str, offset: int = 0, pagesize: int = Query(1000, gte=0, lte=1000)):
     filter = filter.replace("|", "/")
-    query = results_file_taxonomy.select().where(results_file_taxonomy.c.object_name == filter)\
-            .limit(pagesize).offset(offset)
+    query = select([results_file_taxonomy.c.species, results_file_taxonomy.c.time_start_relative, results_file_taxonomy.c.duration, results_file_taxonomy.c.image_url])\
+            .where(results_file_taxonomy.c.object_name == filter)\
+            .limit(pagesize).offset(offset)\
+            .group_by(results_file_taxonomy.c.species, results_file_taxonomy.c.time_start_relative, results_file_taxonomy.c.duration, results_file_taxonomy.c.image_url)
     results = await database.fetch_all(query)
     return results
 
@@ -198,13 +200,11 @@ async def read_species(start: int = 0, end: int = 0, conf: float = 0.9):
 @app.get('/species/{from_date}', response_model=List[SpeciesByDate], tags=['inferrence'])
 async def read_species_on_date(from_date: date, offset: int = 0, pagesize: int = Query(1000, gte=0, lte=1000)):
     query = (
-            select(results_file_taxonomy.c.genus,
-                results_file_taxonomy.c.family,
+            select(results_file_taxonomy.c.species,
                 func.date(results_file_taxonomy.c.object_time).label("object_time"))
             .where(results_file_taxonomy.c.object_time >= from_date)
             .group_by(
-                results_file_taxonomy.c.genus,
-                results_file_taxonomy.c.family,
+                results_file_taxonomy.c.species,
                 func.date(results_file_taxonomy.c.object_time))
             .order_by(func.date(results_file_taxonomy.c.object_time)))
     results = await database.fetch_all(query)
