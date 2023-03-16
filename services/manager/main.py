@@ -201,12 +201,13 @@ async def read_species(start: int = 0, end: int = 0, conf: float = 0.9):
 async def read_species_on_date(from_date: date, offset: int = 0, pagesize: int = Query(1000, gte=0, lte=1000)):
     query = (
             select(results_file_taxonomy.c.species,
-                func.date(results_file_taxonomy.c.object_time).label("object_time"))
-            .where(results_file_taxonomy.c.object_time >= from_date)
+                   func.date(results_file_taxonomy.c.object_time).label("object_time"),
+                   results_file_taxonomy.c.image_url)
+            .where(func.date(results_file_taxonomy.c.object_time) == from_date)
             .group_by(
                 results_file_taxonomy.c.species,
-                func.date(results_file_taxonomy.c.object_time))
-            .order_by(func.date(results_file_taxonomy.c.object_time)))
+                func.date(results_file_taxonomy.c.object_time),
+                results_file_taxonomy.c.image_url))
     results = await database.fetch_all(query)
     return results
 

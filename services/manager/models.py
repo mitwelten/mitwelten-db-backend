@@ -149,6 +149,7 @@ class ResultsGrouped(BaseModel):
 class SpeciesByDate(BaseModel):
     species: str
     object_time: Optional[date] = None
+    image_url: Optional[str]
 
 class RankEnum(str, Enum):
     kingdom = 'KINGDOM'
