@@ -4,7 +4,6 @@ from datetime import datetime
 from sqlalchemy.dialects.postgresql import TSTZRANGE
 from pydantic import BaseModel, Field, constr, PositiveInt
 from asyncpg.types import Range
-from datetime import date
 
 class TimeStampRange(BaseModel):
     '''
