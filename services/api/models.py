@@ -143,6 +143,12 @@ class ResultFull(Species):
     phylum: Optional[str] = None
     kingdom: str
 
+class ResultsGrouped(BaseModel):
+    species: str
+    time_start_relative: float
+    duration: float
+    image_url: Optional[str]
+
 class RankEnum(str, Enum):
     kingdom = 'KINGDOM'
     phylum = 'PHYLUM'

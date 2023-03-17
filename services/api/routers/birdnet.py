@@ -1,7 +1,8 @@
+from datetime import date
 from typing import List
 
 from api.database import database
-from api.models import Result, ResultFull
+from api.models import Result, ResultFull, ResultsGrouped
 from api.tables import results, results_file_taxonomy, species, species_day, taxonomy_data
 
 from fastapi import APIRouter, Query
@@ -27,6 +28,32 @@ async def read_results_full(offset: int = 0, pagesize: int = Query(1000, gte=0, 
     query = results_file_taxonomy.select().where(results.c.confidence > 0.9).\
         limit(pagesize).offset(offset)
     return await database.fetch_all(query)
+
+@router.get('/results_full/{on_date}', response_model=List[ResultFull])
+async def read_results_full_on_date(on_date: date, offset: int = 0, pagesize: int = Query(1000, gte=0, lte=1000)):
+    query = results_file_taxonomy.select().where(and_(func.date(results_file_taxonomy.c.object_time) == on_date, results_file_taxonomy.c.confidence > 0.9)).\
+        limit(pagesize).offset(offset)\
+        .order_by(results_file_taxonomy.c.object_time)
+
+    return await database.fetch_all(query)
+
+@router.get('/results_full/single/{filter:path}', response_model=List[ResultsGrouped])
+async def read_results_full(filter: str):
+    query = select([results_file_taxonomy.c.species, results_file_taxonomy.c.time_start_relative, results_file_taxonomy.c.duration, results_file_taxonomy.c.image_url])\
+            .where(and_(results_file_taxonomy.c.confidence > 0.9, results_file_taxonomy.c.object_name == filter))\
+            .group_by(results_file_taxonomy.c.species, results_file_taxonomy.c.time_start_relative, results_file_taxonomy.c.duration, results_file_taxonomy.c.image_url)
+    results = await database.fetch_all(query)
+    return results
+
+@router.get('/results_full/grouped/{from_date}', response_model=List[str])
+async def read_grouped_full(from_date: date, offset: int = 0, pagesize: int = Query(1000, gte=0, lte=1000)):
+    query = select(results_file_taxonomy.c.object_name, func.count(results_file_taxonomy.c.object_name))\
+        .filter(and_(results_file_taxonomy.c.confidence > 0.9, results_file_taxonomy.c.object_time >= from_date))\
+        .group_by(results_file_taxonomy.c.object_name, results_file_taxonomy.c.object_time)\
+        .limit(pagesize).offset(offset)
+
+    results = await database.fetch_all(query)
+    return [result.object_name for result in results]
 
 @router.get('/species/')
 async def read_species(start: int = 0, end: int = 0, conf: float = 0.9):
