@@ -31,7 +31,7 @@ from models import (
     Deployment, Result, Species, DeploymentResponse, DeploymentRequest, Node,
     ValidationResult, NodeValidationRequest, ImageValidationRequest,
     ImageValidationResponse, ImageRequest, QueueInputDefinition,
-    QueueUpdateDefinition, ResultFull, ResultsGrouped, SpeciesByDate, Taxon, Tag, TagStats
+    QueueUpdateDefinition, ResultFull, ResultsGrouped, Taxon, Tag, TagStats
 )
 
 sys.path.append('../../')
@@ -165,11 +165,19 @@ async def read_results_full(offset: int = 0, pagesize: int = Query(1000, gte=0, 
         limit(pagesize).offset(offset)
     return await database.fetch_all(query)
 
-@app.get('/results_full/{filter}', response_model=List[ResultsGrouped], tags=['inferrence'])
+@app.get('/results_full/{on_date}', response_model=List[ResultFull], tags=['inferrence'])
+async def read_results_full_on_date(on_date: date, offset: int = 0, pagesize: int = Query(1000, gte=0, lte=1000)):
+    query = results_file_taxonomy.select().where(and_(func.date(results_file_taxonomy.c.object_time) == on_date, results_file_taxonomy.c.confidence > 0.9)).\
+        limit(pagesize).offset(offset)\
+        .order_by(results_file_taxonomy.c.object_time)
+
+    return await database.fetch_all(query)
+
+@app.get('/results_full/single/{filter}', response_model=List[ResultsGrouped], tags=['inferrence'])
 async def read_results_full(filter: str, offset: int = 0, pagesize: int = Query(1000, gte=0, lte=1000)):
     filter = filter.replace("|", "/")
     query = select([results_file_taxonomy.c.species, results_file_taxonomy.c.time_start_relative, results_file_taxonomy.c.duration, results_file_taxonomy.c.image_url])\
-            .where(results_file_taxonomy.c.object_name == filter)\
+            .where(and_(results_file_taxonomy.c.confidence > 0.9, results_file_taxonomy.c.object_name == filter))\
             .limit(pagesize).offset(offset)\
             .group_by(results_file_taxonomy.c.species, results_file_taxonomy.c.time_start_relative, results_file_taxonomy.c.duration, results_file_taxonomy.c.image_url)
     results = await database.fetch_all(query)
@@ -178,7 +186,7 @@ async def read_results_full(filter: str, offset: int = 0, pagesize: int = Query(
 @app.get('/results_full/grouped/{from_date}', response_model=List[str], tags=['inferrence'])
 async def read_grouped_full(from_date: date, offset: int = 0, pagesize: int = Query(1000, gte=0, lte=1000)):
     query = select(results_file_taxonomy.c.object_name, func.count(results_file_taxonomy.c.object_name))\
-        .filter(results_file_taxonomy.c.object_time >= from_date)\
+        .filter(and_(results_file_taxonomy.c.confidence > 0.9, results_file_taxonomy.c.object_time >= from_date))\
         .group_by(results_file_taxonomy.c.object_name, results_file_taxonomy.c.object_time)\
         .limit(pagesize).offset(offset)
 
@@ -196,20 +204,6 @@ async def read_species(start: int = 0, end: int = 0, conf: float = 0.9):
         order_by(desc(query.c.count)).\
         with_only_columns(query, taxonomy_data.c.label_de, taxonomy_data.c.label_en, taxonomy_data.c.image_url)
     return await database.fetch_all(labelled_query)
-
-@app.get('/species/{from_date}', response_model=List[SpeciesByDate], tags=['inferrence'])
-async def read_species_on_date(from_date: date, offset: int = 0, pagesize: int = Query(1000, gte=0, lte=1000)):
-    query = (
-            select(results_file_taxonomy.c.species,
-                   func.date(results_file_taxonomy.c.object_time).label("object_time"),
-                   results_file_taxonomy.c.image_url)
-            .where(func.date(results_file_taxonomy.c.object_time) == from_date)
-            .group_by(
-                results_file_taxonomy.c.species,
-                func.date(results_file_taxonomy.c.object_time),
-                results_file_taxonomy.c.image_url))
-    results = await database.fetch_all(query)
-    return results
 
 @app.get('/species/{spec}', tags=['inferrence']) # , response_model=List[Species]
 async def read_species_detail(spec: str, start: int = 0, end: int = 0, conf: float = 0.9):
