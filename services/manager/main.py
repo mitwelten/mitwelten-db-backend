@@ -173,12 +173,10 @@ async def read_results_full_on_date(on_date: date, offset: int = 0, pagesize: in
 
     return await database.fetch_all(query)
 
-@app.get('/results_full/single/{filter}', response_model=List[ResultsGrouped], tags=['inferrence'])
-async def read_results_full(filter: str, offset: int = 0, pagesize: int = Query(1000, gte=0, lte=1000)):
-    filter = filter.replace("|", "/")
+@app.get('/results_full/single/{filter:path}', response_model=List[ResultsGrouped], tags=['inferrence'])
+async def read_results_full(filter: str):
     query = select([results_file_taxonomy.c.species, results_file_taxonomy.c.time_start_relative, results_file_taxonomy.c.duration, results_file_taxonomy.c.image_url])\
             .where(and_(results_file_taxonomy.c.confidence > 0.9, results_file_taxonomy.c.object_name == filter))\
-            .limit(pagesize).offset(offset)\
             .group_by(results_file_taxonomy.c.species, results_file_taxonomy.c.time_start_relative, results_file_taxonomy.c.duration, results_file_taxonomy.c.image_url)
     results = await database.fetch_all(query)
     return results
