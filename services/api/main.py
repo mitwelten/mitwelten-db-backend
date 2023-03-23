@@ -2,7 +2,7 @@ from api.database import database
 from api.dependencies import check_oid_authentication, crd
 from api.routers import (
     birdnet, data, deployments, geo, entries, ingest, minio, nodes, queue, tags,
-    taxonomy, validators
+    taxonomy, validators, walk
 )
 
 from fastapi import Depends, FastAPI, Request, status
@@ -98,6 +98,7 @@ app.include_router(queue.router)
 app.include_router(tags.router)
 app.include_router(taxonomy.router)
 app.include_router(validators.router)
+app.include_router(walk.router)
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):

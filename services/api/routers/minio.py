@@ -1,3 +1,4 @@
+from os import path
 
 from api.config import crd
 from api.dependencies import check_oid_authentication
@@ -26,7 +27,7 @@ if not bucket_exists:
 def stream_minio_response(response):
     try:
         while True:
-            chunk = response.read(4096)
+            chunk = response.read(4096 * 16)
             if not chunk:
                 break
             yield chunk
@@ -37,18 +38,9 @@ def stream_minio_response(response):
 @router.get('/files/{object_name:path}', dependencies=[Depends(check_oid_authentication)])
 async def get_download(request: Request, object_name: str):
     try:
-        response = storage.get_object(crd.minio.bucket, object_name)
+        # response = storage.get_object(crd.minio.bucket, object_name)
+        response = storage.get_object(crd.minio.bucket, path.splitext('scaled/' + path.basename(object_name))[0] + '.webp')
         return StreamingResponse(stream_minio_response(response), headers=response.headers)
     except S3Error as e:
         if e.code == 'NoSuchKey':
             raise HTTPException(status_code=404, detail='File not found')
-
-'''
-whitelist
-- datetyp
-    - jpgeg: ok
-
-    - wav: nok
-
-gbif db: gbif table
-'''
