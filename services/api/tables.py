@@ -65,6 +65,7 @@ results_file_taxonomy = sqlalchemy.Table(
     sqlalchemy.Column('species_en',  sqlalchemy.String),
     sqlalchemy.Column('genus',       sqlalchemy.String),
     sqlalchemy.Column('family',      sqlalchemy.String),
+    sqlalchemy.Column('order',       sqlalchemy.String),
     sqlalchemy.Column('class',       sqlalchemy.String),
     sqlalchemy.Column('phylum',      sqlalchemy.String),
     sqlalchemy.Column('kingdom',     sqlalchemy.String)
@@ -76,6 +77,7 @@ taxonomy_tree = sqlalchemy.Table(
     sqlalchemy.Column('species_id',  sqlalchemy.Integer),
     sqlalchemy.Column('genus_id',    sqlalchemy.Integer),
     sqlalchemy.Column('family_id',   sqlalchemy.Integer),
+    sqlalchemy.Column('order_id',    sqlalchemy.Integer),
     sqlalchemy.Column('class_id',    sqlalchemy.Integer),
     sqlalchemy.Column('phylum_id',   sqlalchemy.Integer),
     sqlalchemy.Column('kingdom_id',  sqlalchemy.Integer),

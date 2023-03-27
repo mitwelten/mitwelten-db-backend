@@ -266,10 +266,11 @@ CREATE TABLE IF NOT EXISTS prod.taxonomy_tree
     species_id bigint,
     genus_id bigint,
     family_id bigint,
+    order_id bigint,
     class_id bigint,
     phylum_id bigint,
     kingdom_id bigint NOT NULL,
-    CONSTRAINT unique_definition UNIQUE (species_id, genus_id, family_id, class_id, phylum_id, kingdom_id)
+    CONSTRAINT unique_definition UNIQUE (species_id, genus_id, family_id, order_id, class_id, phylum_id, kingdom_id)
 );
 
 CREATE TABLE IF NOT EXISTS prod.taxonomy_data
@@ -493,10 +494,11 @@ CREATE OR REPLACE VIEW prod.birdnet_inferred_species_file_taxonomy
         d1.label_de  species_de,
         d1.label_en  species_en,
         d2.label_sci genus,
-        d3.label_sci family,
-        d4.label_sci class,
-        d5.label_sci phylum,
-        d6.label_sci kingdom
+        d3.label_sci "family",
+        d4.label_sci "order",
+        d5.label_sci "class",
+        d6.label_sci phylum,
+        d7.label_sci kingdom
 
     FROM prod.birdnet_results r
 
@@ -512,9 +514,10 @@ CREATE OR REPLACE VIEW prod.birdnet_inferred_species_file_taxonomy
     -- link taxonomy tree keys to scientific labels
     LEFT JOIN prod.taxonomy_data d2 ON t.genus_id   = d2.datum_id
     LEFT JOIN prod.taxonomy_data d3 ON t.family_id  = d3.datum_id
-    LEFT JOIN prod.taxonomy_data d4 ON t.class_id   = d4.datum_id
-    LEFT JOIN prod.taxonomy_data d5 ON t.phylum_id  = d5.datum_id
-    LEFT JOIN prod.taxonomy_data d6 ON t.kingdom_id = d6.datum_id
+    LEFT JOIN prod.taxonomy_data d4 ON t.order_id   = d4.datum_id
+    LEFT JOIN prod.taxonomy_data d5 ON t.class_id   = d5.datum_id
+    LEFT JOIN prod.taxonomy_data d6 ON t.phylum_id  = d6.datum_id
+    LEFT JOIN prod.taxonomy_data d7 ON t.kingdom_id = d7.datum_id
 
     -- link location data
     LEFT JOIN prod.deployments     d ON f.deployment_id = d.deployment_id

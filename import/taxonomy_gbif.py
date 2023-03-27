@@ -20,6 +20,7 @@ keyMap = [ # map db fieldnames to keys in GBIF response
     {'db': 'species_id', 'gbif': 'speciesKey', 'gbif_label': 'canonicalName',  'rank': 'SPECIES'},
     {'db': 'genus_id',   'gbif': 'genusKey',   'gbif_label': 'genus',          'rank': 'GENUS'},
     {'db': 'family_id',  'gbif': 'familyKey',  'gbif_label': 'family',         'rank': 'FAMILY'},
+    {'db': 'order_id',   'gbif': 'orderKey',   'gbif_label': 'order',          'rank': 'ORDER'},
     {'db': 'class_id',   'gbif': 'classKey',   'gbif_label': 'class',          'rank': 'CLASS'},
     {'db': 'phylum_id',  'gbif': 'phylumKey',  'gbif_label': 'phylum',         'rank': 'PHYLUM'},
     {'db': 'kingdom_id', 'gbif': 'kingdomKey', 'gbif_label': 'kingdom',        'rank': 'KINGDOM'}
@@ -113,7 +114,7 @@ def main():
             else: values.append(taxon[k['gbif']])
         # put usage key into species_id when present (== subspecies)
         if taxon['rank'] == 'SUBSPECIES': values[0] = taxon[keyMap[0]['gbif']]
-        cursor.execute(f'insert into prod.taxonomy_tree ({dbfields}) values (%s,%s,%s,%s,%s,%s) on conflict do nothing',
+        cursor.execute(f'insert into prod.taxonomy_tree ({dbfields}) values (%s,%s,%s,%s,%s,%s,%s) on conflict do nothing',
             tuple(values))
         connection.commit()
 
