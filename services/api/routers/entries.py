@@ -39,6 +39,9 @@ async def list_entries(
     elif time_to:
         query = query.where(entries.c.created_at < time_to)
 
+    # order by itertools groupby key
+    query = query.order_by(entries.c.entry_id)
+
     result = await database.fetch_all(query=query)
     output = []
     for key, grp in groupby(result, key=lambda x: x['entry_id']):

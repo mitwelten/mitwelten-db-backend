@@ -26,6 +26,10 @@ async def read_deployments(node_id: Optional[int] = None) -> List[DeploymentResp
         set_label_style(LABEL_STYLE_TABLENAME_PLUS_COL)
     if node_id != None:
         query = query.where(text('d.node_id = :node_id').bindparams(node_id=node_id))
+
+    # order by itertools groupby key
+    query = query.order_by(text('d.deployment_id'))
+
     result = await database.fetch_all(query)
     response = []
     for key, grp in groupby(result, key=lambda x: x['d_deployment_id']):
