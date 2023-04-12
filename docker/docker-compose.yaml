@@ -396,6 +396,28 @@ services:
     ports:
       - 9093:9093
     restart: unless-stopped
+    labels:
+      - traefik.enable=true
+      - traefik.http.services.am.loadbalancer.server.port=9093
+
+      # for http
+      - 'traefik.http.routers.am-http.rule=Host(`status.mitwelten.org`) && PathPrefix(`/alertmanager`)'
+      - traefik.http.routers.am-http.entrypoints=http
+
+      # redirect to https
+      - traefik.http.middlewares.am-https.redirectscheme.scheme=https
+      - traefik.http.routers.am-http.middlewares=am-https
+
+      # for https
+      - 'traefik.http.routers.am.rule=Host(`status.mitwelten.org`) && PathPrefix(`/alertmanager`)'
+      - traefik.http.routers.am.entrypoints=https
+      - traefik.http.routers.am.tls.certresolver=ssl
+
+      #  middlewares for https
+      - traefik.http.routers.am.middlewares=am-stripprefix
+
+      # strip prefix /api/v3
+      - traefik.http.middlewares.am-stripprefix.stripprefix.prefixes=/alertmanager
 
   prom2teams:
     container_name: prom2teams
