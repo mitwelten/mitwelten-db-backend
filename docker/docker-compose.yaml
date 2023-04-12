@@ -371,8 +371,8 @@ services:
       - traefik.http.routers.grafana_insecure.entrypoints=http
 
       # redirect to https
-      - traefik.http.middlewares.viz-api-https.redirectscheme.scheme=https
-      - traefik.http.routers.grafana_insecure.middlewares=viz-api-https
+      - traefik.http.middlewares.grafana-https.redirectscheme.scheme=https
+      - traefik.http.routers.grafana_insecure.middlewares=grafana-https
 
       # for https
       - 'traefik.http.routers.grafana.rule=Host(`status.mitwelten.org`)'
