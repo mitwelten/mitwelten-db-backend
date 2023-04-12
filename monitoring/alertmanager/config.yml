@@ -53,8 +53,8 @@ receivers:
 
 - name: telegram
   telegram_configs:
-  - chat_id: ${TG_CHAT_ID}
-    bot_token: ${TG_BOT_TOKEN}
+  - chat_id: 0 # <- put chat id
+    bot_token: '' # <- put token
     send_resolved: true
     api_url: 'https://api.telegram.org'
     parse_mode: HTML
