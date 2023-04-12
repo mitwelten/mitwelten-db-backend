@@ -11,8 +11,18 @@ route:
   routes:
   - receiver: telegram
     continue: true
-  - receiver: slack
+  - receiver: teams
     continue: true
+    repeat_interval: 4h
+    matchers:
+    - severity = 'high'
+  - receiver: teams
+    continue: true
+    repeat_interval: 12h
+    matchers:
+    - severity = 'medium'
+  # - receiver: slack
+  #   continue: true
 
 receivers:
 - name: root
@@ -52,6 +62,11 @@ receivers:
     # webhook_configs:
     # - send_resolved: True
     #   url: http://127.0.0.1:9088/alert/-xyz
+
+- name: teams
+  webhook_configs:
+  - url: "http://prom2teams:8089"
+    send_resolved: true
 
 # Inhibition rules allow to mute a set of alerts given that another alert is
 # firing.
