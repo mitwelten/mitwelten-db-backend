@@ -13,6 +13,11 @@ route:
     continue: true
   - receiver: teams
     continue: true
+    repeat_interval: 30m
+    matchers:
+    - severity = 'critical'
+  - receiver: teams
+    continue: true
     repeat_interval: 4h
     matchers:
     - severity = 'high'
