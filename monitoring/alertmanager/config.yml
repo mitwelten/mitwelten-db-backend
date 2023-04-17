@@ -15,17 +15,22 @@ route:
     continue: true
     repeat_interval: 30m
     matchers:
-    - severity = 'critical'
+    - severity = "critical"
   - receiver: teams
     continue: true
-    repeat_interval: 4h
+    repeat_interval: 6h
     matchers:
-    - severity = 'high'
+    - severity = "error"
   - receiver: teams
     continue: true
     repeat_interval: 12h
     matchers:
-    - severity = 'medium'
+    - severity = "warning"
+  - receiver: teams
+    continue: true
+    repeat_interval: 24h
+    matchers:
+    - severity = "info"
   # - receiver: slack
   #   continue: true
 
