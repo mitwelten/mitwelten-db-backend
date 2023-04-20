@@ -541,7 +541,7 @@ services:
       - "traefik.http.routers.dashboardclient.tls.certresolver=ssl"
 
   mitwelten-explore:
-    image: cr.gitlab.fhnw.ch/mitwelten/docker-infrastructure/mitwelten-explore-test:0.1
+    image: cr.gitlab.fhnw.ch/mitwelten/docker-infrastructure/mitwelten-explore-test:0.1.1
     networks:
       - mitwelten
     restart: unless-stopped
@@ -550,6 +550,7 @@ services:
       - KC_SERVER_URL=https://auth.mitwelten.org/auth/
       - KC_CLIENT_ID=fastapi_auth_test
       - KC_REALM_NAME=explore
+      - DOMAIN_NAME=https://explore.mitwelten.org
     labels:
       - "traefik.enable=true"
       - "traefik.http.services.mwexplore.loadbalancer.server.port=80"
