@@ -539,3 +539,32 @@ services:
       - "traefik.http.routers.dashboardclient.rule=(Host(`discover.mitwelten.org`) && PathPrefix(`/`))"
       - "traefik.http.routers.dashboardclient.entrypoints=https"
       - "traefik.http.routers.dashboardclient.tls.certresolver=ssl"
+
+  mitwelten-explore:
+    image: cr.gitlab.fhnw.ch/mitwelten/docker-infrastructure/mitwelten-explore-test:0.1
+    networks:
+      - mitwelten
+    restart: unless-stopped
+    container_name: mitwelten-explore
+    environment:
+      - KC_SERVER_URL=https://auth.mitwelten.org/auth/
+      - KC_CLIENT_ID=fastapi_auth_test
+      - KC_REALM_NAME=explore
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.services.mwexplore.loadbalancer.server.port=80"
+
+      # for http
+      - "traefik.http.routers.mwexplore_insecure.rule=Host(`explore.mitwelten.org`)"
+      - "traefik.http.routers.mwexplore_insecure.entrypoints=http"
+
+      # redirect to https
+      - "traefik.http.middlewares.mwexplore-https.redirectscheme.scheme=https"
+      - "traefik.http.routers.mwexplore_insecure.middlewares=mwexplore-https"
+
+      # for https
+      - "traefik.http.routers.mwexplore.rule=Host(`explore.mitwelten.org`)"
+      - "traefik.http.routers.mwexplore.entrypoints=https"
+      - "traefik.http.routers.mwexplore.tls.certresolver=ssl"
+
+        
