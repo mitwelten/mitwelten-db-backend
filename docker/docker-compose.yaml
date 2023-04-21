@@ -12,6 +12,8 @@ networks:
     ipam:
       config:
         - subnet: 192.168.0.0/16
+  explore:
+    driver: bridge
 
 services:
   traefik:
@@ -541,16 +543,19 @@ services:
       - "traefik.http.routers.dashboardclient.tls.certresolver=ssl"
 
   mitwelten-explore:
-    image: cr.gitlab.fhnw.ch/mitwelten/docker-infrastructure/mitwelten-explore-test:0.1.1
+    image: cr.gitlab.fhnw.ch/mitwelten/docker-infrastructure/mitwelten-explore-test:latest
     networks:
       - mitwelten
+      - explore
     restart: unless-stopped
     container_name: mitwelten-explore
     environment:
       - KC_SERVER_URL=https://auth.mitwelten.org/auth/
-      - KC_CLIENT_ID=fastapi_auth_test
-      - KC_REALM_NAME=explore
+      - KC_CLIENT_ID=explore
+      - KC_REALM_NAME=mitwelten
       - DOMAIN_NAME=https://explore.mitwelten.org
+      - REDIS_HOST=redis_cache
+      - REDIS_PORT=6379
     labels:
       - "traefik.enable=true"
       - "traefik.http.services.mwexplore.loadbalancer.server.port=80"
@@ -568,4 +573,9 @@ services:
       - "traefik.http.routers.mwexplore.entrypoints=https"
       - "traefik.http.routers.mwexplore.tls.certresolver=ssl"
 
-        
+  redis_cache:
+    image: redis
+    container_name: redis_cache
+    restart: always
+    networks:
+      - explore
