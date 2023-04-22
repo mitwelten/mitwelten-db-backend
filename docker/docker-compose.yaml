@@ -12,8 +12,6 @@ networks:
     ipam:
       config:
         - subnet: 192.168.0.0/16
-  explore:
-    driver: bridge
 
 services:
   traefik:
@@ -546,8 +544,7 @@ services:
     image: cr.gitlab.fhnw.ch/mitwelten/docker-infrastructure/mitwelten-explore-test:latest
     networks:
       - mitwelten
-      - explore
-    restart: unless-stopped
+    restart: always
     container_name: mitwelten-explore
     environment:
       - KC_SERVER_URL=https://auth.mitwelten.org/auth/
@@ -578,4 +575,4 @@ services:
     container_name: redis_cache
     restart: always
     networks:
-      - explore
+      - mitwelten
