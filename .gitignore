@@ -4,3 +4,4 @@ __pycache__
 .venv/
 viz_dashboard.env
 viz_users.sqlite
+mqtt_relay_configuration.yaml

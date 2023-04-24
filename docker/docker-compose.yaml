@@ -490,6 +490,13 @@ services:
       - "traefik.http.routers.vaui.entrypoints=https"
       - "traefik.http.routers.vaui.tls.certresolver=ssl"
 
+  mqtt-relay:
+    image: cr.gitlab.fhnw.ch/mitwelten/docker-infrastructure/mitwelten-mqtt-relay:latest
+    container_name: mqtt-relay
+    restart: always
+    volumes:
+      - /opt/mitwelten-db-backend/docker/mqtt_relay_configuration.yaml:/app/configuration.yaml
+
   viz-dashboard-server:
     env_file: ${VIZ_DASHBOARD_SERVER_ENV_FILE}
     restart: always
