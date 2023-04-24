@@ -1,10 +1,10 @@
 from api.database import database
 from api.dependencies import check_authentication
-from api.models import ImageRequest
-from api.tables import files_image
+from api.models import ImageRequest, PaxMeasurement
+from api.tables import files_image, data_pax, deployments, nodes
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.sql import insert, select
+from sqlalchemy.sql import insert, select, and_, text
 
 router = APIRouter(tags=['inferrence', 'ingest'])
 
@@ -40,3 +40,37 @@ async def ingest_image(body: ImageRequest) -> None:
 
     else:
         await transaction.commit()
+
+@router.post('/ingest/pax', dependencies=[Depends(check_authentication)])
+async def ingest_pax(body: PaxMeasurement):
+    transaction = await database.transaction()
+
+    try:
+        if body.nodeLabel is not None:
+            node_id_subquery = select(nodes.c.node_id).filter(nodes.c.node_label == body.nodeLabel).scalar_subquery()
+        elif body.deviceEui is not None:
+            node_id_subquery = select(nodes.c.node_id).filter(nodes.c.serial_number == body.deviceEui).scalar_subquery()
+        else:
+            raise HTTPException(status_code=409, detail="Invalid Node Identifier")
+        deployment_id_subquery = select(deployments.c.deployment_id).filter(
+            and_(
+                deployments.c.node_id == node_id_subquery,
+                text("upper(period) is NULL")
+            )
+        ).scalar_subquery()
+        insert_stmt = insert(data_pax).values(
+            time=body.time,
+            deployment_id=deployment_id_subquery,
+            pax=body.pax,
+            voltage=body.voltage
+        )
+        await database.execute(insert_stmt)
+
+    except Exception as e:
+        await transaction.rollback()
+        print(str(e))
+        raise HTTPException(status_code=409, detail=str(e))
+
+    else:
+        await transaction.commit()    
+

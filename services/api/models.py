@@ -323,6 +323,13 @@ class DatumResponse(BaseModel):
     '''
     __root__: Union[List[PaxDatum], List[EnvDatum]] = Field(..., discriminator='type')
 
+class PaxMeasurement(BaseModel):
+    time: datetime
+    nodeLabel: Optional[constr(regex=r'\d{4}-\d{4}')] = None
+    deviceEui: Optional[str] = None
+    pax: int
+    voltage: float
+
 class ApiResponse(BaseModel):
     code: Optional[int] = None
     type: Optional[str] = None
