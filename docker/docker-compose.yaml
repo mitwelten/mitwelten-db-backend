@@ -494,6 +494,8 @@ services:
     image: cr.gitlab.fhnw.ch/mitwelten/docker-infrastructure/mitwelten-mqtt-relay:latest
     container_name: mqtt-relay
     restart: always
+    networks:
+      - mitwelten
     volumes:
       - /opt/mitwelten-db-backend/docker/mqtt_relay_configuration.yaml:/app/configuration.yaml
 
