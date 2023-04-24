@@ -1,8 +1,8 @@
-from api.database import database
+from api.database import database, database_cache
 from api.dependencies import check_oid_authentication, crd
 from api.routers import (
     birdnet, data, deployments, geo, entries, ingest, minio, nodes, queue, tags,
-    taxonomy, validators, walk
+    taxonomy, validators, walk, meteodata
 )
 
 from fastapi import Depends, FastAPI, Request, status
@@ -54,6 +54,10 @@ tags_metadata = [
         'name': 'files',
         'description': 'File up- and download (images, audio, etc.)',
     },
+    {
+        'name': 'meteodata',
+        'description': 'Meteodata from external sources',
+    },
 ]
 
 app = FastAPI(
@@ -99,6 +103,8 @@ app.include_router(tags.router)
 app.include_router(taxonomy.router)
 app.include_router(validators.router)
 app.include_router(walk.router)
+app.include_router(meteodata.router)
+
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
@@ -110,10 +116,12 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 @app.on_event('startup')
 async def startup():
     await database.connect()
+    await database_cache.connect()
 
 @app.on_event('shutdown')
 async def shutdown():
     await database.disconnect()
+    await database_cache.disconnect()
 
 @app.get('/login', tags=['authentication'])
 async def login(auth: dict = Depends(check_oid_authentication)):

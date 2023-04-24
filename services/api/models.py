@@ -373,3 +373,47 @@ class PatchEntry(Entry):
         None, example='Interesting Observation', description='Title of this entry'
     )
     location: Optional[Point]
+
+# Meteo Models
+
+class MeteoStation(BaseModel):
+    station_id: str
+    station_name: str
+    data_src: str
+    location: Point
+    altitude: int 
+
+class MeteoParameter(BaseModel):
+    param_id: str
+    unit: str
+    description: str
+
+class MeteoDataset(BaseModel):
+    param_id: str
+    unit: str
+    description: str
+    station_id: str
+    station_name: str
+    data_src: str
+
+class MeteoMeasurements(BaseModel):
+    time: List[datetime]
+    value: List[float]
+
+class MeteoMeasurementTimeOfDay(BaseModel):
+    minute_of_day: List[int]
+    value: List[float]
+
+class MeteoSummary(BaseModel):
+    maximum: float
+    minimum: float
+    mean: float
+    median: float
+    q1: float
+    q3: float
+    range: float
+    variance: float
+    stddev: float
+    min_time: datetime
+    max_time: datetime
+    count: int

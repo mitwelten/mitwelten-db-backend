@@ -16,6 +16,7 @@ httpcore==0.13.7
 httpx==0.18.2
 idna==3.4
 minio==7.1.13
+pandas==2.0.1
 pyasn1==0.4.8
 pycparser==2.21
 pydantic==1.10.5

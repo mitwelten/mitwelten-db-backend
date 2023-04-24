@@ -7,6 +7,8 @@ from sqlalchemy import ForeignKey
 from sqlalchemy.dialects.postgresql import TSTZRANGE
 
 metadata = sqlalchemy.MetaData(schema=crd.db.schema)
+metadata_cache = sqlalchemy.MetaData(schema=crd.db_cache.schema)
+
 
 # view: birdnet_input
 birdnet_input = sqlalchemy.Table(
@@ -232,4 +234,37 @@ data_env = sqlalchemy.Table(
     sqlalchemy.Column('humidity', sqlalchemy.Float, nullable=False),
     sqlalchemy.Column('moisture', sqlalchemy.Float, nullable=False),
     sqlalchemy.Column('voltage', sqlalchemy.Float, nullable=False),
+)
+
+# Meteo
+
+meteo_station = sqlalchemy.Table(
+    "station",
+    metadata_cache,
+    sqlalchemy.Column("station_id", sqlalchemy.Text, primary_key=True),
+    sqlalchemy.Column("station_name", sqlalchemy.Text, nullable=False),
+    sqlalchemy.Column("data_src", sqlalchemy.Text, nullable=False),
+    sqlalchemy.Column("location", GeometryPoint, nullable=False),
+    sqlalchemy.Column("altitude", sqlalchemy.Integer, nullable=False),
+    schema=crd.db_cache.schema,
+)
+
+
+meteo_parameter = sqlalchemy.Table(
+    "parameter",
+    metadata_cache,
+    sqlalchemy.Column("param_id", sqlalchemy.Text, primary_key=True),
+    sqlalchemy.Column("unit", sqlalchemy.Text, nullable=False),
+    sqlalchemy.Column("description", sqlalchemy.Text, nullable=False),
+    schema=crd.db_cache.schema,
+)
+
+meteo_meteodata = sqlalchemy.Table(
+    "meteodata",
+    metadata_cache,
+    sqlalchemy.Column("ts", sqlalchemy.TIMESTAMP, nullable=False),
+    sqlalchemy.Column("param_id", None, ForeignKey(meteo_parameter.c.param_id)),
+    sqlalchemy.Column("station_id", None, ForeignKey(meteo_station.c.station_id)),
+    sqlalchemy.Column("value", sqlalchemy.Float, nullable=False), 
+    schema=crd.db_cache.schema,
 )
