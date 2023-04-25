@@ -153,6 +153,7 @@ class RankEnum(str, Enum):
     kingdom = 'KINGDOM'
     phylum = 'PHYLUM'
     _class = 'CLASS'
+    order = 'ORDER'
     family = 'FAMILY'
     genus = 'GENUS'
     species = 'SPECIES'
