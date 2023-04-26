@@ -1,7 +1,7 @@
 from typing import List
 
 from api.database import database
-from api.models import Taxon
+from api.models import Taxon, RankEnum
 from api.tables import taxonomy_data, taxonomy_tree
 
 from fastapi import APIRouter
@@ -52,3 +52,30 @@ async def taxonomy_by_sci(identifier: str) -> List[Taxon]:
     query = select(taxonomy_data.c.datum_id).where(taxonomy_data.c.label_sci == identifier)
     result = await database.fetch_one(query)
     return await taxonomy_by_id(result['datum_id'])
+
+@router.get('/taxonomy/level/{level}', response_model=List[Taxon])
+async def taxonomy_by_level(level: RankEnum) -> List[Taxon]:
+    id_column = None
+    if level == RankEnum.subspecies or level == RankEnum.species:
+        id_column = taxonomy_tree.c.species_id
+    elif level == RankEnum.genus:
+        id_column = taxonomy_tree.c.genus_id
+    elif level == RankEnum.family:
+        id_column = taxonomy_tree.c.family_id
+    elif level == RankEnum.order:
+        id_column = taxonomy_tree.c.order_id
+    elif level == RankEnum._class:
+        id_column = taxonomy_tree.c.class_id
+    elif level == RankEnum.phylum:
+        id_column = taxonomy_tree.c.phylum_id
+    elif level == RankEnum.kingdom:
+        id_column = taxonomy_tree.c.kingdom_id
+
+    datum_id_subquery = select(id_column.distinct()).filter(id_column.isnot(None)).subquery()
+    query = select(taxonomy_data.c.datum_id, taxonomy_data.c.label_sci, taxonomy_data.c.label_de, taxonomy_data.c.label_en, taxonomy_data.c.image_url)\
+              .where(taxonomy_data.c.datum_id.in_(select(datum_id_subquery)))
+    results = await database.fetch_all(query)
+    typed_results = []
+    for result in results:
+        typed_results.append(Taxon(rank=level.value, **result))
+    return typed_results
