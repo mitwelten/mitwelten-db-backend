@@ -6,7 +6,7 @@ from api.tables import files_image, data_pax, deployments, nodes
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.sql import insert, select, and_, text
 
-router = APIRouter(tags=['inferrence', 'ingest'])
+router = APIRouter(tags=['ingest'])
 
 # ------------------------------------------------------------------------------
 # DATA INPUT (INGEST)
@@ -72,5 +72,5 @@ async def ingest_pax(body: PaxMeasurement):
         raise HTTPException(status_code=409, detail=str(e))
 
     else:
-        await transaction.commit()    
+        await transaction.commit()
 
