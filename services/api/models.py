@@ -418,3 +418,14 @@ class MeteoSummary(BaseModel):
     min_time: datetime
     max_time: datetime
     count: int
+
+# Birds
+
+class BirdResultTimeseries(BaseModel):
+    bucket: List[datetime]
+    detections: List[int]
+
+class BirdResultLocations(BaseModel):
+    location: List[Point]
+    detections: List[int]
+    deployment_id: List[int]

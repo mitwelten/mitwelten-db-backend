@@ -1,12 +1,15 @@
-from datetime import date
-from typing import List
+from datetime import date, datetime, timedelta
+from typing import List, Optional
 
 from api.database import database
-from api.models import Result, ResultFull, ResultsGrouped
+from api.models import Result, ResultFull, ResultsGrouped, BirdResultTimeseries, BirdResultLocations
 from api.tables import results, results_file_taxonomy, species, species_day, taxonomy_data
 
 from fastapi import APIRouter, Query
-from sqlalchemy.sql import and_, desc, func, select
+from sqlalchemy.sql import and_, desc, func, select, text
+from pandas import to_timedelta
+
+import credentials as crd
 
 router = APIRouter(tags=['inferrence'])
 
@@ -91,3 +94,51 @@ async def read_species_day(spec: str, start: int = 0, end: int = 0, conf: float 
         order_by(query.c.date).\
         with_only_columns(query, taxonomy_data.c.label_de, taxonomy_data.c.label_en)
     return await database.fetch_all(labelled_query)
+
+@router.get('/birds/{identifier}/date' , response_model=BirdResultTimeseries)
+async def detection_dates_by_id(
+    identifier: int,  
+    conf: float = 0.9,
+    bucket_width:str = "1d",
+    time_from: Optional[datetime] = Query(None, alias='from', example='2021-09-01T00:00:00.000Z'),
+    time_to: Optional[datetime] = Query(None, alias='to', example='2022-08-31T23:59:59.999Z'),
+    ) -> BirdResultTimeseries:
+    time_from_condition = "AND (f.time + interval '1 second' * r.time_start) >= :time_from" if time_from else ""
+    time_to_condition = "AND (f.time + interval '1 second' * r.time_start) <= :time_to" if time_to else ""
+    query = text(
+    f"""
+    SELECT time_bucket(:bucket_width, (f.time + interval '1 second' * r.time_start)) AS bucket,
+    count(r.species) as detections
+    from {crd.db.schema}.birdnet_results r
+    left join {crd.db.schema}.files_audio f on f.file_id = r.file_id 
+    left join {crd.db.schema}.deployments d on f.deployment_id = d.deployment_id
+    where r.confidence >= :conf
+    and r.species in (
+        select s.label_sci from {crd.db.schema}.taxonomy_data s where datum_id in (
+            select species_id from {crd.db.schema}.taxonomy_tree 
+            where species_id = :identifier
+            or genus_id = :identifier
+            or family_id = :identifier
+            or order_id = :identifier
+            or class_id = :identifier
+            or phylum_id = :identifier
+            or kingdom_id = :identifier
+            )
+        ) 
+    {time_from_condition}
+    {time_to_condition}
+    GROUP BY bucket
+    ORDER BY bucket
+    """
+    ).bindparams(bucket_width=to_timedelta(bucket_width).to_pytimedelta(),conf=conf, identifier=identifier)
+    if time_from:
+        query = query.bindparams(time_from = time_from)
+    if time_to:
+        query = query.bindparams(time_to = time_to)
+
+    results = await database.fetch_all(query)
+    response = BirdResultTimeseries(bucket=[],detections=[])
+    for result in results:
+        response.bucket.append(result.bucket)
+        response.detections.append(result.detections)
+    return response
