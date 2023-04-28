@@ -236,3 +236,53 @@ async def detection_count(
 
     result = await database.fetch_one(query)
     return result.detections
+
+@router.get('/birds/{identifier}/time_of_day')
+async def detection_time_of_day(
+    identifier: int,  
+    conf: float = 0.9,
+    bucket_width_m:int = 30,
+    time_from: Optional[datetime] = Query(None, alias='from', example='2021-09-01T00:00:00.000Z'),
+    time_to: Optional[datetime] = Query(None, alias='to', example='2022-08-31T23:59:59.999Z'),
+):
+    time_from_condition = "AND (f.time + interval '1 second' * r.time_start) >= :time_from" if time_from else ""
+    time_to_condition = "AND (f.time + interval '1 second' * r.time_start) <= :time_to" if time_to else ""
+    query = text(
+    f"""
+    SELECT
+    unnest((hist.minute_buckets[2:])[: array_length(hist.minute_buckets,1)-2]) as detections,
+    generate_series(0, 24*60-1, :bucket_width_m) AS minute_of_day
+    FROM (
+        SELECT 
+        histogram(
+            EXTRACT (hour from (f.time + interval '1 second' * r.time_start))*60 + EXTRACT (minute from (f.time + interval '1 second' * r.time_start)), 0, 24*60, (24*60)/:bucket_width_m) as minute_buckets
+        FROM {crd.db.schema}.birdnet_results r
+        LEFT JOIN {crd.db.schema}.files_audio f ON f.file_id = r.file_id 
+        WHERE r.confidence >=  :conf
+        AND r.species IN (
+            SELECT s.label_sci FROM {crd.db.schema}.taxonomy_data s WHERE datum_id IN (
+                SELECT species_id FROM {crd.db.schema}.taxonomy_tree 
+                WHERE species_id =  :identifier 
+                OR genus_id =  :identifier 
+                OR family_id =  :identifier 
+                OR order_id =  :identifier 
+                OR class_id =  :identifier 
+                OR phylum_id =  :identifier 
+                OR kingdom_id =  :identifier 
+            )
+        )
+    {time_from_condition}
+    {time_to_condition}
+    ) hist
+    """
+    ).bindparams(identifier=identifier, bucket_width_m = bucket_width_m, conf = conf)
+    if time_from:
+        query = query.bindparams(time_from = time_from)
+    if time_to:
+        query = query.bindparams(time_to = time_to)
+    results = await database.fetch_all(query)
+    return {
+        "minuteOfDay":[r.minute_of_day for r in results],
+        "detections":[r.detections for r in results]
+        }
+    
