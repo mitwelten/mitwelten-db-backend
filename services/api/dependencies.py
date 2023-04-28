@@ -49,6 +49,24 @@ async def check_oid_authentication(token: str = Depends(oauth2_scheme)):
     else:
         return auth
 
+async def check_oid_m2m_authentication(role, token: str = Depends(oauth2_scheme)):
+    try:
+        auth = keycloak_openid.decode_token(
+            token,
+            key=crd.oidc.KC_PUBLIC_KEY,
+            options={'verify_signature': True, 'verify_aud': False, 'exp': True},
+        )
+        if role == None or role not in auth['realm_access']['roles']:
+            raise
+    except:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail='Authentication failed',
+            headers={'WWW-Authenticate': 'Bearer'},
+        )
+    else:
+        return auth
+
 security = HTTPBasic()
 
 async def check_authentication(
