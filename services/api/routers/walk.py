@@ -4,18 +4,30 @@ from api.dependencies import check_oid_authentication
 from api.tables import files_image, deployments, nodes
 
 from fastapi import APIRouter, Depends
-from sqlalchemy.sql import select
+from sqlalchemy.sql import select, text
 
-router = APIRouter(tags=['files', 'images'])
+router = APIRouter(tags=['files', 'images', 'walk'])
 
 # ------------------------------------------------------------------------------
 # DATA WALKING
 # ------------------------------------------------------------------------------
 
-@router.get('/walk/imagestack', dependencies=[Depends(check_oid_authentication)])
+@router.get('/walk/imagestack/1', dependencies=[Depends(check_oid_authentication)])
 async def get_imagestack():
     images = select(files_image).\
         outerjoin(deployments).\
         outerjoin(nodes).where(deployments.c.deployment_id == 20).\
         order_by(files_image.c.time).limit(2000);
+    return await database.fetch_all(images)
+
+@router.get('/walk/imagestack/2', dependencies=[Depends(check_oid_authentication)])
+async def get_imagestack():
+    images = text(f'''
+    select t.* from (
+        select *, row_number() OVER(ORDER BY time ASC) AS row
+        from prod.files_image
+        where deployment_id = 67
+        limit 1000
+    ) t where t.row % 20 = 0;
+    ''')
     return await database.fetch_all(images)
