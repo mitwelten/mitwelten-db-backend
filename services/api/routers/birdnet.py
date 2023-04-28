@@ -194,3 +194,45 @@ async def detection_locations_by_id(
             )
         )
     return typed_results
+
+
+@router.get('/birds/{identifier}/count')#, response_model=List[BirdResultLocation])
+async def detection_count(
+    identifier: int,  
+    conf: float = 0.9,
+    time_from: Optional[datetime] = Query(None, alias='from', example='2021-09-01T00:00:00.000Z'),
+    time_to: Optional[datetime] = Query(None, alias='to', example='2022-08-31T23:59:59.999Z'),
+    ):
+    time_from_condition = "AND (f.time + interval '1 second' * r.time_start) >= :time_from" if time_from else ""
+    time_to_condition = "AND (f.time + interval '1 second' * r.time_start) <= :time_to" if time_to else ""
+    query = text(
+    f"""
+    SELECT 
+    count(r.species) as detections
+    from {crd.db.schema}.birdnet_results r
+    left join {crd.db.schema}.files_audio f on f.file_id = r.file_id 
+    left join {crd.db.schema}.deployments d on f.deployment_id = d.deployment_id
+    where r.confidence >= :conf
+    and r.species in (
+        select s.label_sci from {crd.db.schema}.taxonomy_data s where datum_id in (
+            select species_id from {crd.db.schema}.taxonomy_tree 
+            where species_id = :identifier
+            or genus_id = :identifier
+            or family_id = :identifier
+            or order_id = :identifier
+            or class_id = :identifier
+            or phylum_id = :identifier
+            or kingdom_id = :identifier
+            )
+        ) 
+    {time_from_condition}
+    {time_to_condition}
+    """
+    ).bindparams(conf=conf, identifier=identifier)
+    if time_from:
+        query = query.bindparams(time_from = time_from)
+    if time_to:
+        query = query.bindparams(time_to = time_to)
+
+    result = await database.fetch_one(query)
+    return result.detections
