@@ -1,9 +1,9 @@
 from os import path
 
 from api.config import crd
-from api.dependencies import check_oid_authentication
+from api.dependencies import check_oid_authentication, check_oid_m2m_authentication
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile
 from fastapi.responses import StreamingResponse
 
 from minio import Minio
@@ -44,3 +44,15 @@ async def get_download(request: Request, object_name: str):
     except S3Error as e:
         if e.code == 'NoSuchKey':
             raise HTTPException(status_code=404, detail='File not found')
+
+@router.post('/files/', dependencies=[Depends(check_oid_m2m_authentication)])
+async def post_upload(file: UploadFile):
+    # make sure object doesn't already exist
+    try:
+        stat = storage.stat_object(crd.minio.bucket, file.filename)
+    except S3Error as e:
+        if e.code != 'NoSuchKey':
+            raise e
+    # upload
+    upload = storage.put_object(crd.minio.bucket, file.filename, file.file, length=-1, part_size=10*1024*1024)
+    return { 'object_name': upload.object_name, 'etag': upload.etag }
