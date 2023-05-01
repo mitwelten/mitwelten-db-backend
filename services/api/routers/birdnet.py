@@ -286,3 +286,48 @@ async def detection_time_of_day(
         "detections":[r.detections for r in results]
         }
     
+@router.get('/species/parent_taxon/{identifier}/count')#, response_model=List[BirdResultLocation])
+async def species_count_by_parent_taxon(
+    identifier: int,  
+    conf: float = 0.9,
+    limit: int = 20,
+    ):
+    query = text(
+    f"""
+    SELECT 
+        s.datum_id,
+        s.label_sci,
+        s.label_de,
+        s.label_en,
+        count(r.species) as detections
+    FROM {crd.db.schema}.taxonomy_data s
+    left join {crd.db.schema}.birdnet_results r on r.species = s.label_sci
+    WHERE s.datum_id IN (
+        select species_id from {crd.db.schema}.taxonomy_tree
+                where species_id = :identifier
+                or genus_id = :identifier
+                or family_id = :identifier
+                or order_id = :identifier
+                or class_id = :identifier
+                or phylum_id = :identifier
+                or kingdom_id =:identifier
+        )
+    AND r.confidence > :conf
+    group by s.datum_id
+    order by detections desc
+    LIMIT :limit
+    """
+    ).bindparams(conf=conf, identifier=identifier, limit=limit)
+
+    results = await database.fetch_all(query)
+    typed_results = [
+        dict(
+        datum_id=r.datum_id,
+        label_sci=r.label_sci,
+        label_de = r.label_de,
+        label_en = r.label_en,
+        detections =r.detections
+        )
+        for r in results]
+    
+    return typed_results
