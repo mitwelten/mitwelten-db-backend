@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Optional
 
 from api.database import database
-from api.models import DatumResponse, EnvDatum, PaxDatum
+from api.models import DatumResponse, EnvDatum, PaxDatum, Point
 from api.tables import data_env, data_pax, deployments, nodes
 
 from fastapi import APIRouter, HTTPException, Query
@@ -120,3 +120,43 @@ async def get_pax_measurements_time_of_day(
         "minuteOfDay":[r.minute_of_day for r in results],
         "pax":[r.pax for r in results]
         }
+
+@router.get('/sensordata/pax_locations')
+async def get_pax_locations(
+    time_from: Optional[datetime] = Query(None, alias='from', example='2020-06-22T18:00:00.000Z'),
+    time_to: Optional[datetime] = Query(None, alias='to', example='2022-06-22T20:00:00.000Z'),
+    ):
+    if time_from is not None and time_to is not None:
+        time_condition = "WHERE p.time >= :time_from and p.time <= :time_to"
+    elif time_from:
+        time_condition = "WHERE p.time >= :time_from"
+    elif time_to:
+        time_condition = "WHERE p.time <= :time_to"
+    else:
+        time_condition = ""
+    query = text(f"""
+        SELECT
+            p.deployment_id, 
+            d.location[0] as lat,
+            d.location[1] as lon,
+            sum(p.pax) as pax
+        FROM {crd.db.schema}.sensordata_pax p
+        left join {crd.db.schema}.deployments d on d.deployment_id = p.deployment_id
+        {time_condition}
+        group by p.deployment_id, lat, lon
+    """)
+    if time_from:
+        query = query.bindparams(time_from = time_from)
+    if time_to:
+        query = query.bindparams(time_to = time_to)
+    results = await database.fetch_all(query=query)
+    typed_results = []
+    for result in results:
+        typed_results.append(
+            dict(
+            location=Point(lat=result.lat, lon=result.lon),
+            pax=result.pax,
+            deployment_id=result.deployment_id
+            )
+        )
+    return typed_results
