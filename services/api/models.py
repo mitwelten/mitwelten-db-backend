@@ -429,3 +429,13 @@ class BirdResultLocation(BaseModel):
     location: Point
     detections: int
     deployment_id: int
+
+# Walks
+
+class SectionText(BaseModel):
+    text_id: int
+    walk_id: int
+    percent_in: int
+    percent_out: int
+    title: Optional[str]
+    text: Optional[str]

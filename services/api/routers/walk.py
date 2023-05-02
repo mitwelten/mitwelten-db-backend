@@ -1,7 +1,9 @@
+from typing import List
 
 from api.database import database
 from api.dependencies import check_oid_authentication
-from api.tables import files_image, deployments, nodes
+from api.tables import files_image, deployments, nodes, walk_text
+from api.models import SectionText
 
 from fastapi import APIRouter, Depends
 from sqlalchemy.sql import select, text
@@ -31,3 +33,10 @@ async def get_imagestack():
     ) t where t.row % 20 = 0;
     ''')
     return await database.fetch_all(images)
+
+@router.get('/walk/text/{walk_id}')
+async def get_imagestack(walk_id: int)-> List[SectionText]:
+    texts = select(walk_text).\
+        where(walk_text.c.walk_id == walk_id).\
+        order_by(walk_text.c.percent_in)
+    return await database.fetch_all(texts)

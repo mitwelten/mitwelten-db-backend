@@ -268,3 +268,19 @@ meteo_meteodata = sqlalchemy.Table(
     sqlalchemy.Column("value", sqlalchemy.Float, nullable=False), 
     schema=crd.db_cache.schema,
 )
+
+# Walk
+
+walk_text = sqlalchemy.Table(
+    'walk_text',
+    metadata,
+    sqlalchemy.Column('text_id'     , sqlalchemy.Integer,   primary_key=True),
+    sqlalchemy.Column('walk_id'     , sqlalchemy.Integer,   nullable=False),
+    sqlalchemy.Column('percent_in'  , sqlalchemy.Integer,   nullable=False),
+    sqlalchemy.Column('percent_out' , sqlalchemy.Integer,   nullable=False),
+    sqlalchemy.Column('title'       , sqlalchemy.Text,      nullable=True),
+    sqlalchemy.Column('text'        , sqlalchemy.Text,      nullable=True),
+    sqlalchemy.Column('created_at'  , sqlalchemy.TIMESTAMP, nullable=False),
+    sqlalchemy.Column('updated_at'  , sqlalchemy.TIMESTAMP, nullable=True),
+    schema=crd.db.schema,
+)
