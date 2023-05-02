@@ -382,7 +382,7 @@ class MeteoStation(BaseModel):
     station_name: str
     data_src: str
     location: Point
-    altitude: int 
+    altitude: int
 
 class MeteoParameter(BaseModel):
     param_id: str

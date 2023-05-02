@@ -265,7 +265,7 @@ meteo_meteodata = sqlalchemy.Table(
     sqlalchemy.Column("ts", sqlalchemy.TIMESTAMP, nullable=False),
     sqlalchemy.Column("param_id", None, ForeignKey(meteo_parameter.c.param_id)),
     sqlalchemy.Column("station_id", None, ForeignKey(meteo_station.c.station_id)),
-    sqlalchemy.Column("value", sqlalchemy.Float, nullable=False), 
+    sqlalchemy.Column("value", sqlalchemy.Float, nullable=False),
     schema=crd.db_cache.schema,
 )
 
