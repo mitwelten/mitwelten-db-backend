@@ -92,4 +92,31 @@ async def get_pax_measurements(
     pax = [r.pax for r in results]
     return {"buckets":buckets, "pax":pax}
 
-
+@router.get('/sensordata/pax/{deployment_id}/time_of_day')
+async def get_pax_measurements_time_of_day(
+    deployment_id: int,
+    time_from: Optional[datetime] = Query(None, alias='from', example='2020-06-22T18:00:00.000Z'),
+    time_to: Optional[datetime] = Query(None, alias='to', example='2022-06-22T20:00:00.000Z'),
+    bucket_width_m:int = 20):
+    time_from_condition = "AND time >= :time_from" if time_from else ""
+    time_to_condition = "AND time <= :time_to" if time_to else ""
+    query = text(f"""
+    SELECT 
+        FLOOR((EXTRACT(hour FROM time) * 60 + EXTRACT(minute FROM time)) / :bucket_width_m) * :bucket_width_m as minute_of_day,
+        sum(pax) as pax
+    FROM {crd.db.schema}.sensordata_pax
+    WHERE deployment_id = :deployment_id
+    {time_from_condition}
+    {time_to_condition}
+    GROUP BY minute_of_day
+    ORDER BY minute_of_day
+    """).bindparams(bucket_width_m=bucket_width_m, deployment_id=deployment_id)
+    if time_from:
+        query = query.bindparams(time_from = time_from)
+    if time_to:
+        query = query.bindparams(time_to = time_to)
+    results = await database.fetch_all(query=query)
+    return {
+        "minuteOfDay":[r.minute_of_day for r in results],
+        "pax":[r.pax for r in results]
+        }
