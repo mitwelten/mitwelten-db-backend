@@ -71,14 +71,22 @@ async def get_pax_measurements(
     time_from: Optional[datetime] = Query(None, alias='from', example='2020-06-22T18:00:00.000Z'),
     time_to: Optional[datetime] = Query(None, alias='to', example='2022-06-22T20:00:00.000Z'),
     bucket_width:str = "1d"):
+    time_from_condition = "AND time >= :time_from" if time_from else ""
+    time_to_condition = "AND time <= :time_to" if time_to else ""
     query = text(f"""
     SELECT time_bucket(:bucket_width, time) AS bucket,
     sum(pax) as pax
     from {crd.db.schema}.sensordata_pax
     where deployment_id = :deployment_id
+    {time_from_condition}
+    {time_to_condition}
     group by bucket
     order by bucket
     """).bindparams(bucket_width=to_timedelta(bucket_width).to_pytimedelta(), deployment_id=deployment_id)
+    if time_from:
+        query = query.bindparams(time_from = time_from)
+    if time_to:
+        query = query.bindparams(time_to = time_to)
     results = await database.fetch_all(query=query)
     buckets = [r.bucket for r in results]
     pax = [r.pax for r in results]
