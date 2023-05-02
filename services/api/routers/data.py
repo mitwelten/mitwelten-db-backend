@@ -7,7 +7,9 @@ from api.tables import data_env, data_pax, deployments, nodes
 
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import conint, constr
-from sqlalchemy.sql import between, select
+from sqlalchemy.sql import between, select,  text
+from pandas import to_timedelta
+import credentials as crd
 
 router = APIRouter(tags=['data', 'viz'])
 
@@ -61,3 +63,25 @@ async def list_data(
     for datum in result:
         typed_result.append(typeclass(type=typecheck['type'], **datum))
     return typed_result
+
+
+@router.get('/sensordata/pax/{deployment_id}')
+async def get_pax_measurements(
+    deployment_id: int,
+    time_from: Optional[datetime] = Query(None, alias='from', example='2020-06-22T18:00:00.000Z'),
+    time_to: Optional[datetime] = Query(None, alias='to', example='2022-06-22T20:00:00.000Z'),
+    bucket_width:str = "1d"):
+    query = text(f"""
+    SELECT time_bucket(:bucket_width, time) AS bucket,
+    sum(pax) as pax
+    from {crd.db.schema}.sensordata_pax
+    where deployment_id = :deployment_id
+    group by bucket
+    order by bucket
+    """).bindparams(bucket_width=to_timedelta(bucket_width).to_pytimedelta(), deployment_id=deployment_id)
+    results = await database.fetch_all(query=query)
+    buckets = [r.bucket for r in results]
+    pax = [r.pax for r in results]
+    return {"buckets":buckets, "pax":pax}
+
+
