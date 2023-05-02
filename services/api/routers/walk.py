@@ -14,7 +14,7 @@ router = APIRouter(tags=['files', 'images', 'walk'])
 # DATA WALKING
 # ------------------------------------------------------------------------------
 
-@router.get('/walk/imagestack/1', dependencies=[Depends(check_oid_authentication)])
+@router.get('/walk/imagestack/1')
 async def get_imagestack():
     images = select(files_image).\
         outerjoin(deployments).\
@@ -22,7 +22,7 @@ async def get_imagestack():
         order_by(files_image.c.time).limit(2000);
     return await database.fetch_all(images)
 
-@router.get('/walk/imagestack/2', dependencies=[Depends(check_oid_authentication)])
+@router.get('/walk/imagestack/2')
 async def get_imagestack():
     images = text(f'''
     select t.* from (
