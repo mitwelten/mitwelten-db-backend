@@ -164,7 +164,7 @@ async def get_pax_locations(
 
 
 @router.get('/sensordata/{measurement}/{deployment_id}')
-async def get_env_temperature_measurements(
+async def get_env_measurements(
     measurement: EnvTypeEnum,
     deployment_id: int,
     aggregation:str = "mean",
@@ -195,3 +195,38 @@ async def get_env_temperature_measurements(
     buckets = [r.bucket for r in results]
     value = [r.value for r in results]
     return {"time":buckets, "value":value}
+
+@router.get('/sensordata/{measurement}/{deployment_id}/time_of_day')
+async def get_env_measurement_time_of_day(
+    measurement: EnvTypeEnum,
+    deployment_id: int,
+    aggregation:str = "mean",
+    bucket_width_m:int = 30,
+    time_from: Optional[datetime] = Query(None, alias='from', example='2020-06-22T18:00:00.000Z'),
+    time_to: Optional[datetime] = Query(None, alias='to', example='2022-06-22T20:00:00.000Z'),
+    ):
+    time_from_condition = "AND time >= :time_from" if time_from else ""
+    time_to_condition = "AND time <= :time_to" if time_to else ""
+    aggregation_str = aggregation_mapper(aggregation=aggregation, column_name=measurement.value)
+    if aggregation_str is None:
+        raise HTTPException(status_code=400, detail='Invalid aggregation method: {}'.format(aggregation))
+    query = text(f"""
+    SELECT
+        FLOOR((EXTRACT(hour FROM time) * 60 + EXTRACT(minute FROM time)) / :bucket_width_m) * :bucket_width_m as minute_of_day,
+        {aggregation_str}
+    from {crd.db.schema}.sensordata_env
+    where deployment_id = :deployment_id
+    {time_from_condition}
+    {time_to_condition}
+    group by minute_of_day
+    order by minute_of_day
+    """).bindparams(bucket_width_m = bucket_width_m, deployment_id=deployment_id)
+    if time_from:
+        query = query.bindparams(time_from = time_from)
+    if time_to:
+        query = query.bindparams(time_to = time_to)
+    results = await database.fetch_all(query=query)
+    return {
+        "minuteOfDay":[r.minute_of_day for r in results],
+        "value":[r.value for r in results]
+        }
