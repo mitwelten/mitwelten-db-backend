@@ -142,4 +142,6 @@ def aggregation_mapper(aggregation, column_name):
         'q1': "percentile_cont(0.25) WITHIN GROUP (ORDER BY {}) as value",
         'q3': "percentile_cont(0.75) WITHIN GROUP (ORDER BY {}) as value",
     }
+    if not aggregation in mapping:
+        return None
     return mapping[aggregation].format(column_name)

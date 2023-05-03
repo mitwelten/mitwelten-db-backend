@@ -174,7 +174,9 @@ async def get_env_temperature_measurements(
     ):
     time_from_condition = "AND time >= :time_from" if time_from else ""
     time_to_condition = "AND time <= :time_to" if time_to else ""
-    aggregation_str = aggregation_mapper(aggregation=aggregation, column_name=measurement)
+    aggregation_str = aggregation_mapper(aggregation=aggregation, column_name=measurement.value)
+    if aggregation_str is None:
+        raise HTTPException(status_code=400, detail='Invalid aggregation method: {}'.format(aggregation))
     query = text(f"""
     SELECT time_bucket(:bucket_width, time) AS bucket,
     {aggregation_str}
