@@ -38,6 +38,24 @@ def stream_minio_response(response):
         response.close()
         response.release_conn()
 
+@router.get('/files/walk/{object_name:path}', summary='Whitelisted media resources from S3 storage for Walk App')
+async def get_walk_download(request: Request, object_name: str):
+    '''
+    ## Media resources for Walk App
+
+    Requested media will be returned if path is whitelisted for public access.
+    '''
+    try:
+        whitelisted = await database.fetch_one(text('select count(object_name) from prod.storage_whitelist where object_name = :object_name').\
+            bindparams(object_name=object_name))
+        if not whitelisted['count']:
+            raise HTTPException(status_code=401, detail='Access denied')
+        response = storage.get_object(crd.minio.bucket, path.splitext('scaled/' + path.basename(object_name))[0] + '.webp')
+        return StreamingResponse(stream_minio_response(response), headers=response.headers)
+    except S3Error as e:
+        if e.code == 'NoSuchKey':
+            raise HTTPException(status_code=404, detail='File not found')
+
 @router.get('/files/{object_name:path}', dependencies=[Depends(check_oid_authentication)], summary='Media resources from S3 storage')
 async def get_download(request: Request, object_name: str):
     '''
