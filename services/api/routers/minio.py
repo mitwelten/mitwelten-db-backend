@@ -1,6 +1,7 @@
 from os import path
 
 from api.config import crd
+from api.database import database
 from api.dependencies import check_oid_authentication, check_oid_m2m_authentication
 
 from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile
@@ -8,6 +9,8 @@ from fastapi.responses import StreamingResponse
 
 from minio import Minio
 from minio.error import S3Error
+
+from sqlalchemy.sql import text
 
 router = APIRouter(tags=['files', 's3'])
 
@@ -35,10 +38,32 @@ def stream_minio_response(response):
         response.close()
         response.release_conn()
 
-@router.get('/files/{object_name:path}', dependencies=[Depends(check_oid_authentication)])
+@router.get('/files/{object_name:path}', dependencies=[Depends(check_oid_authentication)], summary='Media resources from S3 storage')
 async def get_download(request: Request, object_name: str):
+    '''
+    ## Media resources
+
+    Requested media will be returned if request is authenticated and role is authorized for access.
+    '''
     try:
-        # response = storage.get_object(crd.minio.bucket, object_name)
+        response = storage.get_object(crd.minio.bucket, object_name)
+        return StreamingResponse(stream_minio_response(response), headers=response.headers)
+    except S3Error as e:
+        if e.code == 'NoSuchKey':
+            raise HTTPException(status_code=404, detail='File not found')
+
+@router.get('/files/walk/{object_name:path}', summary='Whitelisted media resources from S3 storage for Walk App')
+async def get_walk_download(request: Request, object_name: str):
+    '''
+    ## Media resources for Walk App
+
+    Requested media will be returned if path is whitelisted for public access.
+    '''
+    try:
+        whitelisted = await database.fetch_one(text('select count(object_name) from prod.storage_whitelist where object_name = :object_name').\
+            bindparams(object_name=object_name))
+        if not whitelisted['count']:
+            raise HTTPException(status_code=401, detail='Access denied')
         response = storage.get_object(crd.minio.bucket, path.splitext('scaled/' + path.basename(object_name))[0] + '.webp')
         return StreamingResponse(stream_minio_response(response), headers=response.headers)
     except S3Error as e:
