@@ -131,3 +131,15 @@ class GeometryPoint(UserDefinedType):
             assert isinstance(value, PgPoint)
             return {'lat': float(value.x), 'lon': float(value.y)}
         return process
+
+def aggregation_mapper(aggregation, column_name):
+    mapping = {
+        'mean': 'avg({}) as value',
+        'sum': 'sum({}) as value',
+        'min': 'min({}) as value',
+        'max': 'max({}) as value',
+        'median': "percentile_cont(0.5) WITHIN GROUP (ORDER BY {}) as value",
+        'q1': "percentile_cont(0.25) WITHIN GROUP (ORDER BY {}) as value",
+        'q3': "percentile_cont(0.75) WITHIN GROUP (ORDER BY {}) as value",
+    }
+    return mapping[aggregation].format(column_name)

@@ -2,8 +2,9 @@ from datetime import datetime
 from typing import Optional
 
 from api.database import database
-from api.models import DatumResponse, EnvDatum, PaxDatum, Point
+from api.models import DatumResponse, EnvDatum, PaxDatum, Point, EnvTypeEnum
 from api.tables import data_env, data_pax, deployments, nodes
+from api.dependencies import aggregation_mapper
 
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import conint, constr
@@ -160,3 +161,35 @@ async def get_pax_locations(
             )
         )
     return typed_results
+
+
+@router.get('/sensordata/{measurement}/{deployment_id}')
+async def get_env_temperature_measurements(
+    measurement: EnvTypeEnum,
+    deployment_id: int,
+    aggregation:str = "mean",
+    bucket_width:str = "1d",
+    time_from: Optional[datetime] = Query(None, alias='from', example='2020-06-22T18:00:00.000Z'),
+    time_to: Optional[datetime] = Query(None, alias='to', example='2022-06-22T20:00:00.000Z'),
+    ):
+    time_from_condition = "AND time >= :time_from" if time_from else ""
+    time_to_condition = "AND time <= :time_to" if time_to else ""
+    aggregation_str = aggregation_mapper(aggregation=aggregation, column_name=measurement)
+    query = text(f"""
+    SELECT time_bucket(:bucket_width, time) AS bucket,
+    {aggregation_str}
+    from {crd.db.schema}.sensordata_env
+    where deployment_id = :deployment_id
+    {time_from_condition}
+    {time_to_condition}
+    group by bucket
+    order by bucket
+    """).bindparams(bucket_width=to_timedelta(bucket_width).to_pytimedelta(), deployment_id=deployment_id)
+    if time_from:
+        query = query.bindparams(time_from = time_from)
+    if time_to:
+        query = query.bindparams(time_to = time_to)
+    results = await database.fetch_all(query=query)
+    buckets = [r.bucket for r in results]
+    value = [r.value for r in results]
+    return {"time":buckets, "value":value}

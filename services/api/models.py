@@ -287,6 +287,11 @@ class Comment(BaseModel):
     timeEnd: Optional[datetime] = Field(None, example='2022-03-06T12:42:23.777Z', description='End of the time range the comment is referring to')
     author: Optional[str] = None
 
+class EnvTypeEnum(str, Enum):
+    temperature = "temperature"
+    humidity = "humidity"
+    moisture = "moisture"
+
 class EnvDatum(BaseModel):
     '''
     Datum of a measurement by an environmental sensor
