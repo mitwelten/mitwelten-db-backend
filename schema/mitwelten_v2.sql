@@ -285,6 +285,19 @@ CREATE TABLE IF NOT EXISTS prod.taxonomy_data
     PRIMARY KEY (datum_id)
 );
 
+CREATE TABLE IF NOT EXISTS prod.walk_text
+(
+    text_id serial,
+    walk_id int NOT NULL,
+    percent_in int NOT NULL,
+    percent_out int NOT NULL,
+    title character varying(255),
+    text character varying(255),
+    created_at timestamptz NOT NULL DEFAULT current_timestamp,
+    updated_at timestamptz NOT NULL DEFAULT current_timestamp,
+    PRIMARY KEY (text_id)
+);
+
 ALTER TABLE IF EXISTS prod.files_audio
     ADD FOREIGN KEY (deployment_id)
     REFERENCES prod.deployments (deployment_id) MATCH SIMPLE
