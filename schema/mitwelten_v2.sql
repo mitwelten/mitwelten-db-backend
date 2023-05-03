@@ -298,6 +298,12 @@ CREATE TABLE IF NOT EXISTS prod.walk_text
     PRIMARY KEY (text_id)
 );
 
+CREATE TABLE IF NOT EXISTS prod.storage_whitelist
+(
+    object_name TEXT,
+    PRIMARY KEY (object_name)
+);
+
 ALTER TABLE IF EXISTS prod.files_audio
     ADD FOREIGN KEY (deployment_id)
     REFERENCES prod.deployments (deployment_id) MATCH SIMPLE
@@ -463,6 +469,11 @@ CREATE INDEX IF NOT EXISTS files_image_sha256_idx
 CREATE INDEX IF NOT EXISTS taxonomy_labels_label_sci_idx
     ON prod.taxonomy_labels USING btree
     (label_sci ASC NULLS LAST);
+
+-- fast lookup of whitelist entries
+CREATE INDEX IF NOT EXISTS storate_whitelist_object_name_idx
+    ON prod.storate_whitelist USING btree
+    (object_name ASC NULLS LAST);
 
 CREATE OR REPLACE VIEW prod.birdnet_input
     AS
