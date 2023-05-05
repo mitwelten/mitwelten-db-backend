@@ -67,6 +67,7 @@ async def detection_dates_by_class(
 @router.get('/pollinators/time_of_day')
 async def detection_time_of_day(
     pollinator_class: PollinatorTypeEnum = None,
+    deployment_ids:List[int] = Query(default=None),
     conf: float = 0.9,
     bucket_width_m:int = 30,
     time_from: Optional[datetime] = Query(None, alias='from', example='2021-09-01T00:00:00.000Z'),
@@ -75,6 +76,7 @@ async def detection_time_of_day(
     time_from_condition = "AND i.time >= :time_from" if time_from else ""
     time_to_condition = "AND i.time <= :time_to" if time_to else ""
     pollinator_class_condition = "and p.class = :pollinator_class" if pollinator_class else ""
+    deployment_filter = "and i.deployment_id in :deployment_ids" if deployment_ids else ""
     query = text(
     f"""
     SELECT
@@ -90,6 +92,7 @@ async def detection_time_of_day(
         left join {crd.db.schema}.files_image i ON ir.file_id = i.file_id
         where p.confidence >= :conf
         {pollinator_class_condition}
+        {deployment_filter}
         {time_from_condition}
         {time_to_condition}
     ) hist
@@ -101,6 +104,8 @@ async def detection_time_of_day(
         query = query.bindparams(time_to = time_to)
     if pollinator_class:
         query = query.bindparams( pollinator_class=pollinator_class.value)    
+    if deployment_ids:
+        query = query.bindparams( bindparam('deployment_ids', value=deployment_ids, expanding=True))
 
     results = await database.fetch_all(query)
     return {
