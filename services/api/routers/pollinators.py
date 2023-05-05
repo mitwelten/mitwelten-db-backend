@@ -6,7 +6,8 @@ from pandas import to_timedelta
 from api.database import database
 from api.models import PollinatorTypeEnum, TimeSeriesResult
 from fastapi import APIRouter, Query
-from sqlalchemy.sql import and_, desc, func, select, text
+from sqlalchemy.sql import and_, desc, func, select, text, bindparam
+from sqlalchemy.types import ARRAY, INTEGER
 
 import credentials as crd
 
@@ -21,6 +22,7 @@ router = APIRouter(tags=['pollinator'])
 @router.get('/pollinators/date' , response_model=TimeSeriesResult)
 async def detection_dates_by_class(
     pollinator_class: PollinatorTypeEnum = None,
+    deployment_ids:List[int] = Query(default=None),
     conf: float = 0.9,
     bucket_width:str = "1d",
     time_from: Optional[datetime] = Query(None, alias='from', example='2021-09-01T00:00:00.000Z'),
@@ -29,6 +31,7 @@ async def detection_dates_by_class(
     time_from_condition = "AND i.time >= :time_from" if time_from else ""
     time_to_condition = "AND i.time <= :time_to" if time_to else ""
     pollinator_class_condition = "and p.class = :pollinator_class" if pollinator_class else ""
+    deployment_filter = "and i.deployment_id in :deployment_ids" if deployment_ids else ""
     query = text(
     f"""
     SELECT time_bucket(:bucket_width, i.time) AS bucket,
@@ -38,6 +41,7 @@ async def detection_dates_by_class(
     left join {crd.db.schema}.files_image i ON ir.file_id = i.file_id
     where p.confidence >= :conf
     {pollinator_class_condition}
+    {deployment_filter}
     {time_from_condition}
     {time_to_condition}
     GROUP BY bucket
@@ -50,6 +54,8 @@ async def detection_dates_by_class(
         query = query.bindparams(time_to = time_to)
     if pollinator_class:
         query = query.bindparams( pollinator_class=pollinator_class.value)
+    if deployment_ids:
+        query = query.bindparams( bindparam('deployment_ids', value=deployment_ids, expanding=True))
 
     results = await database.fetch_all(query)
     response = TimeSeriesResult(bucket=[],detections=[])
