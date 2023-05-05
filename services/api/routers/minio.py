@@ -11,6 +11,7 @@ from minio import Minio
 from minio.error import S3Error
 
 from sqlalchemy.sql import text
+import json
 
 router = APIRouter(tags=['files', 's3'])
 
@@ -81,3 +82,14 @@ async def post_upload(file: UploadFile):
     # upload
     upload = storage.put_object(crd.minio.bucket, file.filename, file.file, length=-1, part_size=10*1024*1024)
     return { 'object_name': upload.object_name, 'etag': upload.etag }
+
+
+@router.get('/walk/imagestack_s3/{walk_id}')
+async def get_imagestack_from_s3(walk_id):
+    object_name = f'walk/public/{walk_id}.json'
+    try:
+        resp = storage.get_object(crd.minio.bucket, object_name)
+        return json.loads(resp.data)
+    except:
+        raise HTTPException(status_code=404, detail='File not found')
+    
