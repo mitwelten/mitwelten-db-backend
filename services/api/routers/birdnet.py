@@ -2,7 +2,7 @@ from datetime import date, datetime, timedelta
 from typing import List, Optional
 
 from api.database import database
-from api.models import Result, ResultFull, ResultsGrouped, BirdResultTimeseries, BirdResultLocation, Point
+from api.models import Result, ResultFull, ResultsGrouped, TimeSeriesResult, BirdResultLocation, Point
 from api.tables import results, results_file_taxonomy, species, species_day, taxonomy_data
 
 from fastapi import APIRouter, Query
@@ -95,14 +95,14 @@ async def read_species_day(spec: str, start: int = 0, end: int = 0, conf: float 
         with_only_columns(query, taxonomy_data.c.label_de, taxonomy_data.c.label_en)
     return await database.fetch_all(labelled_query)
 
-@router.get('/birds/{identifier}/date' , response_model=BirdResultTimeseries)
+@router.get('/birds/{identifier}/date' , response_model=TimeSeriesResult)
 async def detection_dates_by_id(
     identifier: int,  
     conf: float = 0.9,
     bucket_width:str = "1d",
     time_from: Optional[datetime] = Query(None, alias='from', example='2021-09-01T00:00:00.000Z'),
     time_to: Optional[datetime] = Query(None, alias='to', example='2022-08-31T23:59:59.999Z'),
-    ) -> BirdResultTimeseries:
+    ) -> TimeSeriesResult:
     time_from_condition = "AND (f.time + interval '1 second' * r.time_start) >= :time_from" if time_from else ""
     time_to_condition = "AND (f.time + interval '1 second' * r.time_start) <= :time_to" if time_to else ""
     query = text(
@@ -136,7 +136,7 @@ async def detection_dates_by_id(
         query = query.bindparams(time_to = time_to)
 
     results = await database.fetch_all(query)
-    response = BirdResultTimeseries(bucket=[],detections=[])
+    response = TimeSeriesResult(bucket=[],detections=[])
     for result in results:
         response.bucket.append(result.bucket)
         response.detections.append(result.detections)

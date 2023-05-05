@@ -426,7 +426,7 @@ class MeteoSummary(BaseModel):
 
 # Birds
 
-class BirdResultTimeseries(BaseModel):
+class TimeSeriesResult(BaseModel):
     bucket: List[datetime]
     detections: List[int]
 
@@ -444,3 +444,11 @@ class SectionText(BaseModel):
     percent_out: int
     title: Optional[str]
     text: Optional[str]
+
+
+class PollinatorTypeEnum(str, Enum):
+    fliege = "fliege"
+    honigbiene = "honigbiene"
+    hummel  = "hummel"
+    schwebfliege = "schwebfliege"
+    wildbiene = "wildbiene"
