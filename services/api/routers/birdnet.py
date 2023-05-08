@@ -2,7 +2,7 @@ from datetime import date, datetime, timedelta
 from typing import List, Optional
 
 from api.database import database
-from api.models import Result, ResultFull, ResultsGrouped, TimeSeriesResult, BirdResultLocation, Point
+from api.models import Result, ResultFull, ResultsGrouped, TimeSeriesResult, DetectionLocationResult, Point
 from api.tables import results, results_file_taxonomy, species, species_day, taxonomy_data
 
 from fastapi import APIRouter, Query
@@ -142,13 +142,13 @@ async def detection_dates_by_id(
         response.detections.append(result.detections)
     return response
 
-@router.get('/birds/{identifier}/location' , response_model=List[BirdResultLocation])
+@router.get('/birds/{identifier}/location' , response_model=List[DetectionLocationResult])
 async def detection_locations_by_id(
     identifier: int,  
     conf: float = 0.9,
     time_from: Optional[datetime] = Query(None, alias='from', example='2021-09-01T00:00:00.000Z'),
     time_to: Optional[datetime] = Query(None, alias='to', example='2022-08-31T23:59:59.999Z'),
-    ) -> List[BirdResultLocation]:
+    ) -> List[DetectionLocationResult]:
     time_from_condition = "AND (f.time + interval '1 second' * r.time_start) >= :time_from" if time_from else ""
     time_to_condition = "AND (f.time + interval '1 second' * r.time_start) <= :time_to" if time_to else ""
     query = text(
@@ -187,7 +187,7 @@ async def detection_locations_by_id(
     typed_results = []
     for result in results:
         typed_results.append(
-            BirdResultLocation(
+            DetectionLocationResult(
             location=Point(lat=result.location[0], lon=result.location[1]),
             detections=result.detections,
             deployment_id=result.deployment_id
@@ -196,7 +196,7 @@ async def detection_locations_by_id(
     return typed_results
 
 
-@router.get('/birds/{identifier}/count')#, response_model=List[BirdResultLocation])
+@router.get('/birds/{identifier}/count')#, response_model=List[DetectionLocationResult])
 async def detection_count(
     identifier: int,  
     conf: float = 0.9,
@@ -286,7 +286,7 @@ async def detection_time_of_day(
         "detections":[r.detections for r in results]
         }
     
-@router.get('/species/parent_taxon/{identifier}/count')#, response_model=List[BirdResultLocation])
+@router.get('/species/parent_taxon/{identifier}/count')#, response_model=List[DetectionLocationResult])
 async def species_count_by_parent_taxon(
     identifier: int,  
     conf: float = 0.9,

@@ -430,7 +430,7 @@ class TimeSeriesResult(BaseModel):
     bucket: List[datetime]
     detections: List[int]
 
-class BirdResultLocation(BaseModel):
+class DetectionLocationResult(BaseModel):
     location: Point
     detections: int
     deployment_id: int
