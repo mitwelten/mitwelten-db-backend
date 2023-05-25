@@ -163,3 +163,34 @@ async def detection_locations_by_id(
             deployment_id=result.deployment_id
         ))
     return typed_results
+
+@router.get('/files_image/latest')
+async def get_latest_image_entries():
+    query = text(f"""
+    SELECT
+        d.deployment_id,
+        i.object_name,
+        i.time
+    FROM
+        {crd.db.schema}.deployments d
+        JOIN (
+            SELECT
+                deployment_id,
+                MAX(time) AS max_time
+            FROM
+                {crd.db.schema}.files_image
+            GROUP BY
+                deployment_id
+        ) AS latest ON d.deployment_id = latest.deployment_id
+        JOIN {crd.db.schema}.files_image i ON i.deployment_id = latest.deployment_id
+        AND i.time = latest.max_time
+    where
+        upper(d.period) is NULL
+    """)
+   
+    results = await database.fetch_all(query)
+    return [
+        {"deployment_id":r.deployment_id, "object_name":r.object_name,"time":r.time}
+        for r in results
+    ]
+    
