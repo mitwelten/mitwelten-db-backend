@@ -579,6 +579,34 @@ services:
       - "traefik.http.routers.mwexplore.entrypoints=https"
       - "traefik.http.routers.mwexplore.tls.certresolver=ssl"
 
+  mitwelten-cams:
+    image: cr.gitlab.fhnw.ch/mitwelten/docker-infrastructure/mitwelten-cams-dashboard:latest
+    networks:
+      - mitwelten
+    restart: always
+    container_name: mitwelten-cams
+    environment:
+      - KC_SERVER_URL=https://auth.mitwelten.org/auth/
+      - KC_CLIENT_ID=cams
+      - KC_REALM_NAME=mitwelten
+      - DOMAIN_NAME=https://cams.mitwelten.org
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.services.mwcams.loadbalancer.server.port=80"
+
+      # for http
+      - "traefik.http.routers.mwcams_insecure.rule=Host(`cams.mitwelten.org`)"
+      - "traefik.http.routers.mwcams_insecure.entrypoints=http"
+
+      # redirect to https
+      - "traefik.http.middlewares.mwcams-https.redirectscheme.scheme=https"
+      - "traefik.http.routers.mwcams_insecure.middlewares=mwcams-https"
+
+      # for https
+      - "traefik.http.routers.mwcams.rule=Host(`cams.mitwelten.org`)"
+      - "traefik.http.routers.mwcams.entrypoints=https"
+      - "traefik.http.routers.mwcams.tls.certresolver=ssl"
+
   redis_cache:
     image: redis
     container_name: redis_cache
