@@ -294,3 +294,17 @@ user_collections = sqlalchemy.Table(
     sqlalchemy.Column('datasets'    , sqlalchemy.JSON,      nullable=True),
     schema=crd.db.schema,
 )
+
+annotations = sqlalchemy.Table(
+    'annotations',
+    metadata,
+    sqlalchemy.Column('annot_id'    , sqlalchemy.Integer,   nullable=False),
+    sqlalchemy.Column('title'       , sqlalchemy.Text,      nullable=False),
+    sqlalchemy.Column('user_sub'    , sqlalchemy.Text,      nullable=False),
+    sqlalchemy.Column('created_at'  , sqlalchemy.TIMESTAMP, nullable=False),
+    sqlalchemy.Column('updated_at'  , sqlalchemy.TIMESTAMP, nullable=False),
+    sqlalchemy.Column('content'     , sqlalchemy.Text,      nullable=True),
+    sqlalchemy.Column('url'         , sqlalchemy.Text,      nullable=True),
+    sqlalchemy.Column('datasets'    , sqlalchemy.JSON,      nullable=True),
+    schema=crd.db.schema,
+)
