@@ -257,6 +257,26 @@ CREATE TABLE IF NOT EXISTS prod.environment
     PRIMARY KEY (environment_id)
 );
 
+CREATE TABLE IF NOT EXISTS prod.user_collections
+(
+    user_sub text,
+    datasets json,
+    UNIQUE (user_sub)
+);
+
+CREATE TABLE IF NOT EXISTS prod.annotations
+(
+    annot_id serial,
+    title text NOT NULL,
+    user_sub text NOT NULL,
+    created_at timestamptz NOT NULL DEFAULT current_timestamp,
+    updated_at timestamptz NOT NULL DEFAULT current_timestamp,
+    content text,
+    url text,
+    datasets json,
+    PRIMARY KEY (annot_id)
+);
+
 -- no foreign key constraints for taxonomy tables
 -- data is ever only imported, all taxonomy_tree ids and
 -- taxonomy_labels.label_id contain the unique GBIF species_id
@@ -593,7 +613,9 @@ GRANT ALL ON
   prod.tags,
   prod.mm_tags_entries,
   prod.mm_tags_deployments,
-  prod.files_entry
+  prod.files_entry,
+  prod.user_collections,
+  prod.annotations
 TO mitwelten_rest;
 
 GRANT SELECT ON
