@@ -2,7 +2,7 @@ from api.database import database, database_cache
 from api.dependencies import check_oid_authentication, crd
 from api.routers import (
     birdnet, data, deployments, geo, entries, ingest, minio, nodes, queue, tags,
-    taxonomy, validators, walk, meteodata, pollinators
+    taxonomy, validators, walk, meteodata, pollinators, explore
 )
 
 from fastapi import Depends, FastAPI, Request, status
@@ -17,6 +17,10 @@ tags_metadata = [
     {
         'name': 'deployments',
         'description': 'Node deployments management',
+    },
+    {
+        'name': 'explore',
+        'description': 'API routes for explore.mitwelten.org',
     },
     {
         'name': 'inferrence',
@@ -109,6 +113,7 @@ app.include_router(validators.router)
 app.include_router(walk.router)
 app.include_router(meteodata.router)
 app.include_router(pollinators.router)
+app.include_router(explore.router)
 
 
 @app.exception_handler(RequestValidationError)

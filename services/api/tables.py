@@ -284,3 +284,13 @@ walk_text = sqlalchemy.Table(
     sqlalchemy.Column('updated_at'  , sqlalchemy.TIMESTAMP, nullable=True),
     schema=crd.db.schema,
 )
+
+# Explore
+
+user_collections = sqlalchemy.Table(
+    'user_collections',
+    metadata,
+    sqlalchemy.Column('user_sub'    , sqlalchemy.Text,      primary_key=False),
+    sqlalchemy.Column('datasets'    , sqlalchemy.JSON,      nullable=True),
+    schema=crd.db.schema,
+)

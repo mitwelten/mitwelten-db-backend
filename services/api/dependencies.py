@@ -48,6 +48,18 @@ async def check_oid_authentication(token: str = Depends(oauth2_scheme)):
         )
     else:
         return auth
+    
+def get_user(token: str):
+    try:
+        auth = keycloak_openid.decode_token(
+            token,
+            key=crd.oidc.KC_PUBLIC_KEY,
+            options={'verify_signature': True, 'verify_aud': False, 'exp': True},
+        )
+        return auth
+
+    except:
+        return None
 
 async def check_oid_m2m_authentication(role, token: str = Depends(oauth2_scheme)):
     try:
