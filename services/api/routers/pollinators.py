@@ -21,7 +21,7 @@ router = APIRouter(tags=['pollinator'])
 
 @router.get('/pollinators/date' , response_model=TimeSeriesResult)
 async def detection_dates_by_class(
-    pollinator_class: PollinatorTypeEnum = None,
+    pollinator_class:List[PollinatorTypeEnum] = Query(default=None),
     deployment_ids:List[int] = Query(default=None),
     conf: float = 0.9,
     bucket_width:str = "1d",
@@ -30,7 +30,7 @@ async def detection_dates_by_class(
     ) -> TimeSeriesResult:
     time_from_condition = "AND i.time >= :time_from" if time_from else ""
     time_to_condition = "AND i.time <= :time_to" if time_to else ""
-    pollinator_class_condition = "and p.class = :pollinator_class" if pollinator_class else ""
+    pollinator_class_condition = "and p.class in :pollinator_classes" if pollinator_class is not None else ""
     deployment_filter = "and i.deployment_id in :deployment_ids" if deployment_ids else ""
     query = text(
     f"""
@@ -52,8 +52,8 @@ async def detection_dates_by_class(
         query = query.bindparams(time_from = time_from)
     if time_to:
         query = query.bindparams(time_to = time_to)
-    if pollinator_class:
-        query = query.bindparams( pollinator_class=pollinator_class.value)
+    if pollinator_class is not None:
+        query = query.bindparams(bindparam('pollinator_classes', value=pollinator_class, expanding=True))
     if deployment_ids:
         query = query.bindparams( bindparam('deployment_ids', value=deployment_ids, expanding=True))
 
@@ -66,7 +66,7 @@ async def detection_dates_by_class(
 
 @router.get('/pollinators/time_of_day')
 async def detection_time_of_day(
-    pollinator_class: PollinatorTypeEnum = None,
+    pollinator_class:List[PollinatorTypeEnum] = Query(default=None),
     deployment_ids:List[int] = Query(default=None),
     conf: float = 0.9,
     bucket_width_m:int = 30,
@@ -75,7 +75,7 @@ async def detection_time_of_day(
 ):
     time_from_condition = "AND i.time >= :time_from" if time_from else ""
     time_to_condition = "AND i.time <= :time_to" if time_to else ""
-    pollinator_class_condition = "and p.class = :pollinator_class" if pollinator_class else ""
+    pollinator_class_condition = "and p.class in :pollinator_classes" if pollinator_class is not None else ""
     deployment_filter = "and i.deployment_id in :deployment_ids" if deployment_ids else ""
     query = text(
     f"""
@@ -103,7 +103,7 @@ async def detection_time_of_day(
     if time_to:
         query = query.bindparams(time_to = time_to)
     if pollinator_class:
-        query = query.bindparams( pollinator_class=pollinator_class.value)    
+        query = query.bindparams(bindparam('pollinator_classes', value=pollinator_class, expanding=True))
     if deployment_ids:
         query = query.bindparams( bindparam('deployment_ids', value=deployment_ids, expanding=True))
 
@@ -115,7 +115,7 @@ async def detection_time_of_day(
 
 @router.get('/pollinators/location', response_model=List[DetectionLocationResult])
 async def detection_locations_by_id(
-    pollinator_class: PollinatorTypeEnum = None,
+    pollinator_class:List[PollinatorTypeEnum] = Query(default=None),
     deployment_ids:List[int] = Query(default=None),
     conf: float = 0.9,
     time_from: Optional[datetime] = Query(None, alias='from', example='2021-09-01T00:00:00.000Z'),
@@ -123,7 +123,7 @@ async def detection_locations_by_id(
     ) -> List[DetectionLocationResult]:
     time_from_condition = "AND i.time >= :time_from" if time_from else ""
     time_to_condition = "AND i.time <= :time_to" if time_to else ""
-    pollinator_class_condition = "and p.class = :pollinator_class" if pollinator_class else ""
+    pollinator_class_condition = "and p.class in :pollinator_classes" if pollinator_class is not None else ""
     deployment_filter = "and i.deployment_id in :deployment_ids" if deployment_ids else ""
 
     query = text(
@@ -150,7 +150,7 @@ async def detection_locations_by_id(
     if time_to:
         query = query.bindparams(time_to = time_to)
     if pollinator_class:
-        query = query.bindparams( pollinator_class=pollinator_class.value)    
+        query = query.bindparams(bindparam('pollinator_classes', value=pollinator_class, expanding=True))
     if deployment_ids:
         query = query.bindparams( bindparam('deployment_ids', value=deployment_ids, expanding=True))
 
