@@ -430,9 +430,11 @@ class TimeSeriesResult(BaseModel):
     bucket: List[datetime]
     detections: List[int]
 
-class DetectionLocationResult(BaseModel):
+class DetectionsByLocation(BaseModel):
     location: Point
     detections: int
+
+class DetectionLocationResult(DetectionsByLocation):
     deployment_id: int
 
 # Walks
