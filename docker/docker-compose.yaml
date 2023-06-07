@@ -15,7 +15,7 @@ networks:
 
 services:
   traefik:
-    image: "traefik:v2.7"
+    image: "traefik:v2.8.8"
     networks:
       - mitwelten
     container_name: "traefik"
