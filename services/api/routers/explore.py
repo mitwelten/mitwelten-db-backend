@@ -2,7 +2,7 @@ from api.database import database
 from fastapi import APIRouter, Depends, Request, HTTPException, status
 from api.dependencies import check_oid_authentication, get_user
 from sqlalchemy.sql import select, text, insert, delete, and_
-from api.tables import user_collections, annotations
+from api.tables import user_collections, annotations, user_entity
 from api.models import AnnotationContent, Annotation
 from typing import List
 import json
@@ -78,7 +78,9 @@ async def get_collection(collection: List[dict], request: Request):
     
 @router.get('/explore/annotations', dependencies=[Depends(check_oid_authentication)], response_model=List[Annotation])
 async def get_annotation_list() -> List[Annotation]:
-    query = select(annotations)
+    query = select(annotations,  user_entity.c.first_name, user_entity.c.last_name, user_entity.c.username)\
+        .select_from(annotations)\
+        .outerjoin(user_entity, user_entity.c.id == annotations.c.user_sub)
     results = await database.fetch_all(query)
     return [ 
         Annotation(
@@ -89,8 +91,10 @@ async def get_annotation_list() -> List[Annotation]:
             content=r.content,
             url=r.url,
             datasets=r.datasets,
-            full_name="Mitwelten User",
-            username="mitwelten",
+            full_name=f'{r.first_name} {r.last_name}' 
+            if r.first_name is not None and r.last_name is not None
+            else "Mitwelten User",
+            username=r.username if r.username is not None else "mitwelten",
             id=r.annot_id
         ) 
         for r in results
@@ -98,7 +102,10 @@ async def get_annotation_list() -> List[Annotation]:
 
 @router.get('/explore/annotations/{annot_id}', dependencies=[Depends(check_oid_authentication)], response_model=Annotation)
 async def get_annotation_by_id(annot_id: int) -> Annotation:
-    query = select(annotations).where(annotations.c.annot_id == annot_id)
+    query = select(annotations,  user_entity.c.first_name, user_entity.c.last_name, user_entity.c.username)\
+        .select_from(annotations)\
+        .outerjoin(user_entity, user_entity.c.id == annotations.c.user_sub)\
+        .where(annotations.c.annot_id == annot_id)
     result = await database.fetch_one(query)
     if result is not None:
         return Annotation(
@@ -109,8 +116,10 @@ async def get_annotation_by_id(annot_id: int) -> Annotation:
                 content=result.content,
                 url=result.url,
                 datasets=result.datasets,
-                full_name="Mitwelten User",
-                username="mitwelten",
+                full_name=f'{result.first_name} {result.last_name}' 
+                if result.first_name is not None and result.last_name is not None
+                else "Mitwelten User",
+                username=result.username if result.username is not None else "mitwelten",
                 id=result.annot_id
             )
     raise HTTPException(status.HTTP_404_NOT_FOUND, detail=f"There exists no annotation with id {annot_id}")
