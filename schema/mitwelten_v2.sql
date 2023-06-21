@@ -305,6 +305,17 @@ CREATE TABLE IF NOT EXISTS prod.taxonomy_data
     PRIMARY KEY (datum_id)
 );
 
+CREATE TABLE prod.walk
+(
+    walk_id serial,
+    title character varying(255),
+    description text,
+    path double precision[][],
+    created_at timestamptz NOT NULL DEFAULT current_timestamp,
+    updated_at timestamptz NOT NULL DEFAULT current_timestamp,
+    PRIMARY KEY (walk_id)
+);
+
 CREATE TABLE IF NOT EXISTS prod.walk_text
 (
     text_id serial,

@@ -271,6 +271,19 @@ meteo_meteodata = sqlalchemy.Table(
 
 # Walk
 
+walk = sqlalchemy.Table(
+    'walk',
+    metadata,
+    sqlalchemy.Column('walk_id'     , sqlalchemy.Integer,   primary_key=True),
+    sqlalchemy.Column('title'       , sqlalchemy.Text,      nullable=True),
+    sqlalchemy.Column('description' , sqlalchemy.Text,      nullable=True),
+    sqlalchemy.Column('path'        , sqlalchemy.ARRAY(sqlalchemy.FLOAT), nullable=True),
+    sqlalchemy.Column('created_at'  , sqlalchemy.TIMESTAMP, nullable=False),
+    sqlalchemy.Column('updated_at'  , sqlalchemy.TIMESTAMP, nullable=True),
+    schema=crd.db.schema,
+)
+
+
 walk_text = sqlalchemy.Table(
     'walk_text',
     metadata,

@@ -2,7 +2,7 @@ from typing import List
 
 from api.database import database
 from api.dependencies import check_oid_authentication
-from api.tables import files_image, deployments, nodes, walk_text
+from api.tables import files_image, deployments, nodes, walk_text, walk
 from api.models import SectionText
 
 from fastapi import APIRouter, Depends
@@ -40,3 +40,14 @@ async def get_imagestack(walk_id: int)-> List[SectionText]:
         where(walk_text.c.walk_id == walk_id).\
         order_by(walk_text.c.percent_in)
     return await database.fetch_all(texts)
+
+
+@router.get('/walk/{walk_id}')
+async def get_walkpath(walk_id: int):
+    path = select(walk).where(walk.c.walk_id == walk_id)
+    return await database.fetch_all(path)
+
+@router.get('/walk/')
+async def get_walk():
+    walks = select(walk.c.walk_id, walk.c.title, walk.c.description, walk.c.created_at, walk.c.updated_at)
+    return await database.fetch_all(walks)

@@ -439,6 +439,14 @@ class DetectionLocationResult(DetectionsByLocation):
 
 # Walks
 
+class Walk(BaseModel):
+    walk_id: int
+    title: Optional[str]
+    description: Optional[str]
+    path: Optional[List[Point]]
+    created_at: datetime
+    updated_at: datetime
+
 class SectionText(BaseModel):
     text_id: int
     walk_id: int
