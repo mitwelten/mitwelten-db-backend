@@ -4,7 +4,7 @@ from typing import Optional, List
 from api.database import database_cache
 from api.tables import meteo_station, meteo_parameter, meteo_meteodata
 from api.models import MeteoStation, MeteoParameter, MeteoDataset, MeteoMeasurements, MeteoSummary, MeteoMeasurementTimeOfDay
-from api.dependencies import check_oid_authentication
+from api.dependencies import AuthenticationChecker
 
 from fastapi import APIRouter, HTTPException, Query, Depends
 from sqlalchemy.sql import between, select, and_, text
@@ -91,7 +91,7 @@ async def list_datasets(
         typed_result.append(MeteoDataset(**result))
     return typed_result
 
-@router.get("/meteo/measurements/{station_id}/{param_id}", response_model=MeteoMeasurements, dependencies=[Depends(check_oid_authentication)])
+@router.get("/meteo/measurements/{station_id}/{param_id}", response_model=MeteoMeasurements)
 async def get_measurements(
     station_id: str,
     param_id: str,
@@ -99,6 +99,7 @@ async def get_measurements(
     aggregation:str = "mean",
     time_from: Optional[datetime] = Query(None, alias='from', example='2021-09-01T00:00:00.000Z'),
     time_to: Optional[datetime] = Query(None, alias='to', example='2022-08-31T23:59:59.999Z'),
+    is_allowed: bool = Depends(AuthenticationChecker())
 ) -> MeteoMeasurements:
     aggregation_str = aggregation_mapping.get(aggregation)
     if aggregation_str is None:
@@ -132,7 +133,7 @@ async def get_measurements(
     return response
 
 
-@router.get("/meteo/measurements_time_of_day/{station_id}/{param_id}", response_model=MeteoMeasurementTimeOfDay, dependencies=[Depends(check_oid_authentication)])
+@router.get("/meteo/measurements_time_of_day/{station_id}/{param_id}", response_model=MeteoMeasurementTimeOfDay)
 async def get_measurements_tod(
     station_id: str,
     param_id: str,
@@ -140,6 +141,7 @@ async def get_measurements_tod(
     aggregation:str = "mean",
     time_from: Optional[datetime] = Query(None, alias='from', example='2021-09-01T00:00:00.000Z'),
     time_to: Optional[datetime] = Query(None, alias='to', example='2022-08-31T23:59:59.999Z'),
+    is_allowed: bool = Depends(AuthenticationChecker())
 )-> MeteoMeasurementTimeOfDay:
     aggregation_str = aggregation_mapping.get(aggregation)
     if aggregation_str is None:
@@ -174,12 +176,13 @@ async def get_measurements_tod(
 
 
 
-@router.get("/meteo/summary/{station_id}/{param_id}", response_model=MeteoSummary, dependencies=[Depends(check_oid_authentication)])
+@router.get("/meteo/summary/{station_id}/{param_id}", response_model=MeteoSummary)
 async def get_summary(
     station_id: str,
     param_id: str,
     time_from: Optional[datetime] = Query(None, alias='from', example='2021-09-01T00:00:00.000Z'),
     time_to: Optional[datetime] = Query(None, alias='to', example='2022-08-31T23:59:59.999Z'),
+    is_allowed: bool = Depends(AuthenticationChecker())
 ) -> MeteoSummary:
     time_from_condition = "AND ts >= :time_from" if time_from else ""
     time_to_condition = "AND ts <= :time_to" if time_to else ""

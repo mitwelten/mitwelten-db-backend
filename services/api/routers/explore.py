@@ -1,6 +1,6 @@
 from api.database import database
 from fastapi import APIRouter, Depends, Request, HTTPException, status
-from api.dependencies import check_oid_authentication, get_user
+from api.dependencies import get_user, AuthenticationChecker
 from sqlalchemy.sql import select, text, insert, delete, and_
 from api.tables import user_collections, annotations, user_entity
 from api.models import AnnotationContent, Annotation
@@ -15,8 +15,8 @@ router = APIRouter(tags=['explore'])
 # Explore routes
 # ------------------------------------------------------------------------------
 
-@router.get('/explore/collection', dependencies=[Depends(check_oid_authentication)])
-async def get_collection(request: Request):
+@router.get('/explore/collection')
+async def get_collection(request: Request, is_allowed: bool = Depends(AuthenticationChecker())):
     auth_header = request.headers.get("authorization")
     if auth_header is None:
         raise HTTPException(
@@ -38,8 +38,8 @@ async def get_collection(request: Request):
         return dict(result).get("datasets")
     return []
 
-@router.post('/explore/collection', dependencies=[Depends(check_oid_authentication)])
-async def get_collection(collection: List[dict], request: Request):
+@router.post('/explore/collection')
+async def post_collection(collection: List[dict], request: Request, is_allowed: bool = Depends(AuthenticationChecker())):
     auth_header = request.headers.get("authorization")
     if auth_header is None:
         raise HTTPException(
@@ -76,8 +76,8 @@ async def get_collection(collection: List[dict], request: Request):
         await transaction.commit()
         return True
     
-@router.get('/explore/annotations', dependencies=[Depends(check_oid_authentication)], response_model=List[Annotation])
-async def get_annotation_list() -> List[Annotation]:
+@router.get('/explore/annotations',  response_model=List[Annotation])
+async def get_annotation_list(is_allowed: bool = Depends(AuthenticationChecker())) -> List[Annotation]:
     query = select(annotations,  user_entity.c.first_name, user_entity.c.last_name, user_entity.c.username)\
         .select_from(annotations)\
         .outerjoin(user_entity, user_entity.c.id == annotations.c.user_sub)
@@ -100,8 +100,8 @@ async def get_annotation_list() -> List[Annotation]:
         for r in results
         ]
 
-@router.get('/explore/annotations/{annot_id}', dependencies=[Depends(check_oid_authentication)], response_model=Annotation)
-async def get_annotation_by_id(annot_id: int) -> Annotation:
+@router.get('/explore/annotations/{annot_id}', response_model=Annotation)
+async def get_annotation_by_id(annot_id: int, is_allowed: bool = Depends(AuthenticationChecker())) -> Annotation:
     query = select(annotations,  user_entity.c.first_name, user_entity.c.last_name, user_entity.c.username)\
         .select_from(annotations)\
         .outerjoin(user_entity, user_entity.c.id == annotations.c.user_sub)\
@@ -124,8 +124,8 @@ async def get_annotation_by_id(annot_id: int) -> Annotation:
             )
     raise HTTPException(status.HTTP_404_NOT_FOUND, detail=f"There exists no annotation with id {annot_id}")
 
-@router.delete('/explore/annotations/{annot_id}', dependencies=[Depends(check_oid_authentication)])
-async def delete_annotation(annot_id: int, request: Request):
+@router.delete('/explore/annotations/{annot_id}')
+async def delete_annotation(annot_id: int, request: Request, is_allowed: bool = Depends(AuthenticationChecker())):
     auth_header = request.headers.get("authorization")
     if auth_header is None:
         raise HTTPException(
@@ -160,8 +160,8 @@ async def delete_annotation(annot_id: int, request: Request):
         await transaction.commit()
         return True
 
-@router.post('/explore/annotations', dependencies=[Depends(check_oid_authentication)])
-async def post_annotation(body: AnnotationContent, request: Request):
+@router.post('/explore/annotations')
+async def post_annotation(body: AnnotationContent, request: Request, is_allowed: bool = Depends(AuthenticationChecker())):
     auth_header = request.headers.get("authorization")
     if auth_header is None:
         raise HTTPException(

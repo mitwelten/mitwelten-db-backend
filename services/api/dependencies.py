@@ -31,6 +31,30 @@ oauth2_scheme = OAuth2AuthorizationCodeBearer(
     tokenUrl=f'{crd.oidc.KC_SERVER_URL}realms/{crd.oidc.KC_REALM_NAME}/protocol/openid-connect/token',
 )
 
+def get_user(token: str = Depends(oauth2_scheme)):
+    try:
+        auth = keycloak_openid.decode_token(
+            token,
+            key=crd.oidc.KC_PUBLIC_KEY,
+            options={'verify_signature': True, 'verify_aud': False, 'exp': True},
+        )
+        return auth
+
+    except:
+        return None
+
+class AuthenticationChecker:
+    def __init__(self, required_roles: list = []) -> None:
+        self.required_roles = required_roles
+    def __call__(self, user:dict=Depends(get_user)) -> bool:
+        for r_perm in self.required_roles:
+            if r_perm not in user["realm_access"]["roles"]:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Invalid Permissions",
+                )
+        return True
+
 async def check_oid_authentication(token: str = Depends(oauth2_scheme)):
     try:
         auth = keycloak_openid.decode_token(
@@ -48,18 +72,6 @@ async def check_oid_authentication(token: str = Depends(oauth2_scheme)):
         )
     else:
         return auth
-    
-def get_user(token: str):
-    try:
-        auth = keycloak_openid.decode_token(
-            token,
-            key=crd.oidc.KC_PUBLIC_KEY,
-            options={'verify_signature': True, 'verify_aud': False, 'exp': True},
-        )
-        return auth
-
-    except:
-        return None
 
 async def check_oid_m2m_authentication(role, token: str = Depends(oauth2_scheme)):
     try:
