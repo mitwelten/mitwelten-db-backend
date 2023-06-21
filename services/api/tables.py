@@ -330,6 +330,5 @@ user_entity = sqlalchemy.Table(
     sqlalchemy.Column('first_name'  , sqlalchemy.Text,      nullable=False),
     sqlalchemy.Column('last_name'   , sqlalchemy.Text,      nullable=False),
     sqlalchemy.Column('username'    , sqlalchemy.Text,      nullable=False),
-    
     schema=crd.db.schema,
 )
