@@ -34,8 +34,9 @@ async def get_collection(request: Request, is_allowed: bool = Depends(Authentica
         )
     query = select(user_collections.c.datasets).where(user_collections.c.user_sub == user_sub)
     result = await database.fetch_one(query)
-    if "datasets" in dict(result):
-        return dict(result).get("datasets")
+    if result is not None:
+        if "datasets" in dict(result):
+            return dict(result).get("datasets")
     return []
 
 @router.post('/explore/collection')
