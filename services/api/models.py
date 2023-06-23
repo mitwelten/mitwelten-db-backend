@@ -401,6 +401,7 @@ class MeteoDataset(BaseModel):
     station_id: str
     station_name: str
     data_src: str
+    last_measurement: Optional[datetime]
 
 class MeteoMeasurements(BaseModel):
     time: List[datetime]

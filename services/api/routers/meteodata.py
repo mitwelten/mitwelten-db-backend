@@ -73,12 +73,16 @@ async def list_datasets(
 
     query = text(
         f"""
-    SELECT p.param_id, p.unit, p.description, s.station_id, s.station_name, s.data_src
+    SELECT p.param_id, p.unit, p.description, s.station_id, s.station_name, s.data_src, md.last_measurement
     FROM {crd.db_cache.schema}.parameter p
     JOIN (
-    SELECT DISTINCT param_id, station_id
+    SELECT 
+        DISTINCT ON (param_id) param_id,
+        station_id,
+        max(ts) as last_measurement
     FROM {crd.db_cache.schema}.meteodata
     {station_filter}
+    group by param_id, station_id
     ) md ON md.param_id = p.param_id
     JOIN {crd.db_cache.schema}.station s ON s.station_id = md.station_id
     {unit_filter}
