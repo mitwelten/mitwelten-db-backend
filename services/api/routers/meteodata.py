@@ -77,15 +77,17 @@ async def list_datasets(
     FROM {crd.db_cache.schema}.parameter p
     JOIN (
     SELECT 
-        DISTINCT ON (param_id) param_id,
-        station_id,
-        max(ts) as last_measurement
+        DISTINCT ON (param_id, station_id)
+        max(ts) as last_measurement,
+        param_id,
+        station_id
     FROM {crd.db_cache.schema}.meteodata
     {station_filter}
-    group by param_id, station_id
+    group by station_id, param_id
     ) md ON md.param_id = p.param_id
     JOIN {crd.db_cache.schema}.station s ON s.station_id = md.station_id
     {unit_filter}
+    order by p.description
     """
     )
 
