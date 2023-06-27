@@ -1,12 +1,14 @@
 from typing import List
 
 from api.database import database
-from api.dependencies import check_oid_authentication
+from api.dependencies import AuthenticationChecker
 from api.tables import files_image, deployments, nodes, walk_text, walk
-from api.models import SectionText
+from api.models import SectionText, Walk
 
-from fastapi import APIRouter, Depends
-from sqlalchemy.sql import select, text
+from asyncpg.exceptions import ForeignKeyViolationError
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.sql import select, text, update, delete, insert
+from sqlalchemy.sql.functions import current_timestamp
 
 router = APIRouter(tags=['files', 'images', 'walk'])
 
@@ -51,3 +53,22 @@ async def get_walkpath(walk_id: int):
 async def get_walk():
     walks = select(walk.c.walk_id, walk.c.title, walk.c.description, walk.c.created_at, walk.c.updated_at)
     return await database.fetch_all(walks)
+
+@router.put('/walk/', dependencies=[Depends(AuthenticationChecker())])
+async def upsert_walk(body: Walk) -> None:
+    if hasattr(body, 'walk_id') and body.walk_id != None:
+        return await database.execute(update(walk).where(walk.c.walk_id == body.walk_id).\
+            values({**body.dict(exclude_none=True, by_alias=True), walk.c.updated_at: current_timestamp()}).\
+            returning(walk.c.walk_id))
+    else:
+        return await database.execute(insert(walk).values(body.dict(exclude_none=True, by_alias=True)).\
+            returning(walk.c.walk_id))
+
+@router.delete('/walk/{walk_id}', response_model=None, dependencies=[Depends(AuthenticationChecker())])
+async def delete_walk(walk_id: int) -> None:
+    try:
+        await database.fetch_one(delete(walk).where(walk.c.walk_id == walk_id))
+    except ForeignKeyViolationError as e:
+        raise HTTPException(status_code=409, detail=str(e))
+    else:
+        return True
