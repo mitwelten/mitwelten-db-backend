@@ -191,9 +191,8 @@ async def gbif_occurence_datasets(
     time_to_condition = "AND eventdate <= :time_to" if time_to else ""
     query = text(
     f"""
-    SELECT distinct(datasetname) as datasetname,
-    datasetkey,
-    datasetreference
+    SELECT distinct(datasetkey) as datasetkey,
+    max(datasetname) as datasetname
     from {crd.db_cache.schema}.gbif
     where (
     speciesKey = :identifier 
@@ -207,6 +206,8 @@ async def gbif_occurence_datasets(
     )
     {time_from_condition}
     {time_to_condition}
+    group by datasetkey
+    order by datasetname
     """
     ).bindparams(identifier=identifier)
     if time_from:
@@ -214,7 +215,14 @@ async def gbif_occurence_datasets(
     if time_to:
         query = query.bindparams(time_to = time_to)
     results = await database_cache.fetch_all(query)
-    return [dict(name=r.datasetname if r.datasetname is not None else r.datasetkey,datasetkey=r.datasetkey,reference=r.datasetreference ) for r in results]
+    return [
+        dict(
+        name=r.datasetname if r.datasetname is not None else r.datasetkey,
+        datasetkey=r.datasetkey,
+        reference=f"https://www.gbif.org/dataset/{r.datasetkey}" 
+        ) 
+        for r in results
+        ]
 
 
 @router.get('/gbif/{identifier}/occurences')
