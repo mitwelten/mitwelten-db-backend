@@ -1,8 +1,8 @@
-from api.database import database_cache
+from api.database import database_cache, database
 from fastapi import APIRouter, HTTPException, status, Query
 from typing import List, Optional
 from api.models import TimeSeriesResult, DetectionsByLocation, Point
-from sqlalchemy.sql import select, text
+from sqlalchemy.sql import select, text, bindparam
 from datetime import date, datetime, timedelta
 import json
 from pandas import to_timedelta
@@ -180,3 +180,111 @@ async def gbif_detection_time_of_day(
         "minuteOfDay":[r.minute_of_day for r in results],
         "detections":[r.detections for r in results]
         }
+
+@router.get('/gbif/{identifier}/datasets')
+async def gbif_occurence_datasets(
+    identifier: int,
+    time_from: Optional[datetime] = Query(None, alias='from', example='2021-09-01T00:00:00.000Z'),
+    time_to: Optional[datetime] = Query(None, alias='to', example='2022-08-31T23:59:59.999Z'),
+    ):
+    time_from_condition = "AND eventdate >= :time_from" if time_from else ""
+    time_to_condition = "AND eventdate <= :time_to" if time_to else ""
+    query = text(
+    f"""
+    SELECT distinct(datasetname) as datasetname,
+    datasetkey,
+    datasetreference
+    from {crd.db_cache.schema}.gbif
+    where (
+    speciesKey = :identifier 
+    or speciesKey = :identifier 
+    or genusKey = :identifier 
+    or familyKey = :identifier 
+    or orderKey = :identifier 
+    or classKey = :identifier 
+    or phylumKey = :identifier 
+    or kingdomKey = :identifier 
+    )
+    {time_from_condition}
+    {time_to_condition}
+    """
+    ).bindparams(identifier=identifier)
+    if time_from:
+        query = query.bindparams(time_from = time_from)
+    if time_to:
+        query = query.bindparams(time_to = time_to)
+    results = await database_cache.fetch_all(query)
+    return [dict(name=r.datasetname if r.datasetname is not None else r.datasetkey,datasetkey=r.datasetkey,reference=r.datasetreference ) for r in results]
+
+
+@router.get('/gbif/{identifier}/occurences')
+async def gbif_occurences_by_id(
+    identifier: int,
+    time_from: Optional[datetime] = Query(None, alias='from', example='2021-09-01T00:00:00.000Z'),
+    time_to: Optional[datetime] = Query(None, alias='to', example='2022-08-31T23:59:59.999Z'),
+    limit:int=100,
+    offset:int=0,
+    with_media_only:bool = False
+    ):
+    time_from_condition = "AND eventdate >= :time_from" if time_from else ""
+    time_to_condition = "AND eventdate <= :time_to" if time_to else ""
+    media_filter = "AND media is not NULL" if with_media_only else ""
+    query = text(
+    f"""
+    SELECT eventdate AS ts,
+        key as occurence_key,
+        taxonkey as taxon_key,
+        media,
+        datasetname,
+        datasetkey
+    from {crd.db_cache.schema}.gbif
+    where (
+    speciesKey = :identifier 
+    or speciesKey = :identifier 
+    or genusKey = :identifier 
+    or familyKey = :identifier 
+    or orderKey = :identifier 
+    or classKey = :identifier 
+    or phylumKey = :identifier 
+    or kingdomKey = :identifier 
+    )
+    {time_from_condition}
+    {time_to_condition}
+    {media_filter}
+    order by eventdate
+    limit :limit
+    offset :offset
+    """
+    ).bindparams(identifier=identifier, limit=limit,offset=offset)
+    if time_from:
+        query = query.bindparams(time_from = time_from)
+    if time_to:
+        query = query.bindparams(time_to = time_to)
+    results = await database_cache.fetch_all(query)
+    taxon_keys = list(set([r.taxon_key for r in results]))
+    taxon_query = text(f"""
+        SELECT 
+        datum_id,
+        label_sci,
+        label_de,
+        label_en
+        FROM {crd.db.schema}.taxonomy_data
+        WHERE datum_id in :taxon_list
+    """).bindparams(bindparam('taxon_list', value=taxon_keys, expanding=True))
+    taxon_results = await database.fetch_all(taxon_query)
+    taxon_mapping = {r.datum_id:dict(label_sci=r.label_sci,label_de=r.label_de,label_en=r.label_en) for r in taxon_results}
+   
+    response = [
+        dict(
+        time=r.ts,
+        occurenceKey = r.occurence_key,
+        taxonKey=r.taxon_key,
+        label_sci=taxon_mapping[r.taxon_key].get("label_sci") if r.taxon_key in taxon_mapping.keys() else None,
+        label_de=taxon_mapping[r.taxon_key].get("label_de") if r.taxon_key in taxon_mapping.keys() else None,
+        label_en=taxon_mapping[r.taxon_key].get("label_en") if r.taxon_key in taxon_mapping.keys() else None,
+        media=json.loads(r.media) if r.media is not None else None,
+        datasetName=r.datasetname,
+        datasetKey = r.datasetkey)
+        for r in results]
+    
+    return response
