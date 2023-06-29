@@ -6,7 +6,7 @@ from api.models import Result, ResultFull, ResultsGrouped, TimeSeriesResult, Det
 from api.tables import results, results_file_taxonomy, species, species_day, taxonomy_data
 
 from fastapi import APIRouter, Query
-from sqlalchemy.sql import and_, desc, func, select, text
+from sqlalchemy.sql import and_, desc, func, select, text, bindparam
 from pandas import to_timedelta
 
 import credentials as crd
@@ -102,13 +102,17 @@ async def detection_dates_by_id(
     bucket_width:str = "1d",
     time_from: Optional[datetime] = Query(None, alias='from', example='2021-09-01T00:00:00.000Z'),
     time_to: Optional[datetime] = Query(None, alias='to', example='2022-08-31T23:59:59.999Z'),
+    deployment_ids:List[int] = Query(default=None),
+    distinctspecies: bool = False,
     ) -> TimeSeriesResult:
     time_from_condition = "AND (f.time + interval '1 second' * r.time_start) >= :time_from" if time_from else ""
     time_to_condition = "AND (f.time + interval '1 second' * r.time_start) <= :time_to" if time_to else ""
+    distinct_arg = "DISTINCT" if distinctspecies else ""
+    deployment_filter = "AND f.deployment_id in :deployment_ids" if deployment_ids else ""
     query = text(
     f"""
     SELECT time_bucket(:bucket_width, (f.time + interval '1 second' * r.time_start)) AS bucket,
-    count(r.species) as detections
+    count({distinct_arg} r.species) as detections
     from {crd.db.schema}.birdnet_results r
     left join {crd.db.schema}.files_audio f on f.file_id = r.file_id 
     where r.confidence >= :conf
@@ -124,6 +128,7 @@ async def detection_dates_by_id(
             or kingdom_id = :identifier
             )
         ) 
+    {deployment_filter}
     {time_from_condition}
     {time_to_condition}
     GROUP BY bucket
@@ -134,7 +139,8 @@ async def detection_dates_by_id(
         query = query.bindparams(time_from = time_from)
     if time_to:
         query = query.bindparams(time_to = time_to)
-
+    if deployment_ids:
+        query = query.bindparams( bindparam('deployment_ids', value=deployment_ids, expanding=True))
     results = await database.fetch_all(query)
     response = TimeSeriesResult(bucket=[],detections=[])
     for result in results:
@@ -148,15 +154,17 @@ async def detection_locations_by_id(
     conf: float = 0.9,
     time_from: Optional[datetime] = Query(None, alias='from', example='2021-09-01T00:00:00.000Z'),
     time_to: Optional[datetime] = Query(None, alias='to', example='2022-08-31T23:59:59.999Z'),
+    distinctspecies: bool = False,
     ) -> List[DetectionLocationResult]:
     time_from_condition = "AND (f.time + interval '1 second' * r.time_start) >= :time_from" if time_from else ""
     time_to_condition = "AND (f.time + interval '1 second' * r.time_start) <= :time_to" if time_to else ""
+    distinct_arg = "DISTINCT" if distinctspecies else ""
     query = text(
     f"""
     SELECT 
     d.location,
     d.deployment_id,
-    count(r.species) as detections
+    count({distinct_arg} r.species) as detections
     from {crd.db.schema}.birdnet_results r
     left join {crd.db.schema}.files_audio f on f.file_id = r.file_id 
     left join {crd.db.schema}.deployments d on f.deployment_id = d.deployment_id
