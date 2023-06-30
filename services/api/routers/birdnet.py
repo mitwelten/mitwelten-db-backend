@@ -155,10 +155,12 @@ async def detection_locations_by_id(
     time_from: Optional[datetime] = Query(None, alias='from', example='2021-09-01T00:00:00.000Z'),
     time_to: Optional[datetime] = Query(None, alias='to', example='2022-08-31T23:59:59.999Z'),
     distinctspecies: bool = False,
+    deployment_ids:List[int] = Query(default=None),
     ) -> List[DetectionLocationResult]:
     time_from_condition = "AND (f.time + interval '1 second' * r.time_start) >= :time_from" if time_from else ""
     time_to_condition = "AND (f.time + interval '1 second' * r.time_start) <= :time_to" if time_to else ""
     distinct_arg = "DISTINCT" if distinctspecies else ""
+    deployment_filter = "AND f.deployment_id in :deployment_ids" if deployment_ids else ""
     query = text(
     f"""
     SELECT 
@@ -181,6 +183,7 @@ async def detection_locations_by_id(
             or kingdom_id = :identifier
             )
         ) 
+    {deployment_filter}
     {time_from_condition}
     {time_to_condition}
     GROUP BY d.deployment_id
@@ -190,7 +193,8 @@ async def detection_locations_by_id(
         query = query.bindparams(time_from = time_from)
     if time_to:
         query = query.bindparams(time_to = time_to)
-
+    if deployment_ids:
+        query = query.bindparams( bindparam('deployment_ids', value=deployment_ids, expanding=True))
     results = await database.fetch_all(query)
     typed_results = []
     for result in results:
