@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile
 from fastapi.responses import StreamingResponse
 
 from minio import Minio
+from minio.datatypes import Object
 from minio.error import S3Error
 
 from sqlalchemy.sql import text
@@ -100,4 +101,16 @@ async def get_imagestack_from_s3(walk_id):
         return json.loads(resp.data)
     except:
         raise HTTPException(status_code=404, detail='File not found')
-    
+
+@router.get('/walk/imagestacks_s3/')
+async def get_imagestacks_from_s3():
+    object_name = f'walk/public/'
+    try:
+        resp = storage.list_objects(crd.minio.bucket, object_name)
+        return list(
+            map(lambda p: {'path': p.object_name, 'updated_at': p.last_modified},
+                filter(lambda o: path.splitext(o._object_name)[1] == '.json', resp)))
+        return ['ass'] #json.loads(list(resp))
+    except S3Error as e:
+        print(e)
+        raise HTTPException(status_code=404, detail='File not found')
