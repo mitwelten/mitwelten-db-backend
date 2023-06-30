@@ -343,3 +343,49 @@ async def species_count_by_parent_taxon(
         for r in results]
     
     return typed_results
+
+@router.get('/birds/detectionlist')
+async def get_detected_species_list(
+    conf: float = 0.9,
+    time_from: Optional[datetime] = Query(None, alias='from', example='2021-09-01T00:00:00.000Z'),
+    time_to: Optional[datetime] = Query(None, alias='to', example='2022-08-31T23:59:59.999Z'),
+    deployment_ids:List[int] = Query(default=None),
+    limit: int = 1000,
+    ):
+    time_from_condition = "AND (f.time + interval '1 second' * r.time_start) >= :time_from" if time_from else ""
+    time_to_condition = "AND (f.time + interval '1 second' * r.time_start) <= :time_to" if time_to else ""
+    deployment_filter = "AND f.deployment_id in :deployment_ids" if deployment_ids else ""
+    query = text(f"""
+        select
+            distinct(r.species),
+            count(r.species) as detections,
+            t.datum_id, 
+            t.label_en,
+            t.label_de 
+        from {crd.db.schema}.birdnet_results r
+        left join {crd.db.schema}.files_audio f on f.file_id = r.file_id
+        join {crd.db.schema}.taxonomy_data t on t.label_sci = r.species
+        where r.confidence >= :conf
+        {deployment_filter}
+        {time_from_condition}
+        {time_to_condition}
+        GROUP by r.species, t.datum_id
+        order by detections DESC
+        LIMIT :limit
+    """
+    ).bindparams(conf=conf, limit=limit)
+    if time_from:
+        query = query.bindparams(time_from = time_from)
+    if time_to:
+        query = query.bindparams(time_to = time_to)
+    if deployment_ids:
+        query = query.bindparams( bindparam('deployment_ids', value=deployment_ids, expanding=True))
+    results = await database.fetch_all(query)
+    typed_results = [dict(
+        datum_id=r.datum_id,
+        label_sci=r.species,
+        label_en=r.label_en,
+        label_de=r.label_de,
+        count=r.detections
+    ) for r in results]
+    return typed_results
