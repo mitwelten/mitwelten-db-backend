@@ -332,3 +332,26 @@ user_entity = sqlalchemy.Table(
     sqlalchemy.Column('username'    , sqlalchemy.Text,      nullable=False),
     schema=crd.db.schema,
 )
+
+# Environment
+
+environment = sqlalchemy.Table(
+    'environment',
+    metadata,
+    sqlalchemy.Column('environment_id' , sqlalchemy.Integer,   primary_key=True),
+    sqlalchemy.Column('location'       , GeometryPoint,        nullable=False),
+    sqlalchemy.Column('timestamp'      , sqlalchemy.Text,      nullable=False),
+    sqlalchemy.Column('attribute_01'   , sqlalchemy.Float,     nullable=False),
+    sqlalchemy.Column('attribute_02'   , sqlalchemy.Float,     nullable=False),
+    sqlalchemy.Column('attribute_03'   , sqlalchemy.Float,     nullable=False),
+    sqlalchemy.Column('attribute_04'   , sqlalchemy.Float,     nullable=False),
+    sqlalchemy.Column('attribute_05'   , sqlalchemy.Float,     nullable=False),
+    sqlalchemy.Column('attribute_06'   , sqlalchemy.Float,     nullable=False),
+    sqlalchemy.Column('attribute_07'   , sqlalchemy.Float,     nullable=False),
+    sqlalchemy.Column('attribute_08'   , sqlalchemy.Float,     nullable=False),
+    sqlalchemy.Column('attribute_09'   , sqlalchemy.Float,     nullable=False),
+    sqlalchemy.Column('attribute_10'   , sqlalchemy.Float,     nullable=False),
+    sqlalchemy.Column('created_at'     , sqlalchemy.TIMESTAMP, nullable=False),
+    sqlalchemy.Column('updated_at'     , sqlalchemy.TIMESTAMP, nullable=True),
+    schema=crd.db.schema,
+)

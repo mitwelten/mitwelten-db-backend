@@ -2,7 +2,7 @@ from api.database import database, database_cache
 from api.dependencies import check_oid_authentication, crd
 from api.routers import (
     birdnet, data, deployments, geo, entries, ingest, minio, nodes, queue, tags,
-    taxonomy, validators, walk, meteodata, pollinators, explore, gbif
+    taxonomy, validators, walk, meteodata, pollinators, explore, gbif, environment
 )
 
 from fastapi import Depends, FastAPI, Request, status
@@ -70,6 +70,10 @@ tags_metadata = [
         'name': 'gbif',
         'description': 'GBIF Occurrences',
     },
+    {
+        'name': 'environment',
+        'description': 'Environment Characteristics',
+    }
 ]
 
 app = FastAPI(
@@ -119,6 +123,7 @@ app.include_router(meteodata.router)
 app.include_router(pollinators.router)
 app.include_router(explore.router)
 app.include_router(gbif.router)
+app.include_router(environment.router)
 
 
 @app.exception_handler(RequestValidationError)

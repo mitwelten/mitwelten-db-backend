@@ -477,3 +477,21 @@ class Annotation(AnnotationContent):
     id: int
     username: str
     full_name: str
+
+class EnvironmentEntry(BaseModel):
+    environment_id: int
+    location: Point
+    timestamp: datetime
+    attribute_01: int
+    attribute_02: int
+    attribute_03: int
+    attribute_04: int
+    attribute_05: int
+    attribute_06: int
+    attribute_07: int
+    attribute_08: int
+    attribute_09: int
+    attribute_10: int
+    created_at: Optional[datetime]
+    updated_at: Optional[datetime]
+    distance: Optional[float]
