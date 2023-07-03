@@ -169,3 +169,15 @@ def aggregation_mapper(aggregation, column_name):
     if not aggregation in mapping:
         return None
     return mapping[aggregation].format(column_name)
+
+def pollinator_class_mapper(pollinator_class):
+    mapping = {
+        'fliege': 5564,
+        'honigbiene': 1334757,
+        'hummel': 1340278,
+        'schwebfliege': 6920,
+        'wildbiene': 4334,
+    }
+    if not pollinator_class in mapping:
+        return None
+    return mapping[pollinator_class]

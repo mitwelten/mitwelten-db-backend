@@ -5,6 +5,7 @@ from pandas import to_timedelta
 
 from api.database import database
 from api.models import PollinatorTypeEnum, TimeSeriesResult, Point, DetectionLocationResult
+from api.dependencies import pollinator_class_mapper
 from fastapi import APIRouter, Query
 from sqlalchemy.sql import and_, desc, func, select, text, bindparam
 from sqlalchemy.types import ARRAY, INTEGER
@@ -163,6 +164,48 @@ async def detection_locations_by_id(
             deployment_id=result.deployment_id
         ))
     return typed_results
+
+@router.get('/pollinators/detectionlist')
+async def get_detected_species_list(
+    conf: float = 0.9,
+    time_from: Optional[datetime] = Query(None, alias='from', example='2021-09-01T00:00:00.000Z'),
+    time_to: Optional[datetime] = Query(None, alias='to', example='2022-08-31T23:59:59.999Z'),
+    deployment_ids:List[int] = Query(default=None),
+    pollinator_class:List[PollinatorTypeEnum] = Query(default=None),
+    limit: int = 1000,
+    ):
+    time_from_condition = "AND i.time >= :time_from" if time_from else ""
+    time_to_condition = "AND i.time <= :time_to" if time_to else ""
+    deployment_filter = "and i.deployment_id in :deployment_ids" if deployment_ids else ""
+    pollinator_class_condition = "and p.class in :pollinator_classes" if pollinator_class is not None else ""
+    query = text(
+    f"""
+    SELECT 
+        distinct(p.class) as polli_class,
+        count(p.class) as detections
+    from {crd.db.schema}.pollinators p
+    left join {crd.db.schema}.image_results ir ON p.result_id = ir.result_id
+    left join {crd.db.schema}.files_image i ON ir.file_id = i.file_id
+    where p.confidence >= :conf
+    {pollinator_class_condition}
+    {deployment_filter}
+    {time_from_condition}
+    {time_to_condition}
+    GROUP BY p.class
+    order by detections desc
+    LIMIT :limit
+    """
+    ).bindparams(conf=conf, limit=limit)
+    if time_from:
+        query = query.bindparams(time_from = time_from)
+    if time_to:
+        query = query.bindparams(time_to = time_to)
+    if deployment_ids:
+        query = query.bindparams( bindparam('deployment_ids', value=deployment_ids, expanding=True))
+    if pollinator_class:
+        query = query.bindparams(bindparam('pollinator_classes', value=pollinator_class, expanding=True))
+    results = await database.fetch_all(query)
+    return [{"class":r.polli_class.title(), "count":r.detections, "datum_id":pollinator_class_mapper(r.polli_class)} for r in results]
 
 @router.get('/files_image/latest')
 async def get_latest_image_entries():
