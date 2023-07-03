@@ -14,6 +14,20 @@ router = APIRouter(tags=['environment'])
 # Environment Characteristics
 # ------------------------------------------------------------------------------
 
+# TODO: Add table to database
+@router.get('/environment/legend')
+def get_environment_legend():
+    legend = dict(
+        attribute_01 = dict(label="Siedlungsfaktor",description = ["Offenland","Stark besiedelt"]),
+        attribute_02 = dict(label="Bodenversiegelung",description = ["keine Versiegelung","komplett versiegelt"]),
+        attribute_03 = dict(label="Sonneneinstrahlung",description = ["keine direkte Sonneneinstrahlung","durchgehende Sonneneinstrahlung"]),
+        attribute_04 = dict(label="Nähe zu Gewaesser",description = ["keine Gewaesser in der Naehe","direkt am Gewaesser"]),
+        attribute_05 = dict(label="Bluehangebot",description = ["nicht vorhanden","sehr hoch"]),
+        attribute_06 = dict(label="Vorkommnis organisches Substrat",description = ["kein Vorkommen","sehr hohes Vorkommen"]),
+        attribute_07 = dict(label="Eignung fuer Bestaeubernester",description = ["sehr ungeeignet","sehr geeignet"]),
+    )
+    return legend
+
 @router.get('/environment/entries',response_model=List[EnvironmentEntry])
 async def get_environment_entries() -> List[EnvironmentEntry]:
     query = select(environment)
