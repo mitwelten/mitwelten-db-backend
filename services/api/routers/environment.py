@@ -17,15 +17,88 @@ router = APIRouter(tags=['environment'])
 # TODO: Add table to database
 @router.get('/environment/legend')
 def get_environment_legend():
-    legend = dict(
-        attribute_01 = dict(label="Siedlungsfaktor",description = ["Offenland","Stark besiedelt"]),
-        attribute_02 = dict(label="Bodenversiegelung",description = ["keine Versiegelung","komplett versiegelt"]),
-        attribute_03 = dict(label="Sonneneinstrahlung",description = ["keine direkte Sonneneinstrahlung","durchgehende Sonneneinstrahlung"]),
-        attribute_04 = dict(label="Nähe zu Gewaesser",description = ["keine Gewaesser in der Naehe","direkt am Gewaesser"]),
-        attribute_05 = dict(label="Bluehangebot",description = ["nicht vorhanden","sehr hoch"]),
-        attribute_06 = dict(label="Vorkommnis organisches Substrat",description = ["kein Vorkommen","sehr hohes Vorkommen"]),
-        attribute_07 = dict(label="Eignung fuer Bestaeubernester",description = ["sehr ungeeignet","sehr geeignet"]),
-    )
+    legend = {
+        "attribute_01": {
+            "label": "Siedlungsfaktor",
+            "description": [
+            "Offene Landschaft",
+            "Gemäßigte Besiedlung",
+            "Stark besiedeltes Gebiet"
+            ]
+        },
+        "attribute_02": {
+            "label": "Bodenversiegelung",
+            "description": [
+            "Keine Versiegelung",
+            "Vollständig versiegelter Boden",
+            "Teilweise versiegelter Boden"
+            ]
+        },
+        "attribute_03": {
+            "label": "Sonneneinstrahlung",
+            "description": [
+            "Keine direkte Sonneneinstrahlung",
+            "Kontinuierliche Sonneneinstrahlung",
+            "Mäßige Sonneneinstrahlung"
+            ]
+        },
+        "attribute_04": {
+            "label": "Gewässer",
+            "description": [
+            "Keine Gewässer in der Nähe",
+            "Direkt am Gewässer",
+            "Nahegelegenes Gewässer"
+            ]
+        },
+        "attribute_05": {
+            "label": "Blühangebot",
+            "description": [
+            "Geringes Blühangebot",
+            "Sehr hohes Blühangebot",
+            "Mäßiges Blühangebot"
+            ]
+        },
+        "attribute_06": {
+            "label": "Substratvorkommen",
+            "description": [
+            "Kein Vorkommen von organischem Substrat",
+            "Sehr hohes Vorkommen von organischem Substrat",
+            "Mäßiges Vorkommen von organischem Substrat"
+            ]
+        },
+        "attribute_07": {
+            "label": "Nistmöglichkeit",
+            "description": [
+            "Sehr ungeeignet für Bestäubernester",
+            "Sehr geeignet für Bestäubernester",
+            "Mäßig geeignet für Bestäubernester"
+            ]
+        },
+        "attribute_08": {
+            "label": "Fragmentierung",
+            "description": [
+            "Geringe Fragmentierung der Landschaft",
+            "Hohe Fragmentierung der Landschaft",
+            "Mäßige Fragmentierung der Landschaft"
+            ]
+        },
+        "attribute_09": {
+            "label": "Habitatvielfalt",
+            "description": [
+            "Geringe Vielfalt natürlicher Lebensräume",
+            "Hohe Vielfalt natürlicher Lebensräume",
+            "Mäßige Vielfalt natürlicher Lebensräume"
+            ]
+        },
+        "attribute_10": {
+            "label": "Pflanzenvielfalt",
+            "description": [
+            "Geringe Pflanzenvielfalt",
+            "Hohe Pflanzenvielfalt",
+            "Mäßige Pflanzenvielfalt"
+            ]
+        }
+    }
     return legend
 
 @router.get('/environment/entries',response_model=List[EnvironmentEntry])
