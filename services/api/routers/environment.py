@@ -73,3 +73,17 @@ async def get_nearest_environment_entries(
         ) 
         for r in results]
 
+@router.get('/environment/attribute/{attribute_id}')
+async def get_environment_data(attribute_id:str):
+    valid_attribute_ids = [
+        'attribute_01', 'attribute_02', 'attribute_03', 'attribute_04', 'attribute_05',
+        'attribute_06', 'attribute_07', 'attribute_08', 'attribute_09', 'attribute_10'
+    ]
+    if attribute_id not in valid_attribute_ids:
+        raise HTTPException(status_code=400,detail={'error': 'Invalid attribute_id'})
+    column = getattr(environment.c, attribute_id).label("value")
+    query = select(environment.c.environment_id,
+                   environment.c.location,
+                   environment.c.timestamp,
+                   column)
+    return await database.fetch_all(query)
