@@ -30,72 +30,72 @@ def get_environment_legend():
             "label": "Bodenversiegelung",
             "description": [
             "Keine Versiegelung",
+            "Teilweise versiegelter Boden",
             "Vollständig versiegelter Boden",
-            "Teilweise versiegelter Boden"
             ]
         },
         "attribute_03": {
             "label": "Sonneneinstrahlung",
             "description": [
             "Keine direkte Sonneneinstrahlung",
+            "Mäßige Sonneneinstrahlung",
             "Kontinuierliche Sonneneinstrahlung",
-            "Mäßige Sonneneinstrahlung"
             ]
         },
         "attribute_04": {
             "label": "Gewässer",
             "description": [
             "Keine Gewässer in der Nähe",
+            "Nahegelegenes Gewässer",
             "Direkt am Gewässer",
-            "Nahegelegenes Gewässer"
             ]
         },
         "attribute_05": {
             "label": "Blühangebot",
             "description": [
             "Geringes Blühangebot",
+            "Mäßiges Blühangebot",
             "Sehr hohes Blühangebot",
-            "Mäßiges Blühangebot"
             ]
         },
         "attribute_06": {
             "label": "Substratvorkommen",
             "description": [
             "Kein Vorkommen von organischem Substrat",
+            "Mäßiges Vorkommen von organischem Substrat",
             "Sehr hohes Vorkommen von organischem Substrat",
-            "Mäßiges Vorkommen von organischem Substrat"
             ]
         },
         "attribute_07": {
             "label": "Nistmöglichkeit",
             "description": [
             "Sehr ungeeignet für Bestäubernester",
+            "Mäßig geeignet für Bestäubernester",
             "Sehr geeignet für Bestäubernester",
-            "Mäßig geeignet für Bestäubernester"
             ]
         },
         "attribute_08": {
             "label": "Fragmentierung",
             "description": [
             "Geringe Fragmentierung der Landschaft",
+            "Mäßige Fragmentierung der Landschaft",
             "Hohe Fragmentierung der Landschaft",
-            "Mäßige Fragmentierung der Landschaft"
             ]
         },
         "attribute_09": {
             "label": "Habitatvielfalt",
             "description": [
             "Geringe Vielfalt natürlicher Lebensräume",
+            "Mäßige Vielfalt natürlicher Lebensräume",
             "Hohe Vielfalt natürlicher Lebensräume",
-            "Mäßige Vielfalt natürlicher Lebensräume"
             ]
         },
         "attribute_10": {
             "label": "Pflanzenvielfalt",
             "description": [
             "Geringe Pflanzenvielfalt",
+            "Mäßige Pflanzenvielfalt",
             "Hohe Pflanzenvielfalt",
-            "Mäßige Pflanzenvielfalt"
             ]
         }
     }
