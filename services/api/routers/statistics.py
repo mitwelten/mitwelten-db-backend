@@ -34,7 +34,7 @@ async def get_total_recording_duration(
         conditions = ""
     query = text(
     f"""
-    SELECT SUM(duration) as total_duration
+    SELECT CAST(SUM(duration) AS INTEGER) as total_duration
     FROM {crd.db.schema}.files_audio
     {conditions}
     """
@@ -46,7 +46,7 @@ async def get_total_recording_duration(
     if deployment_ids:
         query = query.bindparams( bindparam('deployment_ids', value=deployment_ids, expanding=True))
     result = await database.fetch_one(query)
-    return int(result.total_duration)
+    return result.total_duration
 
 
 @router.get('/statistics/audio/daily_recordings')
