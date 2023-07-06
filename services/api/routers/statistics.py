@@ -21,23 +21,30 @@ async def get_total_recording_duration(
     time_to: Optional[datetime] = Query(None, alias='to', example='2022-08-31T23:59:59.999Z'),
     deployment_ids:List[int] = Query(default=None),
     ):
-    if deployment_ids is None:
-        return 0
-    time_from_condition = "AND time >= :time_from" if time_from else ""
-    time_to_condition = "AND time <= :time_to" if time_to else ""
+    if not all(c is None for c in[time_from,time_to, deployment_ids]):
+        condition_list = []
+        if time_from is not None:
+            condition_list.append("time >= :time_from")
+        if time_to is not None:
+            condition_list.append("time <= :time_to")
+        if deployment_ids is not None:
+            condition_list.append("deployment_id in :deployment_ids")
+        conditions = f"WHERE {' AND '.join(condition_list)}"
+    else:
+        conditions = ""
     query = text(
     f"""
     SELECT SUM(duration) as total_duration
     FROM {crd.db.schema}.files_audio
-    WHERE deployment_id in :deployment_ids
-    {time_from_condition}
-    {time_to_condition}
+    {conditions}
     """
-    ).bindparams( bindparam('deployment_ids', value=deployment_ids, expanding=True))
+    )
     if time_from:
         query = query.bindparams(time_from = time_from)
     if time_to:
         query = query.bindparams(time_to = time_to)
+    if deployment_ids:
+        query = query.bindparams( bindparam('deployment_ids', value=deployment_ids, expanding=True))
     result = await database.fetch_one(query)
     return int(result.total_duration)
 
@@ -48,26 +55,33 @@ async def get_recording_duration_per_day(
     time_to: Optional[datetime] = Query(None, alias='to', example='2022-08-31T23:59:59.999Z'),
     deployment_ids:List[int] = Query(default=None),
     ):
-    if deployment_ids is None:
-        return None
-    time_from_condition = "AND time >= :time_from" if time_from else ""
-    time_to_condition = "AND time <= :time_to" if time_to else ""
+    if not all(c is None for c in[time_from,time_to, deployment_ids]):
+        condition_list = []
+        if time_from is not None:
+            condition_list.append("time >= :time_from")
+        if time_to is not None:
+            condition_list.append("time <= :time_to")
+        if deployment_ids is not None:
+            condition_list.append("deployment_id in :deployment_ids")
+        conditions = f"WHERE {' AND '.join(condition_list)}"
+    else:
+        conditions = ""
     query = text(
     f"""
     SELECT
     time_bucket('1d', time) AS bucket,
     CAST(sum(duration) AS INTEGER) as recording_seconds
     FROM {crd.db.schema}.files_audio
-    WHERE deployment_id in :deployment_ids
-    {time_from_condition}
-    {time_to_condition}
+    {conditions}
     GROUP BY bucket
     """
-    ).bindparams( bindparam('deployment_ids', value=deployment_ids, expanding=True))
+    )
     if time_from:
         query = query.bindparams(time_from = time_from)
     if time_to:
         query = query.bindparams(time_to = time_to)
+    if deployment_ids:
+        query = query.bindparams( bindparam('deployment_ids', value=deployment_ids, expanding=True))
     result = await database.fetch_all(query)
     return result
     
@@ -78,23 +92,30 @@ async def get_total_image_count(
     time_to: Optional[datetime] = Query(None, alias='to', example='2022-08-31T23:59:59.999Z'),
     deployment_ids:List[int] = Query(default=None),
     ):
-    if deployment_ids is None:
-        return 0
-    time_from_condition = "AND time >= :time_from" if time_from else ""
-    time_to_condition = "AND time <= :time_to" if time_to else ""
+    if not all(c is None for c in[time_from,time_to, deployment_ids]):
+        condition_list = []
+        if time_from is not None:
+            condition_list.append("time >= :time_from")
+        if time_to is not None:
+            condition_list.append("time <= :time_to")
+        if deployment_ids is not None:
+            condition_list.append("deployment_id in :deployment_ids")
+        conditions = f"WHERE {' AND '.join(condition_list)}"
+    else:
+        conditions = ""
     query = text(
     f"""
     SELECT COUNT(*) as image_count
     FROM {crd.db.schema}.files_image
-    WHERE deployment_id in :deployment_ids
-    {time_from_condition}
-    {time_to_condition}
+    {conditions}
     """
-    ).bindparams( bindparam('deployment_ids', value=deployment_ids, expanding=True))
+    )
     if time_from:
         query = query.bindparams(time_from = time_from)
     if time_to:
         query = query.bindparams(time_to = time_to)
+    if deployment_ids:
+        query = query.bindparams( bindparam('deployment_ids', value=deployment_ids, expanding=True))
     result = await database.fetch_one(query)
     return int(result.image_count)
 
@@ -104,25 +125,32 @@ async def get_image_count_per_day(
     time_to: Optional[datetime] = Query(None, alias='to', example='2022-08-31T23:59:59.999Z'),
     deployment_ids:List[int] = Query(default=None),
     ):
-    if deployment_ids is None:
-        return None
-    time_from_condition = "AND time >= :time_from" if time_from else ""
-    time_to_condition = "AND time <= :time_to" if time_to else ""
+    if not all(c is None for c in[time_from,time_to, deployment_ids]):
+        condition_list = []
+        if time_from is not None:
+            condition_list.append("time >= :time_from")
+        if time_to is not None:
+            condition_list.append("time <= :time_to")
+        if deployment_ids is not None:
+            condition_list.append("deployment_id in :deployment_ids")
+        conditions = f"WHERE {' AND '.join(condition_list)}"
+    else:
+        conditions = ""
     query = text(
     f"""
     SELECT
     time_bucket('1d', time) AS bucket,
     count(*) as image_count
     FROM {crd.db.schema}.files_image
-    WHERE deployment_id in :deployment_ids
-    {time_from_condition}
-    {time_to_condition}
+    {conditions}
     GROUP BY bucket
     """
-    ).bindparams( bindparam('deployment_ids', value=deployment_ids, expanding=True))
+    )
     if time_from:
         query = query.bindparams(time_from = time_from)
     if time_to:
         query = query.bindparams(time_to = time_to)
+    if deployment_ids:
+        query = query.bindparams( bindparam('deployment_ids', value=deployment_ids, expanding=True))
     result = await database.fetch_all(query)
     return result
