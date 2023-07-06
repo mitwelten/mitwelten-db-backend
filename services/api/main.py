@@ -2,7 +2,7 @@ from api.database import database, database_cache
 from api.dependencies import check_oid_authentication, crd
 from api.routers import (
     birdnet, data, deployments, geo, entries, ingest, minio, nodes, queue, tags,
-    taxonomy, validators, walk, meteodata, pollinators, explore, gbif, environment
+    taxonomy, validators, walk, meteodata, pollinators, explore, gbif, environment, statistics
 )
 
 from fastapi import Depends, FastAPI, Request, status
@@ -73,6 +73,10 @@ tags_metadata = [
     {
         'name': 'environment',
         'description': 'Environment Characteristics',
+    },
+    {
+        'name': 'statistics',
+        'description': 'Statistics for image and audio files by deployment',
     }
 ]
 
@@ -124,6 +128,7 @@ app.include_router(pollinators.router)
 app.include_router(explore.router)
 app.include_router(gbif.router)
 app.include_router(environment.router)
+app.include_router(statistics.router)
 
 
 @app.exception_handler(RequestValidationError)
