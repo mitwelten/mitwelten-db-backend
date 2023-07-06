@@ -74,6 +74,7 @@ async def get_recording_duration_per_day(
     FROM {crd.db.schema}.files_audio
     {conditions}
     GROUP BY bucket
+    ORDER BY bucket
     """
     )
     if time_from:
@@ -144,6 +145,7 @@ async def get_image_count_per_day(
     FROM {crd.db.schema}.files_image
     {conditions}
     GROUP BY bucket
+    ORDER BY bucket
     """
     )
     if time_from:
