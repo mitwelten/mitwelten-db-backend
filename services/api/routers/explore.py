@@ -1,9 +1,9 @@
 from api.database import database
 from fastapi import APIRouter, Depends, Request, HTTPException, status
 from api.dependencies import get_user, AuthenticationChecker
-from sqlalchemy.sql import select, text, insert, delete, and_
+from sqlalchemy.sql import select, text, insert, delete, and_, update
 from api.tables import user_collections, annotations, user_entity
-from api.models import AnnotationContent, Annotation
+from api.models import AnnotationText, AnnotationContent, Annotation
 from typing import List
 import json
 import credentials as crd
@@ -202,3 +202,35 @@ async def post_annotation(body: AnnotationContent, request: Request, is_allowed:
         await transaction.commit()
         return True
    
+@router.put('/explore/annotations/{annot_id}')
+async def post_annotation(annot_id: int,body: AnnotationText, request: Request, is_allowed: bool = Depends(AuthenticationChecker())):
+    auth_header = request.headers.get("authorization")
+    if auth_header is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail='Authentication failed',
+            headers={'WWW-Authenticate': 'Bearer'},
+        )
+    user = get_user(auth_header.split("Bearer ")[1])
+    user_sub = user.get("sub")
+    if user_sub is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail='Authentication failed',
+            headers={'WWW-Authenticate': 'Bearer'},
+        )
+    
+    transaction = await database.transaction()
+
+    try:
+        stmt = update(annotations).where(and_(annotations.c.user_sub == user_sub, annotations.c.annot_id == annot_id)).values(content=body.content)
+        await database.execute(stmt)
+
+    except Exception as e:
+        await transaction.rollback()
+        print(str(e))
+        raise HTTPException(status_code=409, detail=str(e))
+
+    else:
+        await transaction.commit()
+        return True

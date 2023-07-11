@@ -464,6 +464,9 @@ class PollinatorTypeEnum(str, Enum):
     schwebfliege = "schwebfliege"
     wildbiene = "wildbiene"
 
+class AnnotationText(BaseModel):
+    content:str
+
 class AnnotationContent(BaseModel):
     title: str
     user_sub: str
