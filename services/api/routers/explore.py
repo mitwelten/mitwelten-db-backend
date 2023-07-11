@@ -135,7 +135,7 @@ async def delete_annotation(annot_id: int, request: Request, is_allowed: bool = 
             headers={'WWW-Authenticate': 'Bearer'},
         )
     user = get_user(auth_header.split("Bearer ")[1])
-    if not 'explore_admin' not in user['realm_access']['roles']:
+    if 'explore_admin' not in user['realm_access']['roles']:
         user_sub = user.get("sub")
         if user_sub is None:
             raise HTTPException(
