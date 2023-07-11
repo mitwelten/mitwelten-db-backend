@@ -135,21 +135,26 @@ async def delete_annotation(annot_id: int, request: Request, is_allowed: bool = 
             headers={'WWW-Authenticate': 'Bearer'},
         )
     user = get_user(auth_header.split("Bearer ")[1])
-    user_sub = user.get("sub")
-    if user_sub is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail='Authentication failed',
-            headers={'WWW-Authenticate': 'Bearer'},
-        )
-    transaction = await database.transaction()
-    try:
+    if not 'explore_admin' not in user['realm_access']['roles']:
+        user_sub = user.get("sub")
+        if user_sub is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail='Authentication failed',
+                headers={'WWW-Authenticate': 'Bearer'},
+            )
         stmt = delete(annotations).where(
             and_(
                 annotations.c.annot_id == annot_id,
                 annotations.c.user_sub == user_sub
             )
         )
+    else:
+        stmt = delete(annotations).where(
+                annotations.c.annot_id == annot_id
+            )
+    transaction = await database.transaction()
+    try:
         await database.execute(stmt)
 
     except Exception as e:
