@@ -70,6 +70,10 @@ the aforementioned format when retrieving (using as a response model).
     def __repr__(self):
         return f'TimeStampRange({super().__repr__()})'
 
+class DeleteResponse(BaseModel):
+    status: str
+    id: int
+
 class ValidationResult(BaseModel):
     __root__: bool
 
@@ -481,7 +485,22 @@ class Annotation(AnnotationContent):
     username: str
     full_name: str
 
-class EnvironmentEntry(BaseModel):
+class EnvironmentRawEntry(BaseModel):
+    environment_id: Optional[int]
+    location: Point
+    timestamp: datetime
+    attribute_01: int
+    attribute_02: int
+    attribute_03: int
+    attribute_04: int
+    attribute_05: int
+    attribute_06: int
+    attribute_07: int
+    attribute_08: int
+    attribute_09: int
+    attribute_10: int
+
+class EnvironmentEntry(EnvironmentRawEntry):
     environment_id: int
     location: Point
     timestamp: datetime
