@@ -115,7 +115,7 @@ async def get_nearest_environment_entries(
     query = text(f"""
         SELECT *,
         acos(
-            sin(radians(location[0])) * sin(radians(:lat)) +  
+            sin(radians(location[0])) * sin(radians(:lat)) +
             cos(radians(location[0])) * cos(radians(:lat)) *
             cos(radians(:lon ) - radians(location[1]))
             ) * 6371000 as distance
@@ -143,7 +143,7 @@ async def get_nearest_environment_entries(
         created_at = r.created_at,
         updated_at = r.updated_at,
         distance = r.distance,
-        ) 
+        )
         for r in results]
 
 @router.get('/environment/attribute/{attribute_id}')
