@@ -1,10 +1,10 @@
 from api.database import database
 from fastapi import APIRouter, Depends, Request, HTTPException, status
 from api.dependencies import AuthenticationChecker
-from sqlalchemy.sql import select, text
+from sqlalchemy.sql import select, update, delete, insert, text, func
 from api.tables import environment
 from typing import List
-from api.models import EnvironmentEntry, Point
+from api.models import EnvironmentRawEntry, EnvironmentEntry, DeleteResponse, Point
 import credentials as crd
 
 
@@ -106,6 +106,44 @@ async def get_environment_entries() -> List[EnvironmentEntry]:
     query = select(environment)
     return await database.fetch_all(query)
 
+@router.get('/environment/entries/{entry_id}', response_model=EnvironmentEntry)
+async def read_environment_entry(entry_id: int) -> EnvironmentEntry:
+    query = select(environment).where(environment.c.environment_id == entry_id)
+    return await database.fetch_one(query)
+
+@router.post('/environment/entries', dependencies=[Depends(AuthenticationChecker())], response_model=EnvironmentEntry)
+async def create_environment_entry(entry: EnvironmentRawEntry) -> EnvironmentEntry:
+    entry_dict = entry.dict()
+    del entry_dict['environment_id']
+    entry_dict.update({'location': text('point(:lat,:lon)')\
+                       .bindparams(lat=entry.location.lat,lon=entry.location.lon)})
+    query = insert(environment).values(entry_dict)
+    last_record_id = await database.execute(query)
+    return {**entry.dict(), 'environment_id': last_record_id}
+
+@router.put('/environment/entries/{entry_id}', dependencies=[Depends(AuthenticationChecker())], response_model=EnvironmentEntry)
+async def update_environment_entry(entry_id: int, entry: EnvironmentEntry) -> EnvironmentEntry:
+    entry_dict = entry.dict()
+    del entry_dict['environment_id']
+    del entry_dict['created_at']
+    del entry_dict['distance']
+    entry_dict.update({'location': text('point(:lat,:lon)')\
+                       .bindparams(lat=entry.location.lat,lon=entry.location.lon)})
+    entry_dict.update({'updated_at': func.now()})
+    query = (
+        update(environment).
+        where(environment.c.environment_id == entry_id).
+        values(entry_dict).
+        returning(environment)
+    )
+    return await database.fetch_one(query)
+
+@router.delete('/environment/entries/{entry_id}', dependencies=[Depends(AuthenticationChecker())], response_model=DeleteResponse)
+async def delete_environment_entry(entry_id: int) -> DeleteResponse:
+    query = delete(environment).where(environment.c.environment_id == entry_id)
+    await database.execute(query)
+    return { 'status': 'deleted', 'id': entry_id }
+
 @router.get('/environment/nearest',response_model=List[EnvironmentEntry])
 async def get_nearest_environment_entries(
     lat:float,
@@ -115,7 +153,7 @@ async def get_nearest_environment_entries(
     query = text(f"""
         SELECT *,
         acos(
-            sin(radians(location[0])) * sin(radians(:lat)) +  
+            sin(radians(location[0])) * sin(radians(:lat)) +
             cos(radians(location[0])) * cos(radians(:lat)) *
             cos(radians(:lon ) - radians(location[1]))
             ) * 6371000 as distance
@@ -143,7 +181,7 @@ async def get_nearest_environment_entries(
         created_at = r.created_at,
         updated_at = r.updated_at,
         distance = r.distance,
-        ) 
+        )
         for r in results]
 
 @router.get('/environment/attribute/{attribute_id}')
