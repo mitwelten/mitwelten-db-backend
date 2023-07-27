@@ -111,7 +111,7 @@ async def read_environment_entry(entry_id: int) -> EnvironmentEntry:
     query = select(environment).where(environment.c.environment_id == entry_id)
     return await database.fetch_one(query)
 
-@router.post('/environment/entries', response_model=EnvironmentEntry)
+@router.post('/environment/entries', dependencies=[Depends(AuthenticationChecker())], response_model=EnvironmentEntry)
 async def create_environment_entry(entry: EnvironmentRawEntry) -> EnvironmentEntry:
     entry_dict = entry.dict()
     del entry_dict['environment_id']
@@ -121,7 +121,7 @@ async def create_environment_entry(entry: EnvironmentRawEntry) -> EnvironmentEnt
     last_record_id = await database.execute(query)
     return {**entry.dict(), 'environment_id': last_record_id}
 
-@router.put('/environment/entries/{entry_id}', response_model=EnvironmentEntry)
+@router.put('/environment/entries/{entry_id}', dependencies=[Depends(AuthenticationChecker())], response_model=EnvironmentEntry)
 async def update_environment_entry(entry_id: int, entry: EnvironmentEntry) -> EnvironmentEntry:
     entry_dict = entry.dict()
     del entry_dict['environment_id']
@@ -138,7 +138,7 @@ async def update_environment_entry(entry_id: int, entry: EnvironmentEntry) -> En
     )
     return await database.fetch_one(query)
 
-@router.delete('/environment/entries/{entry_id}', response_model=DeleteResponse)
+@router.delete('/environment/entries/{entry_id}', dependencies=[Depends(AuthenticationChecker())], response_model=DeleteResponse)
 async def delete_environment_entry(entry_id: int) -> DeleteResponse:
     query = delete(environment).where(environment.c.environment_id == entry_id)
     await database.execute(query)
