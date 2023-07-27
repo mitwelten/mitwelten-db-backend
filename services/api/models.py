@@ -489,16 +489,16 @@ class EnvironmentRawEntry(BaseModel):
     environment_id: Optional[int]
     location: Point
     timestamp: datetime
-    attribute_01: int
-    attribute_02: int
-    attribute_03: int
-    attribute_04: int
-    attribute_05: int
-    attribute_06: int
-    attribute_07: int
-    attribute_08: int
-    attribute_09: int
-    attribute_10: int
+    attribute_01: Optional[int]
+    attribute_02: Optional[int]
+    attribute_03: Optional[int]
+    attribute_04: Optional[int]
+    attribute_05: Optional[int]
+    attribute_06: Optional[int]
+    attribute_07: Optional[int]
+    attribute_08: Optional[int]
+    attribute_09: Optional[int]
+    attribute_10: Optional[int]
 
 class EnvironmentEntry(EnvironmentRawEntry):
     environment_id: int
