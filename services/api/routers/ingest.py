@@ -1,7 +1,7 @@
 from api.database import database
-from api.dependencies import check_authentication
-from api.models import ImageRequest, PaxMeasurement
-from api.tables import files_image, data_pax, deployments, nodes
+from api.dependencies import check_authentication, AuthenticationChecker
+from api.models import ImageRequest, AudioRequest, PaxMeasurement
+from api.tables import files_image, files_audio, data_pax, deployments, nodes
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.sql import insert, select, and_, text
@@ -15,6 +15,10 @@ router = APIRouter(tags=['ingest'])
 @router.get('/ingest/image/{sha256}')
 async def ingest_image(sha256: str) -> None:
     return await database.fetch_one(select(files_image).where(files_image.c.sha256 == sha256))
+
+@router.get('/ingest/audio/{sha256}')
+async def ingest_audio(sha256: str) -> AudioRequest:
+    return await database.fetch_one(select(files_audio).where(files_audio.c.sha256 == sha256))
 
 @router.post('/ingest/image', dependencies=[Depends(check_authentication)])
 async def ingest_image(body: ImageRequest) -> None:
@@ -32,6 +36,22 @@ async def ingest_image(body: ImageRequest) -> None:
         }
         insert_query = insert(files_image).values(record)
         await database.execute(insert_query)
+
+    except Exception as e:
+        await transaction.rollback()
+        print(str(e))
+        raise HTTPException(status_code=409, detail=str(e))
+
+    else:
+        await transaction.commit()
+
+@router.post('/ingest/audio', dependencies=[Depends(AuthenticationChecker())])
+async def ingest_audio(body: AudioRequest) -> None:
+
+    transaction = await database.transaction()
+
+    try:
+        await database.execute(insert(files_audio).values(body.dict(exclude_none=True, by_alias=True)))
 
     except Exception as e:
         await transaction.rollback()

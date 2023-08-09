@@ -189,6 +189,33 @@ data_records = sqlalchemy.Table(
     schema=crd.db.schema
 )
 
+files_audio = sqlalchemy.Table(
+    'files_audio',
+    metadata,
+    sqlalchemy.Column('file_id',        sqlalchemy.Integer,                   primary_key=True),
+    sqlalchemy.Column('object_name',    sqlalchemy.Text,                      nullable=False),
+    sqlalchemy.Column('sha256',         sqlalchemy.String(64),                nullable=False),
+    sqlalchemy.Column('time',           sqlalchemy.TIMESTAMP,                 nullable=False),
+    sqlalchemy.Column('deployment_id',  sqlalchemy.ForeignKey('deployments.deployment_id')),
+    sqlalchemy.Column('duration',       sqlalchemy.REAL,                      nullable=False),
+    sqlalchemy.Column('serial_number',  sqlalchemy.String(32),                nullable=True),
+    sqlalchemy.Column('format',         sqlalchemy.String(64),                nullable=True),
+    sqlalchemy.Column('file_size',      sqlalchemy.Integer,                   nullable=False),
+    sqlalchemy.Column('sample_rate',    sqlalchemy.Integer,                   nullable=False),
+    sqlalchemy.Column('bit_depth',      sqlalchemy.Integer,                   nullable=True),
+    sqlalchemy.Column('channels',       sqlalchemy.Integer,                   nullable=True),
+    sqlalchemy.Column('battery',        sqlalchemy.REAL,                      nullable=True),
+    sqlalchemy.Column('temperature',    sqlalchemy.REAL,                      nullable=True),
+    sqlalchemy.Column('gain',           sqlalchemy.String(32),                nullable=True),
+    sqlalchemy.Column('filter',         sqlalchemy.String(64),                nullable=True),
+    sqlalchemy.Column('source',         sqlalchemy.String(32),                nullable=True),
+    sqlalchemy.Column('rec_end_status', sqlalchemy.String(32),                nullable=True),
+    sqlalchemy.Column('comment',        sqlalchemy.String(64),                nullable=True),
+    sqlalchemy.Column('class',          sqlalchemy.String(32),                nullable=True),
+    sqlalchemy.Column('created_at',     sqlalchemy.TIMESTAMP(timezone=True),  nullable=False),
+    sqlalchemy.Column('updated_at',     sqlalchemy.TIMESTAMP(timezone=True),  nullable=False),
+)
+
 files_image = sqlalchemy.Table(
     'files_image',
     metadata,
