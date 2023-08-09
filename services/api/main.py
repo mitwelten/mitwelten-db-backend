@@ -1,5 +1,5 @@
 from api.database import database, database_cache
-from api.dependencies import check_oid_authentication, crd
+from api.dependencies import AuthenticationChecker, get_user, crd
 from api.routers import (
     birdnet, data, deployments, geo, entries, ingest, minio, nodes, queue, tags,
     taxonomy, validators, walk, meteodata, pollinators, explore, gbif, environment, statistics
@@ -148,9 +148,10 @@ async def shutdown():
     await database.disconnect()
     await database_cache.disconnect()
 
-@app.get('/login', tags=['authentication'])
-async def login(auth: dict = Depends(check_oid_authentication)):
-    return auth
+@app.get('/login', dependencies=[Depends(AuthenticationChecker())], tags=['authentication'])
+async def login(request: Request):
+    auth_header = request.headers.get('authorization')
+    return get_user(auth_header.split('Bearer ')[1])
 
 @app.get('/', include_in_schema=False)
 async def root():
