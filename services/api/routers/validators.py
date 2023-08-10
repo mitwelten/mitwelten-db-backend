@@ -1,7 +1,7 @@
 from api.config import crd
 from api.database import database
-from api.dependencies import to_inclusive_range, check_oid_authentication
-from api.models import DeploymentRequest, ValidationResult, NodeValidationRequest, Tag, ImageValidationResponse, ImageValidationRequest
+from api.dependencies import to_inclusive_range, check_oid_authentication, AuthenticationChecker
+from api.models import DeploymentRequest, ValidationResult, NodeValidationRequest, Tag, ImageValidationResponse, ImageValidationRequest, AudioValidationResponse, AudioValidationRequest
 from api.tables import deployments, nodes, tags
 
 from asyncpg.exceptions import ExclusionViolationError
@@ -95,6 +95,61 @@ async def check_image(body: ImageValidationRequest) -> None:
         || :node_label ||'_'||to_char(:timestamp at time zone 'UTC', 'YYYY-mm-DD"T"HH24-MI-SS"Z"')||:extension -- file_name (node_label, timestamp, extension)
         as object_name
         ''').bindparams(node_label=body.node_label, timestamp=body.timestamp, extension='.jpg')
+        object_name_result = await database.fetch_one(object_name_query)
+        object_name = object_name_result._mapping['object_name']
+    else:
+        object_name = duplicate_result._mapping['object_name']
+
+    deployment_query = select(deployments.c.deployment_id).join(nodes).\
+        where(nodes.c.node_label == body.node_label, text('period @> :timestamp ::timestamptz').bindparams(timestamp=body.timestamp))
+    deployment_result = await database.fetch_one(deployment_query)
+
+    if duplicate_result == None:
+        if deployment_result:
+            return { # no duplicate, deployed: validation passed
+                'hash_match': False, 'object_name_match': False, 'object_name': object_name,
+                **deployment_result._mapping, 'node_deployed': True }
+        else:
+            return { # no duplicate, NOT deployed: validation failed
+                'hash_match': False, 'object_name_match': False, 'object_name': object_name,
+                'deployment_id': None, 'node_deployed': False }
+    else:
+        if deployment_result:
+            return { # DUPLICATE, deployed: validation failed
+                **duplicate_result._mapping,
+                **deployment_result._mapping, 'node_deployed': True }
+        else:
+            return { # DUPLICATE, NOT deployed: validation failed
+                **duplicate_result._mapping,
+                'deployment_id': None, 'node_deployed': False }
+
+@router.post('/validate/audio', dependencies=[Depends(AuthenticationChecker())], response_model=AudioValidationResponse, tags=['ingest'])
+async def check_audio(body: AudioValidationRequest) -> None:
+
+    duplicate_query = text(f'''
+    WITH n AS (
+        SELECT :sha256 as sha256,
+        :node_label ||'/'||to_char(:timestamp at time zone 'UTC', 'YYYY-mm-DD/HH24/') -- file_path (node_label, timestamp)
+        || :node_label ||'_'||to_char(:timestamp at time zone 'UTC', 'YYYY-mm-DD"T"HH24-MI-SS"Z"')||:extension -- file_name (node_label, timestamp, extension)
+        as object_name
+    )
+    SELECT f.sha256 = n.sha256 as hash_match,
+        f.object_name = n.object_name as object_name_match,
+        n.object_name as object_name
+    from {crd.db.schema}.files_audio f, n
+    where (f.sha256 = n.sha256 or f.object_name = n.object_name)
+    ''').bindparams(sha256=body.sha256, node_label=body.node_label, timestamp=body.timestamp, extension='.wav')
+
+    # print(str(query.compile(compile_kwargs={"literal_binds": True})))
+    duplicate_result = await database.fetch_one(duplicate_query)
+
+    object_name = None
+    if duplicate_result == None:
+        object_name_query = text('''
+        SELECT :node_label ||'/'||to_char(:timestamp at time zone 'UTC', 'YYYY-mm-DD/HH24/') -- file_path (node_label, timestamp)
+        || :node_label ||'_'||to_char(:timestamp at time zone 'UTC', 'YYYY-mm-DD"T"HH24-MI-SS"Z"')||:extension -- file_name (node_label, timestamp, extension)
+        as object_name
+        ''').bindparams(node_label=body.node_label, timestamp=body.timestamp, extension='.wav')
         object_name_result = await database.fetch_one(object_name_query)
         object_name = object_name_result._mapping['object_name']
     else:

@@ -98,6 +98,12 @@ class ImageValidationResponse(BaseModel):
     node_deployed: bool
     deployment_id: Optional[int] = None
 
+class AudioValidationRequest(ImageValidationRequest):
+    ...
+
+class AudioValidationResponse(ImageValidationResponse):
+    ...
+
 
 class ImageRequest(BaseModel):
     object_name: str
@@ -108,6 +114,33 @@ class ImageRequest(BaseModel):
     resolution: Tuple[PositiveInt, PositiveInt]
 
     class Config:
+        json_encoders = {
+            datetime: lambda v: v.timestamp(),
+        }
+
+class AudioRequest(BaseModel):
+    object_name: str
+    sha256: str
+    timestamp: datetime = Field(..., alias='time')
+    deployment_id: int
+    file_size: int
+    audio_format: str = Field(..., alias='format')
+    bit_depth: int
+    channels: int
+    duration: float
+    sample_rate: int
+    serial_number: str
+    source: str
+    gain: str
+    filter_: str = Field(..., alias='filter')
+    amp_thresh: Optional[str]
+    amp_trig: Optional[str]
+    battery: float
+    temperature: float
+    rec_end_status: str
+
+    class Config:
+        allow_population_by_field_name = True
         json_encoders = {
             datetime: lambda v: v.timestamp(),
         }
