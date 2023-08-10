@@ -499,56 +499,6 @@ services:
     volumes:
       - /opt/mitwelten-db-backend/docker/mqtt_relay_configuration.yaml:/app/configuration.yaml
 
-  viz-dashboard-server:
-    env_file: ${VIZ_DASHBOARD_SERVER_ENV_FILE}
-    restart: always
-    container_name: viz-dashboard-server
-    image: cr.gitlab.fhnw.ch/mitwelten/docker-infrastructure/mitwelten-viz_dashboard_api:0.1
-    networks:
-      - mitwelten
-    volumes:
-      - "${VIZ_DASHBOARD_SQLITE_FILE}:/usr/src/app/users.sqlite"
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.services.dashboardsrv.loadbalancer.server.port=8080"
-
-      # for http
-      - "traefik.http.routers.dashboardsrv_insecure.rule=(Host(`discover.mitwelten.org`) && PathPrefix(`/api`))"
-      - "traefik.http.routers.dashboardsrv_insecure.entrypoints=http"
-
-      # redirect to https
-      - "traefik.http.middlewares.dashboardsrv-https.redirectscheme.scheme=https"
-      - "traefik.http.routers.dashboardsrv_insecure.middlewares=dashboardsrv-https"
-
-      # for https
-      - "traefik.http.routers.dashboardsrv.rule=(Host(`discover.mitwelten.org`) && PathPrefix(`/api`))"
-      - "traefik.http.routers.dashboardsrv.entrypoints=https"
-      - "traefik.http.routers.dashboardsrv.tls.certresolver=ssl"
-
-
-  viz-dashboard-client:
-    image: cr.gitlab.fhnw.ch/mitwelten/docker-infrastructure/mitwelten-viz_dashboard_client:0.2
-    networks:
-      - mitwelten
-    restart: always
-    container_name: viz-dashboard-client
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.services.dashboardclient.loadbalancer.server.port=3000"
-
-      # for http
-      - "traefik.http.routers.dashboardclient_insecure.rule=(Host(`discover.mitwelten.org`) && PathPrefix(`/`))"
-      - "traefik.http.routers.dashboardclient_insecure.entrypoints=http"
-
-      # redirect to https
-      - "traefik.http.middlewares.dashboardclient-https.redirectscheme.scheme=https"
-      - "traefik.http.routers.dashboardclient_insecure.middlewares=dashboardclient-https"
-
-      # for https
-      - "traefik.http.routers.dashboardclient.rule=(Host(`discover.mitwelten.org`) && PathPrefix(`/`))"
-      - "traefik.http.routers.dashboardclient.entrypoints=https"
-      - "traefik.http.routers.dashboardclient.tls.certresolver=ssl"
-
   mitwelten-explore:
     image: cr.gitlab.fhnw.ch/mitwelten/docker-infrastructure/mitwelten-explore-test:latest
     networks:
