@@ -613,3 +613,26 @@ services:
     restart: always
     networks:
       - mitwelten
+
+  mitwelten-discover:
+    image: cr.gitlab.fhnw.ch/mitwelten/docker-infrastructure/mitwelten-discover_app:01
+    networks:
+      - mitwelten
+    restart: always
+    container_name: mitwelten-discover
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.services.mwdiscover.loadbalancer.server.port=80"
+
+      # for http
+      - "traefik.http.routers.mwdiscover_insecure.rule=Host(`discover.mitwelten.org`)"
+      - "traefik.http.routers.mwdiscover_insecure.entrypoints=http"
+
+      # redirect to https
+      - "traefik.http.middlewares.mwdiscover-https.redirectscheme.scheme=https"
+      - "traefik.http.routers.mwdiscover_insecure.middlewares=mwdiscover-https"
+
+      # for https
+      - "traefik.http.routers.mwdiscover.rule=Host(`discover.mitwelten.org`)"
+      - "traefik.http.routers.mwdiscover.entrypoints=https"
+      - "traefik.http.routers.mwdiscover.tls.certresolver=ssl"
