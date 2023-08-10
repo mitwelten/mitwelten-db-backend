@@ -30,6 +30,8 @@ services:
       - "--certificatesresolvers.ssl.acme.tlschallenge=true"
       - "--certificatesresolvers.ssl.acme.email=mitwelten.technik@fhnw.ch"
       - "--certificatesresolvers.ssl.acme.storage=/letsencrypt/acme.json"
+      - "--providers.file.filename=/configs/traefik_tls.yml"
+      - "--providers.file.watch=true"
 
     ports:
       - "80:80"
@@ -38,6 +40,7 @@ services:
 
     volumes:
       - "/etc/letsencrypt:/letsencrypt"
+      - "/opt/mitwelten-db-backend/docker/traefik_tls.yml:/configs/traefik_tls.yml"
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
 
     restart: always
