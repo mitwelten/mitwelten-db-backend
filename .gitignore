@@ -2,6 +2,4 @@ credentials.py
 __pycache__
 .env
 .venv/
-viz_dashboard.env
-viz_users.sqlite
 mqtt_relay_configuration.yaml
