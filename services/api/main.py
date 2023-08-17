@@ -1,8 +1,9 @@
 from api.database import database, database_cache
-from api.dependencies import AuthenticationChecker, get_user, crd
+from api.dependencies import crd
 from api.routers import (
     birdnet, data, deployments, geo, entries, ingest, minio, nodes, queue, tags,
-    taxonomy, validators, walk, meteodata, pollinators, explore, gbif, environment, statistics
+    taxonomy, validators, walk, meteodata, pollinators, explore, gbif,
+    environment, statistics, auth
 )
 
 from fastapi import Depends, FastAPI, Request, status
@@ -110,6 +111,7 @@ if crd.DEV == True:
         allow_headers=['*'],
 )
 
+app.include_router(auth.router)
 app.include_router(birdnet.router)
 app.include_router(data.router)
 app.include_router(deployments.router)
@@ -147,11 +149,6 @@ async def startup():
 async def shutdown():
     await database.disconnect()
     await database_cache.disconnect()
-
-@app.get('/login', dependencies=[Depends(AuthenticationChecker(required_roles=['public']))], tags=['authentication'])
-async def login(request: Request):
-    auth_header = request.headers.get('authorization')
-    return get_user(auth_header.split('Bearer ')[1])
 
 @app.get('/', include_in_schema=False)
 async def root():
