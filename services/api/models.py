@@ -30,7 +30,7 @@ latter case the `Z` is replaced by `+00:00` to make it compatible to pythons
 
 This object will be turned into the postgres type `tstzrange` like this (note
 the interval definition "including start timestamp up until, but not including
-end timestamp):
+end timestamp"):
 
 ```sql
 ['2021-09-12 00:00:00+02:00','2021-10-15 00:00:00+02:00')
@@ -39,8 +39,8 @@ end timestamp):
 The pydantic model / type definition also converts this `tstzrange` back into
 the aforementioned format when retrieving (using as a response model).
 '''
-    start: datetime = Field(..., example='2021-09-11T22:00:00+00:00', title="Beginning of period (inclusive)")
-    end: datetime = Field(..., example='2021-10-14T22:00:00Z', title="End of period (non inclusive)")
+    start: datetime = Field(..., example='2021-09-11T22:00:00+00:00', title='Beginning of period (inclusive)')
+    end: datetime = Field(..., example='2021-10-14T22:00:00Z', title='End of period (non inclusive)')
 
     def __init__(self, start: datetime, end: datetime):
         self.start = start
@@ -162,8 +162,8 @@ class Point(BaseModel):
     '''
     Coordinate in WGS84 format
     '''
-    lat: float = Field(..., example=47.53484943172696, title="Latitude (WGS84)")
-    lon: float = Field(..., example=7.612519197679952, title="Longitude (WGS84)")
+    lat: float = Field(..., example=47.53484943172696, title='Latitude (WGS84)')
+    lon: float = Field(..., example=7.612519197679952, title='Longitude (WGS84)')
 
 class ResultFull(Species):
     location: Point
@@ -325,9 +325,9 @@ class Comment(BaseModel):
     author: Optional[str] = None
 
 class EnvTypeEnum(str, Enum):
-    temperature = "temperature"
-    humidity = "humidity"
-    moisture = "moisture"
+    temperature = 'temperature'
+    humidity = 'humidity'
+    moisture = 'moisture'
 
 class EnvDatum(BaseModel):
     '''
@@ -495,11 +495,11 @@ class SectionText(BaseModel):
 
 
 class PollinatorTypeEnum(str, Enum):
-    fliege = "fliege"
-    honigbiene = "honigbiene"
-    hummel  = "hummel"
-    schwebfliege = "schwebfliege"
-    wildbiene = "wildbiene"
+    fliege = 'fliege'
+    honigbiene = 'honigbiene'
+    hummel  = 'hummel'
+    schwebfliege = 'schwebfliege'
+    wildbiene = 'wildbiene'
 
 class AnnotationText(BaseModel):
     content:str

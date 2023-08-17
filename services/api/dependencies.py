@@ -48,10 +48,10 @@ class AuthenticationChecker:
         self.required_roles = required_roles
     def __call__(self, user:dict=Depends(get_user)) -> bool:
         for r_perm in self.required_roles:
-            if r_perm not in user["realm_access"]["roles"]:
+            if r_perm not in user['realm_access']['roles']:
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Invalid Permissions",
+                    detail='Invalid Permissions',
                 )
         return True
 
@@ -131,7 +131,7 @@ def to_inclusive_range(period: Range) -> Range:
 class GeometryPoint(UserDefinedType):
 
     def get_col_spec(self):
-        return "POINT"
+        return 'POINT'
 
     def bind_expression(self, bindvalue):
         return func.Point(bindvalue, type_=self)
@@ -145,7 +145,7 @@ class GeometryPoint(UserDefinedType):
                 return None
             assert isinstance(value, tuple)
             lat, lon = value
-            return "POINT(%s, %s)" % (lat, lon)
+            return 'POINT(%s, %s)' % (lat, lon)
         return process
 
     def result_processor(self, dialect, coltype):
@@ -162,9 +162,9 @@ def aggregation_mapper(aggregation, column_name):
         'sum': 'sum({}) as value',
         'min': 'min({}) as value',
         'max': 'max({}) as value',
-        'median': "percentile_cont(0.5) WITHIN GROUP (ORDER BY {}) as value",
-        'q1': "percentile_cont(0.25) WITHIN GROUP (ORDER BY {}) as value",
-        'q3': "percentile_cont(0.75) WITHIN GROUP (ORDER BY {}) as value",
+        'median': 'percentile_cont(0.5) WITHIN GROUP (ORDER BY {}) as value',
+        'q1': 'percentile_cont(0.25) WITHIN GROUP (ORDER BY {}) as value',
+        'q3': 'percentile_cont(0.75) WITHIN GROUP (ORDER BY {}) as value',
     }
     if not aggregation in mapping:
         return None

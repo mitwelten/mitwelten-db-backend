@@ -266,33 +266,33 @@ data_env = sqlalchemy.Table(
 # Meteo
 
 meteo_station = sqlalchemy.Table(
-    "station",
+    'station',
     metadata_cache,
-    sqlalchemy.Column("station_id", sqlalchemy.Text, primary_key=True),
-    sqlalchemy.Column("station_name", sqlalchemy.Text, nullable=False),
-    sqlalchemy.Column("data_src", sqlalchemy.Text, nullable=False),
-    sqlalchemy.Column("location", GeometryPoint, nullable=False),
-    sqlalchemy.Column("altitude", sqlalchemy.Integer, nullable=False),
+    sqlalchemy.Column('station_id', sqlalchemy.Text, primary_key=True),
+    sqlalchemy.Column('station_name', sqlalchemy.Text, nullable=False),
+    sqlalchemy.Column('data_src', sqlalchemy.Text, nullable=False),
+    sqlalchemy.Column('location', GeometryPoint, nullable=False),
+    sqlalchemy.Column('altitude', sqlalchemy.Integer, nullable=False),
     schema=crd.db_cache.schema,
 )
 
 
 meteo_parameter = sqlalchemy.Table(
-    "parameter",
+    'parameter',
     metadata_cache,
-    sqlalchemy.Column("param_id", sqlalchemy.Text, primary_key=True),
-    sqlalchemy.Column("unit", sqlalchemy.Text, nullable=False),
-    sqlalchemy.Column("description", sqlalchemy.Text, nullable=False),
+    sqlalchemy.Column('param_id', sqlalchemy.Text, primary_key=True),
+    sqlalchemy.Column('unit', sqlalchemy.Text, nullable=False),
+    sqlalchemy.Column('description', sqlalchemy.Text, nullable=False),
     schema=crd.db_cache.schema,
 )
 
 meteo_meteodata = sqlalchemy.Table(
-    "meteodata",
+    'meteodata',
     metadata_cache,
-    sqlalchemy.Column("ts", sqlalchemy.TIMESTAMP, nullable=False),
-    sqlalchemy.Column("param_id", None, ForeignKey(meteo_parameter.c.param_id)),
-    sqlalchemy.Column("station_id", None, ForeignKey(meteo_station.c.station_id)),
-    sqlalchemy.Column("value", sqlalchemy.Float, nullable=False),
+    sqlalchemy.Column('ts', sqlalchemy.TIMESTAMP, nullable=False),
+    sqlalchemy.Column('param_id', None, ForeignKey(meteo_parameter.c.param_id)),
+    sqlalchemy.Column('station_id', None, ForeignKey(meteo_station.c.station_id)),
+    sqlalchemy.Column('value', sqlalchemy.Float, nullable=False),
     schema=crd.db_cache.schema,
 )
 

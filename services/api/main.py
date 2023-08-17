@@ -134,7 +134,7 @@ app.include_router(statistics.router)
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     exc_str = f'{exc}'.replace('\n', ' ').replace('   ', ' ')
-    print(f"{request}: {exc_str}")
+    print(f'{request}: {exc_str}')
     content = {'status_code': 10422, 'message': exc_str, 'data': None}
     return JSONResponse(content=content, status_code=status.HTTP_422_UNPROCESSABLE_ENTITY)
 
@@ -148,7 +148,7 @@ async def shutdown():
     await database.disconnect()
     await database_cache.disconnect()
 
-@app.get('/login', dependencies=[Depends(AuthenticationChecker())], tags=['authentication'])
+@app.get('/login', dependencies=[Depends(AuthenticationChecker(required_roles=['public']))], tags=['authentication'])
 async def login(request: Request):
     auth_header = request.headers.get('authorization')
     return get_user(auth_header.split('Bearer ')[1])

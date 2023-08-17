@@ -3,7 +3,7 @@ import databases
 from api.config import crd
 
 database = databases.Database(
-    databases.DatabaseURL("postgresql://"),
+    databases.DatabaseURL('postgresql://'),
     host=crd.db.host,
     port=crd.db.port,
     user=crd.db.user,
@@ -14,7 +14,7 @@ database = databases.Database(
 )
 
 database_cache = databases.Database(
-    databases.DatabaseURL("postgresql://"),
+    databases.DatabaseURL('postgresql://'),
     host=crd.db_cache.host,
     port=crd.db_cache.port,
     user=crd.db_cache.user,
