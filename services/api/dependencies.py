@@ -44,7 +44,7 @@ def get_user(token: str = Depends(oauth2_scheme)):
         return None
 
 class AuthenticationChecker:
-    def __init__(self, required_roles: list = []) -> None:
+    def __init__(self, required_roles: list = ['public']) -> None:
         self.required_roles = required_roles
     def __call__(self, user:dict=Depends(get_user)) -> bool:
         for r_perm in self.required_roles:
