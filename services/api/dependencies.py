@@ -5,6 +5,7 @@ from typing import Optional
 
 from api.config import crd
 
+from jose.exceptions import ExpiredSignatureError
 from asyncpg.pgproto.types import Point as PgPoint
 from asyncpg.types import Range
 from fastapi import Depends, Header, HTTPException, status
@@ -40,13 +41,18 @@ def get_user(token: str = Depends(oauth2_scheme)):
         )
         return auth
 
+    except ExpiredSignatureError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail='Signature Expired',
+        )
     except:
         return None
 
 class AuthenticationChecker:
     def __init__(self, required_roles: list = ['public']) -> None:
         self.required_roles = required_roles
-    def __call__(self, user:dict=Depends(get_user)) -> bool:
+    def __call__(self, user: dict = Depends(get_user)) -> bool:
         for r_perm in self.required_roles:
             if r_perm not in user['realm_access']['roles']:
                 raise HTTPException(
