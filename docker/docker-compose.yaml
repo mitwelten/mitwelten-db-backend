@@ -462,7 +462,7 @@ services:
       - /opt/mitwelten-db-backend/docker/mqtt_relay_configuration.yaml:/app/configuration.yaml
 
   mitwelten-explore:
-    image: cr.gitlab.fhnw.ch/mitwelten/docker-infrastructure/mitwelten-explore-test:latest
+    image: cr.gitlab.fhnw.ch/mitwelten/docker-infrastructure/mitwelten-explore:latest
     networks:
       - mitwelten
     restart: always
