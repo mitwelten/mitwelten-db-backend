@@ -34,8 +34,6 @@ mitwelten_databases:
     postgres_users:
       - username: mitwelten_internal # all access to tables
         password: ***
-      - username: mitwelten_upload   # write acccess to some
-        password: ***
       - username: mitwelten_rest     # write acccess to some
         password: ***
       - username: mitwelten_public   # read only

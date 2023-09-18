@@ -618,7 +618,6 @@ END;
 GRANT USAGE ON SCHEMA "dev" TO
   mitwelten_internal,
   mitwelten_rest,
-  mitwelten_upload,
   mitwelten_public;
 
 GRANT ALL ON ALL TABLES IN SCHEMA "dev" TO mitwelten_internal;
@@ -652,17 +651,5 @@ GRANT UPDATE ON
   nodes_node_id_seq,
   tags_tag_id_seq
 TO mitwelten_rest;
-
-GRANT ALL ON
-  files_audio,
-  files_image,
-  nodes
-TO mitwelten_upload;
-
-GRANT UPDATE ON
-  files_audio_file_id_seq,
-  files_image_file_id_seq,
-  nodes_node_id_seq
-TO mitwelten_upload;
 
 GRANT SELECT ON ALL TABLES IN SCHEMA "dev" TO mitwelten_public;
