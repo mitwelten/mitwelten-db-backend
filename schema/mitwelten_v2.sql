@@ -594,7 +594,7 @@ CREATE OR REPLACE VIEW data_records
     SELECT file_id AS record_id, deployment_id, 'image' AS type
     FROM files_image;
 
-CREATE SERVER IF NOT EXISTS auth;
+CREATE SERVER IF NOT EXISTS auth
 FOREIGN DATA WRAPPER postgres_fdw
 OPTIONS (host 'localhost', dbname 'mitwelten_auth', port '5432');
 
