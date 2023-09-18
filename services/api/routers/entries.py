@@ -3,7 +3,7 @@ from typing import List, Optional
 from datetime import datetime
 
 from api.database import database
-from api.dependencies import unique_everseen, check_oid_authentication
+from api.dependencies import unique_everseen, check_oid_authentication, AuthenticationChecker
 from api.models import ApiErrorResponse, Note, PatchNote, Tag, File
 from api.tables import notes, files_note, mm_tags_notes, tags
 
@@ -222,7 +222,7 @@ async def delete_tag_from_note(note_id: int, body: Tag) -> None:
         and_(mm_tags_notes.c.tags_tag_id == delete_id, mm_tags_notes.c.notes_note_id == note_id)))
 
 
-@router.post('/note/{note_id}/file', dependencies=[Depends(check_oid_authentication)], response_model=None, tags=['files'])
+@router.post('/note/{note_id}/file', dependencies=[Depends(AuthenticationChecker(['internal']))], response_model=None, tags=['files'])
 async def add_file_to_note(note_id: int, body: File) -> None:
     '''
     Adds a file for an note
@@ -245,7 +245,7 @@ async def add_file_to_note(note_id: int, body: File) -> None:
         raise HTTPException(status_code=409, detail='File with same S3 URL already exists')
 
 
-@router.delete('/file/{id}', dependencies=[Depends(check_oid_authentication)], response_model=None, tags=['files'])
+@router.delete('/file/{id}', dependencies=[Depends(AuthenticationChecker(['internal']))], response_model=None, tags=['files'])
 async def delete_file(file_id: int) -> None:
     '''
     Deletes a file
