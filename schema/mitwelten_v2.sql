@@ -608,6 +608,8 @@ FOR mitwelten_admin
 SERVER auth
 OPTIONS (user 'mw_data_auth_fdw');
 
+-- this requires the password for the corresponding users to be set
+-- see 'schema/README.md#foreign-tables'
 IMPORT FOREIGN SCHEMA public LIMIT TO (user_entity)
     FROM SERVER auth INTO "dev";
 
