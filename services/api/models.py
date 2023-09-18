@@ -365,11 +365,6 @@ class ApiResponse(BaseModel):
 class ApiErrorResponse(BaseModel):
     detail: Optional[str] = None
 
-class EntryIdFilePostRequest(BaseModel):
-    additionalMetadata: Optional[str] = Field(
-        None, description='Additional data to pass to server'
-    )
-    file: Optional[bytes] = Field(None, description='File to upload')
 
 class Note(BaseModel):
     '''
