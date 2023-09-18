@@ -2,8 +2,6 @@ from datetime import datetime
 from enum import Enum
 from typing import List, Literal, Optional, Tuple, Union
 
-from api.config import s3_file_url_regex
-
 from asyncpg.types import Range
 from pydantic import BaseModel, Field, PositiveInt, constr
 from sqlalchemy.dialects.postgresql import TSTZRANGE
