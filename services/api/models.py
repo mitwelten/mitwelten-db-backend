@@ -310,20 +310,6 @@ class File(BaseModel):
         description='Constrained to project specific S3 bucket'
     )
 
-class Comment(BaseModel):
-    '''
-    User-created comment in form of a __marker__ or __range label__
-    '''
-    id: Optional[int] = None
-    comment: str = Field(..., example='We have observed this as well.')
-    timeStart: datetime = Field(
-        ...,
-        example='2022-03-06T12:23:42.777Z',
-        description='Point in time the comment is referring to. If `timeEnd` is given, `timeStart` indicates the beginning of a range.'
-    )
-    timeEnd: Optional[datetime] = Field(None, example='2022-03-06T12:42:23.777Z', description='End of the time range the comment is referring to')
-    author: Optional[str] = None
-
 class EnvTypeEnum(str, Enum):
     temperature = 'temperature'
     humidity = 'humidity'
