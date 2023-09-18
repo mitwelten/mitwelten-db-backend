@@ -2,6 +2,9 @@
 -- Mitwelten Database - Schema V2.4
 --
 
+-- search/replace "dev" by target schema
+SET SEARCH_PATH = "dev";
+
 BEGIN;
 
 -- DROP SCHEMA "dev" CASCADE;
@@ -12,8 +15,6 @@ CREATE SCHEMA IF NOT EXISTS "dev"
 CREATE EXTENSION IF NOT EXISTS btree_gist;
 CREATE EXTENSION IF NOT EXISTS timescaledb;
 CREATE EXTENSION IF NOT EXISTS postgres_fdw;
-
-SET SEARCH_PATH = "dev";
 
 CREATE TABLE IF NOT EXISTS birdnet_configs
 (
