@@ -300,7 +300,7 @@ class QueueUpdateDefinition(BaseModel):
 
 class File(BaseModel):
     '''
-    File uploaded through front end to S3, associated to an entry
+    File uploaded through front end to S3, associated to a note
     '''
     id: Optional[int] = None
     type: str = Field(title='MIME type', example='application/pdf')
@@ -375,17 +375,17 @@ class EntryIdFilePostRequest(BaseModel):
 
 class Note(BaseModel):
     '''
-    A user generated "pin" on the map to which `files`, `tags` and `comments` can be associated
+    A user generated note than can be pinned to the map and to which `files` and `tags` can be associated
     '''
     note_id: Optional[int] = None
     date: Optional[datetime] = Field(None, example='2022-12-31T23:59:59.999Z', description='Date of creation')
     title: str = Field(
-        ..., example='Interesting Observation', description='Title of this entry'
+        ..., example='Interesting Observation', description='Title of this note'
     )
     description: Optional[str] = Field(
         None,
         example='I discovered an correlation between air humidity level and visitor count',
-        description='Details for this entry'
+        description='Details for this note'
     )
     location: Optional[Point]
     note_type: Optional[str] = Field(None, example='A walk in the park', alias='type')
@@ -394,7 +394,7 @@ class Note(BaseModel):
 
 class PatchNote(Note):
     '''
-    This is a copy of `Entry` with all fields optional
+    This is a copy of `Note` with all fields optional
     for patching existing records.
     '''
     title: Optional[str] = Field(

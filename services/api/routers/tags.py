@@ -125,7 +125,7 @@ async def delete_viz_tag(id: int) -> None:
         async with database.transaction():
             await database.execute(tags.delete().where(tags.c.tag_id == id))
     except ForeignKeyViolationError:
-        raise HTTPException(status_code=400, detail='Tag is referred to by one or more entries')
+        raise HTTPException(status_code=400, detail='Tag is referred to by one or more notes')
 
 @router.get('/viz/tags', response_model=List[Tag], tags=['viz'])
 async def list_viz_tags(

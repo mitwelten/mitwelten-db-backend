@@ -4,28 +4,28 @@ from datetime import datetime
 
 from api.database import database
 from api.dependencies import unique_everseen, check_oid_authentication
-from api.models import ApiErrorResponse, Entry, PatchEntry, Tag, File
+from api.models import ApiErrorResponse, Note, PatchNote, Tag, File
 from api.tables import notes, files_note, mm_tags_notes, tags
 
 from asyncpg import UniqueViolationError
 from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.sql import and_, between, select, text, func
 
-router = APIRouter(tags=['entries', 'viz'])
+router = APIRouter(tags=['notes', 'discover'])
 
 # ------------------------------------------------------------------------------
-# ENTRIES
+# NOTES
 # ------------------------------------------------------------------------------
 
-@router.get('/entries', response_model=List[Entry], response_model_exclude_none=True)
-async def list_entries(
+@router.get('/notes', response_model=List[Note], response_model_exclude_none=True)
+async def list_notes(
     time_from: Optional[datetime] = Query(None, alias='from', example='2022-06-22T18:00:00.000Z'),
     time_to: Optional[datetime] = Query(None, alias='to', example='2022-06-22T20:00:00.000Z'),
-) -> List[Entry]:
+) -> List[Note]:
     '''
-    ## List all entries
+    ## List all notes
 
-    The entry selection can optionally be delimited by supplying either bounded
+    The note selection can optionally be delimited by supplying either bounded
     or unbounded ranges as a combination of `to` and `from` query parameters.
     '''
 
@@ -55,10 +55,10 @@ async def list_entries(
     return output
 
 
-@router.post('/entries', dependencies=[Depends(check_oid_authentication)], response_model=Entry)
-async def add_entry(body: Entry) -> None:
+@router.post('/notes', dependencies=[Depends(check_oid_authentication)], response_model=Note)
+async def add_note(body: Note) -> None:
     '''
-    ## Add a new entry to the map
+    ## Add a new note
 
     ### Timestamps
 
@@ -77,10 +77,10 @@ async def add_entry(body: Entry) -> None:
     ).returning(notes, notes.c.created_at.label('date'), notes.c.type.label('note_type'))
     return await database.fetch_one(query)
 
-@router.get('/entry/{entry_id}', response_model=Entry, responses={404: {"model": ApiErrorResponse}}, response_model_exclude_none=True)
-async def get_entry_by_id(entry_id: int) -> Entry:
+@router.get('/note/{note_id}', response_model=Note, responses={404: {"model": ApiErrorResponse}}, response_model_exclude_none=True)
+async def get_note_by_id(note_id: int) -> Note:
     '''
-    Find entry by ID
+    Find note by ID
     '''
     query = select(notes, notes.c.note_id, notes.c.created_at.label('date'), tags.c.tag_id, tags.c.name.label('tag_name'),
         files_note.c.file_id, files_note.c.name.label('file_name'), files_note.c.object_name, files_note.c.type.label('file_type')).\
@@ -88,7 +88,7 @@ async def get_entry_by_id(entry_id: int) -> Entry:
     result = await database.fetch_all(query=query)
 
     if result == None or len(result) == 0:
-        raise HTTPException(status_code=404, detail='Entry not found')
+        raise HTTPException(status_code=404, detail='Note not found')
     else:
         f_l = unique_everseen(result, lambda x: x['file_id'])
         t_l = unique_everseen(result, lambda x: x['tag_id'])
@@ -97,12 +97,12 @@ async def get_entry_by_id(entry_id: int) -> Entry:
         e['tags'] = [{'id': t['tag_id'], 'name': t['tag_name']} for t in t_l if t['tag_id'] != None]
         return e
 
-@router.patch('/entry/{entry_id}', response_model=Entry, dependencies=[Depends(check_oid_authentication)])
-async def update_entry(entry_id: int, body: PatchEntry = ...) -> Entry:
+@router.patch('/note/{note_id}', response_model=Note, dependencies=[Depends(check_oid_authentication)])
+async def update_note(note_id: int, body: PatchNote = ...) -> Note:
     '''
-    ## Updates an entry
+    ## Updates an note
 
-    Patching not implemented for `tags`, `files` and `comments`
+    Patching not implemented for `tags`, `files`
     '''
     update_data = body.dict(exclude_unset=True)
 
@@ -135,10 +135,10 @@ async def update_entry(entry_id: int, body: PatchEntry = ...) -> Entry:
     return await database.fetch_one(query)
 
 
-@router.delete('/entry/{entry_id}', response_model=None, dependencies=[Depends(check_oid_authentication)])
-async def delete_entry(entry_id: int) -> None:
+@router.delete('/note/{note_id}', response_model=None, dependencies=[Depends(check_oid_authentication)])
+async def delete_note(note_id: int) -> None:
     '''
-    ## Deletes an entry
+    ## Deletes an note
 
     __potential for optimisation__: remove related records when record to be
     deleted is the last referring one.
@@ -156,10 +156,10 @@ async def delete_entry(entry_id: int) -> None:
         await transaction.commit()
 
 
-@router.post('/entry/{entry_id}/tag',tags=['tags'], response_model=None, dependencies=[Depends(check_oid_authentication)], responses={'404': {'model': ApiErrorResponse}})
-async def add_tag_to_entry(entry_id: int, body: Tag) -> None:
+@router.post('/note/{note_id}/tag',tags=['tags'], response_model=None, dependencies=[Depends(check_oid_authentication)], responses={'404': {'model': ApiErrorResponse}})
+async def add_tag_to_note(note_id: int, body: Tag) -> None:
     '''
-    Adds a tag for an entry
+    Adds a tag for an note
     '''
 
     transaction = await database.transaction()
@@ -167,7 +167,7 @@ async def add_tag_to_entry(entry_id: int, body: Tag) -> None:
     try:
         check = await database.fetch_one(notes.select().where(notes.c.note_id == note_id))
         if check == None:
-            raise HTTPException(status_code=404, detail='Entry not found')
+            raise HTTPException(status_code=404, detail='Note not found')
 
         existing_by_id = None
         existing_by_name = None
@@ -194,7 +194,7 @@ async def add_tag_to_entry(entry_id: int, body: Tag) -> None:
 
     except UniqueViolationError:
         await transaction.rollback()
-        raise HTTPException(status_code=200, detail='Tag is already assigned to this entry')
+        raise HTTPException(status_code=200, detail='Tag is already assigned to this note')
     except Exception as e:
         await transaction.rollback()
         raise e
@@ -202,10 +202,10 @@ async def add_tag_to_entry(entry_id: int, body: Tag) -> None:
         await transaction.commit()
 
 
-@router.delete('/entry/{entry_id}/tag', dependencies=[Depends(check_oid_authentication)], response_model=None, tags=['tags'])
-async def delete_tag_from_entry(entry_id: int, body: Tag) -> None:
+@router.delete('/note/{note_id}/tag', dependencies=[Depends(check_oid_authentication)], response_model=None, tags=['tags'])
+async def delete_tag_from_note(note_id: int, body: Tag) -> None:
     '''
-    Deletes a tag from an entry
+    Deletes a tag from an note
     '''
     delete_id = None
     if body.name:
@@ -222,16 +222,16 @@ async def delete_tag_from_entry(entry_id: int, body: Tag) -> None:
         and_(mm_tags_notes.c.tags_tag_id == delete_id, mm_tags_notes.c.notes_note_id == note_id)))
 
 
-@router.post('/entry/{entry_id}/file', dependencies=[Depends(check_oid_authentication)], response_model=None, tags=['files'])
-async def add_file_to_entry(entry_id: int, body: File) -> None:
+@router.post('/note/{note_id}/file', dependencies=[Depends(check_oid_authentication)], response_model=None, tags=['files'])
+async def add_file_to_note(note_id: int, body: File) -> None:
     '''
-    Adds a file for an entry
+    Adds a file for an note
     '''
 
     # do i need this if there's a FK constraint?
     check = await database.fetch_one(notes.select().where(notes.c.note_id == note_id))
     if check == None:
-        raise HTTPException(status_code=404, detail='Entry not found')
+        raise HTTPException(status_code=404, detail='Note not found')
 
     values = {
         files_note.c.note_id: note_id,

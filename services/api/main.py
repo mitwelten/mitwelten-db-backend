@@ -40,8 +40,8 @@ tags_metadata = [
         'description': 'Layers for map display',
     },
     {
-        'name': 'entries',
-        'description': 'Pins, added to the map',
+        'name': 'notes',
+        'description': 'Notes, may be added to the map',
     },
     {
         'name': 'nodes',
