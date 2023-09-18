@@ -1,5 +1,5 @@
 --
--- Mitwelten Database - Schema V2.3
+-- Mitwelten Database - Schema V2.4
 --
 
 BEGIN;
@@ -154,16 +154,18 @@ CREATE TABLE IF NOT EXISTS prod.sensordata_pax
     voltage real
 );
 
-CREATE TABLE IF NOT EXISTS prod.entries
+CREATE TABLE IF NOT EXISTS prod.notes
 (
-    entry_id serial,
-    location point NOT NULL,
-    name character varying(255),
+    note_id serial,
+    location point,
+    title character varying(255),
     description text,
     type character varying(255),
+    user_sub text NOT NULL,
+    public boolean NOT NULL DEFAULT FALSE,
     created_at timestamptz NOT NULL DEFAULT current_timestamp,
     updated_at timestamptz NOT NULL DEFAULT current_timestamp,
-    PRIMARY KEY (entry_id)
+    PRIMARY KEY (note_id)
 );
 
 CREATE TABLE IF NOT EXISTS prod.tags
@@ -176,11 +178,11 @@ CREATE TABLE IF NOT EXISTS prod.tags
     UNIQUE (name)
 );
 
-CREATE TABLE IF NOT EXISTS prod.mm_tags_entries
+CREATE TABLE IF NOT EXISTS prod.mm_tags_notes
 (
     tags_tag_id integer,
-    entries_entry_id integer,
-    PRIMARY KEY (tags_tag_id, entries_entry_id)
+    notes_note_id integer,
+    PRIMARY KEY (tags_tag_id, notes_note_id)
 );
 
 CREATE TABLE IF NOT EXISTS prod.mm_tags_deployments
@@ -190,10 +192,10 @@ CREATE TABLE IF NOT EXISTS prod.mm_tags_deployments
     PRIMARY KEY (tags_tag_id, deployments_deployment_id)
 );
 
-CREATE TABLE IF NOT EXISTS prod.files_entry
+CREATE TABLE IF NOT EXISTS prod.files_note
 (
     file_id serial,
-    entry_id integer NOT NULL,
+    note_id integer NOT NULL,
     object_name text NOT NULL,
     name character varying(255) NOT NULL,
     type character varying(128),
@@ -400,16 +402,16 @@ ALTER TABLE IF EXISTS prod.sensordata_pax
     NOT VALID;
 
 
-ALTER TABLE IF EXISTS prod.mm_tags_entries
+ALTER TABLE IF EXISTS prod.mm_tags_notes
     ADD FOREIGN KEY (tags_tag_id)
     REFERENCES prod.tags (tag_id) MATCH SIMPLE
     ON UPDATE NO ACTION
     ON DELETE NO ACTION
     NOT VALID;
 
-ALTER TABLE IF EXISTS prod.mm_tags_entries
-    ADD FOREIGN KEY (entries_entry_id)
-    REFERENCES prod.entries (entry_id) MATCH SIMPLE
+ALTER TABLE IF EXISTS prod.mm_tags_notes
+    ADD FOREIGN KEY (notes_note_id)
+    REFERENCES prod.notes (note_id) MATCH SIMPLE
     ON UPDATE NO ACTION
     ON DELETE NO ACTION
     NOT VALID;
@@ -428,9 +430,9 @@ ALTER TABLE IF EXISTS prod.mm_tags_deployments
     ON DELETE CASCADE
     NOT VALID;
 
-ALTER TABLE IF EXISTS prod.files_entry
-    ADD FOREIGN KEY (entry_id)
-    REFERENCES prod.entries (entry_id) MATCH SIMPLE
+ALTER TABLE IF EXISTS prod.files_note
+    ADD FOREIGN KEY (note_id)
+    REFERENCES prod.notes (note_id) MATCH SIMPLE
     ON UPDATE NO ACTION
     ON DELETE CASCADE
     NOT VALID;
@@ -620,11 +622,11 @@ GRANT ALL ON
   prod.nodes,
   prod.sensordata_env,
   prod.sensordata_pax,
-  prod.entries,
+  prod.notes,
   prod.tags,
-  prod.mm_tags_entries,
+  prod.mm_tags_notes,
   prod.mm_tags_deployments,
-  prod.files_entry,
+  prod.files_note,
   prod.user_collections,
   prod.annotations
 TO mitwelten_rest;
@@ -639,8 +641,8 @@ GRANT SELECT ON
 TO mitwelten_rest;
 
 GRANT UPDATE ON
-  prod.entries_entry_id_seq,
-  prod.files_entry_file_id_seq,
+  prod.notes_note_id_seq,
+  prod.files_note_file_id_seq,
   prod.nodes_node_id_seq,
   prod.tags_tag_id_seq
 TO mitwelten_rest;
