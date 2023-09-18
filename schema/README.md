@@ -61,12 +61,18 @@ Several types of files, currently audio and images.
 There is a separate relation for files uploaded by this _viz-dashboard_, that does not
 have an attributes for `deployment`.
 
-#### entry
+#### note
 
-- Has a _name_
-- Has a _description_
-- Has _location_ (same format as `deployment`)
-- Has a type
+Notes can be added by authenticated users of the discover-app.
+It is planned to add this functionality to deployments, where the notes
+themselves don't need to have a location.
+
+- Has an associated author (user, in form of its KeyCloak identifier _user\_sub_)
+- Has a flag _public_ indicating if the record is shown to unauthenticated users
+- Can have a _title_
+- Can have a _description_
+- Can have a _type_ (descriptive string)
+- Can have a _location_ (same format as `deployment`)
 - Can have multiple _tags_
 - Can have multiple _files_
 - Has timestamps for change tracking (_created\_at_, _updated\_at_)
@@ -75,7 +81,7 @@ have an attributes for `deployment`.
 
 - Has a unique _name_
 
-Records of `entry` and `deployment` can be tagged with multiple tags, using the tables `mm_tags_entries` and `mm_tags_deployments`.
+Records of `note` and `deployment` can be tagged with multiple tags, using the tables `mm_tags_notes` and `mm_tags_deployments`.
 
 #### BirdNET pipeline
 
