@@ -144,13 +144,15 @@ deployments = sqlalchemy.Table(
 notes = sqlalchemy.Table(
     'notes',
     metadata,
-    sqlalchemy.Column('note_id',    sqlalchemy.Integer,     primary_key=True),
-    sqlalchemy.Column('location',    GeometryPoint,          nullable=False),
-    sqlalchemy.Column('name',        sqlalchemy.String(255), nullable=False),
+    sqlalchemy.Column('note_id',     sqlalchemy.Integer,     primary_key=True),
+    sqlalchemy.Column('location',    GeometryPoint,          nullable=True),
+    sqlalchemy.Column('title',       sqlalchemy.String(255), nullable=True),
     sqlalchemy.Column('description', sqlalchemy.Text,        nullable=True),
     sqlalchemy.Column('type',        sqlalchemy.String(255), nullable=True),
-    sqlalchemy.Column('created_at',  sqlalchemy.TIMESTAMP,   nullable=False),
-    sqlalchemy.Column('updated_at',  sqlalchemy.TIMESTAMP,   nullable=False),
+    sqlalchemy.Column('user_sub',    sqlalchemy.Text,        nullable=False),
+    sqlalchemy.Column('public',      sqlalchemy.Boolean,     nullable=False),
+    sqlalchemy.Column('created_at',  sqlalchemy.TIMESTAMP,   nullable=True),
+    sqlalchemy.Column('updated_at',  sqlalchemy.TIMESTAMP,   nullable=True),
     schema=crd.db.schema
 )
 

@@ -49,7 +49,7 @@ async def list_notes(
         f_l = unique_everseen(grp, lambda x: x['file_id'])
         t_l = unique_everseen(grp, lambda x: x['tag_id'])
         e = dict(grp[0])
-        e['files'] = [{'name': f['file_name'], 'link': f['object_name'], 'type': f['file_type']} for f in f_l if f['file_id'] != None]
+        e['files'] = [{'name': f['file_name'], 'object_name': f['object_name'], 'type': f['file_type']} for f in f_l if f['file_id'] != None]
         e['tags'] = [{'tag_id': t['tag_id'], 'name': t['tag_name']} for t in t_l if t['tag_id'] != None]
         output.append(e)
     return output
@@ -235,7 +235,7 @@ async def add_file_to_note(note_id: int, body: File) -> None:
 
     values = {
         files_note.c.note_id: note_id,
-        files_note.c.object_name: body.link,
+        files_note.c.object_name: body.object_name,
         files_note.c.name: body.name.strip(),
         files_note.c.type: body.type.strip(),
     }
