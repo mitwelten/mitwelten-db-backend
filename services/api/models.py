@@ -218,7 +218,7 @@ class TagStats(Tag):
     '''
 
     deployments: int
-    entries: int
+    notes: int
     created_at: datetime
     updated_at: datetime
 
@@ -305,7 +305,7 @@ class File(BaseModel):
     id: Optional[int] = None
     type: str = Field(title='MIME type', example='application/pdf')
     name: str = Field(title='File name')
-    link: constr(strip_whitespace=True, regex=s3_file_url_regex) = Field(
+    object_name: constr(strip_whitespace=True) = Field(
         title='Link to S3 object',
         description='Constrained to project specific S3 bucket'
     )
@@ -373,13 +373,13 @@ class EntryIdFilePostRequest(BaseModel):
     )
     file: Optional[bytes] = Field(None, description='File to upload')
 
-class Entry(BaseModel):
+class Note(BaseModel):
     '''
     A user generated "pin" on the map to which `files`, `tags` and `comments` can be associated
     '''
-    entry_id: Optional[int] = None
+    note_id: Optional[int] = None
     date: Optional[datetime] = Field(None, example='2022-12-31T23:59:59.999Z', description='Date of creation')
-    name: str = Field(
+    title: str = Field(
         ..., example='Interesting Observation', description='Title of this entry'
     )
     description: Optional[str] = Field(
@@ -387,21 +387,19 @@ class Entry(BaseModel):
         example='I discovered an correlation between air humidity level and visitor count',
         description='Details for this entry'
     )
-    location: Point
-    entry_type: Optional[str] = Field(None, example='A walk in the park', alias='type')
+    location: Optional[Point]
+    note_type: Optional[str] = Field(None, example='A walk in the park', alias='type')
     tags: Optional[List[Tag]] = None
-    comments: Optional[List[Comment]] = None
     files: Optional[List[File]] = None
 
-class PatchEntry(Entry):
+class PatchNote(Note):
     '''
     This is a copy of `Entry` with all fields optional
     for patching existing records.
     '''
-    name: Optional[str] = Field(
-        None, example='Interesting Observation', description='Title of this entry'
+    title: Optional[str] = Field(
+        None, example='Interesting Observation', description='Title of this note'
     )
-    location: Optional[Point]
 
 # Meteo Models
 
