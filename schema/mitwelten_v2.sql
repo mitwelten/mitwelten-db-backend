@@ -503,13 +503,13 @@ CREATE INDEX IF NOT EXISTS files_image_sha256_idx
     (sha256 ASC NULLS LAST);
 
 -- fast lookup of scientific names for joins of taxonomy
-CREATE INDEX IF NOT EXISTS taxonomy_labels_label_sci_idx
-    ON taxonomy_labels USING btree
+CREATE INDEX IF NOT EXISTS taxonomy_data_label_sci_idx
+    ON taxonomy_data USING btree
     (label_sci ASC NULLS LAST);
 
 -- fast lookup of whitelist entries
-CREATE INDEX IF NOT EXISTS storate_whitelist_object_name_idx
-    ON storate_whitelist USING btree
+CREATE INDEX IF NOT EXISTS storage_whitelist_object_name_idx
+    ON storage_whitelist USING btree
     (object_name ASC NULLS LAST);
 
 CREATE OR REPLACE VIEW birdnet_input
