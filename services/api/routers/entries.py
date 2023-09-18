@@ -5,7 +5,7 @@ from datetime import datetime
 from api.database import database
 from api.dependencies import unique_everseen, check_oid_authentication
 from api.models import ApiErrorResponse, Entry, PatchEntry, Tag, File
-from api.tables import entries, files_entry, mm_tags_entries, tags
+from api.tables import notes, files_note, mm_tags_notes, tags
 
 from asyncpg import UniqueViolationError
 from fastapi import APIRouter, Depends, Query, HTTPException
@@ -29,22 +29,22 @@ async def list_entries(
     or unbounded ranges as a combination of `to` and `from` query parameters.
     '''
 
-    query = select(entries, entries.c.created_at.label('date'), tags.c.tag_id, tags.c.name.label('tag_name'), files_entry.c.file_id, files_entry.c.object_name, files_entry.c.name.label('file_name'), files_entry.c.type.label('file_type')).\
-        select_from(entries.outerjoin(mm_tags_entries).outerjoin(tags).outerjoin(files_entry))
+    query = select(notes, notes.c.created_at.label('date'), tags.c.tag_id, tags.c.name.label('tag_name'), files_note.c.file_id, files_note.c.object_name, files_note.c.name.label('file_name'), files_note.c.type.label('file_type')).\
+        select_from(notes.outerjoin(mm_tags_notes).outerjoin(tags).outerjoin(files_note))
 
     if time_from and time_to:
-        query = query.where(between(entries.c.created_at, time_from, time_to))
+        query = query.where(between(notes.c.created_at, time_from, time_to))
     elif time_from:
-        query = query.where(entries.c.created_at >= time_from)
+        query = query.where(notes.c.created_at >= time_from)
     elif time_to:
-        query = query.where(entries.c.created_at < time_to)
+        query = query.where(notes.c.created_at < time_to)
 
     # order by itertools groupby key
-    query = query.order_by(entries.c.entry_id)
+    query = query.order_by(notes.c.note_id)
 
     result = await database.fetch_all(query=query)
     output = []
-    for key, grp in groupby(result, key=lambda x: x['entry_id']):
+    for key, grp in groupby(result, key=lambda x: x['note_id']):
         grp = list(grp)
         f_l = unique_everseen(grp, lambda x: x['file_id'])
         t_l = unique_everseen(grp, lambda x: x['tag_id'])
@@ -67,14 +67,14 @@ async def add_entry(body: Entry) -> None:
     by the user.
     '''
 
-    query = entries.insert().values(
-        name=body.name,
+    query = notes.insert().values(
+        name=body.title,
         description=body.description,
-        type=body.entry_type,
-        location=text(f'point(:lat,:lon)').bindparams(lat=body.location.lat, lon=body.location.lon),
+        type=body.note_type,
+        location=None if 'location' in body else text(f'point(:lat,:lon)').bindparams(lat=body.location.lat, lon=body.location.lon),
         created_at=body.date or func.now(),
         updated_at=func.now()
-    ).returning(entries, entries.c.created_at.label('date'), entries.c.type.label('entry_type'))
+    ).returning(notes, notes.c.created_at.label('date'), notes.c.type.label('note_type'))
     return await database.fetch_one(query)
 
 @router.get('/entry/{entry_id}', response_model=Entry, responses={404: {"model": ApiErrorResponse}}, response_model_exclude_none=True)
@@ -82,9 +82,9 @@ async def get_entry_by_id(entry_id: int) -> Entry:
     '''
     Find entry by ID
     '''
-    query = select(entries, entries.c.entry_id, entries.c.created_at.label('date'), tags.c.tag_id, tags.c.name.label('tag_name'),
-        files_entry.c.file_id, files_entry.c.name.label('file_name'), files_entry.c.object_name, files_entry.c.type.label('file_type')).\
-        select_from(entries.outerjoin(mm_tags_entries).outerjoin(tags).outerjoin(files_entry)).where(entries.c.entry_id == entry_id)
+    query = select(notes, notes.c.note_id, notes.c.created_at.label('date'), tags.c.tag_id, tags.c.name.label('tag_name'),
+        files_note.c.file_id, files_note.c.name.label('file_name'), files_note.c.object_name, files_note.c.type.label('file_type')).\
+        select_from(notes.outerjoin(mm_tags_notes).outerjoin(tags).outerjoin(files_note)).where(notes.c.note_id == note_id)
     result = await database.fetch_all(query=query)
 
     if result == None or len(result) == 0:
@@ -114,15 +114,11 @@ async def update_entry(entry_id: int, body: PatchEntry = ...) -> Entry:
     if 'tags' in update_data:
         del update_data['tags']
 
-    # 'comments' not implemented
-    if 'comments' in update_data:
-        del update_data['comments']
+    if 'note_type' in update_data:
+        update_data['type'] = update_data['note_type']
+        del update_data['note_type']
 
-    if 'entry_type' in update_data:
-        update_data['type'] = update_data['entry_type']
-        del update_data['entry_type']
-
-    del update_data['entry_id']
+    del update_data['note_id']
 
     update_data['location'] = text('point(:lat,:lon)').bindparams(
         lat=update_data['location']['lat'],
@@ -133,8 +129,8 @@ async def update_entry(entry_id: int, body: PatchEntry = ...) -> Entry:
         update_data['created_at'] = update_data['date']
         del update_data['date']
 
-    query = entries.update().returning(entries, entries.c.created_at.label('date')).where(entries.c.entry_id == entry_id).\
-        values({**update_data, entries.c.updated_at: func.current_timestamp()})
+    query = notes.update().returning(notes, notes.c.created_at.label('date')).where(notes.c.note_id == note_id).\
+        values({**update_data, notes.c.updated_at: func.current_timestamp()})
 
     return await database.fetch_one(query)
 
@@ -151,8 +147,8 @@ async def delete_entry(entry_id: int) -> None:
     transaction = await database.transaction()
 
     try:
-        await database.execute(mm_tags_entries.delete().where(mm_tags_entries.c.entries_entry_id == entry_id))
-        await database.execute(entries.delete().where(entries.c.entry_id == entry_id))
+        await database.execute(mm_tags_notes.delete().where(mm_tags_notes.c.notes_note_id == note_id))
+        await database.execute(notes.delete().where(notes.c.note_id == note_id))
     except Exception as e:
         await transaction.rollback()
         raise e
@@ -169,7 +165,7 @@ async def add_tag_to_entry(entry_id: int, body: Tag) -> None:
     transaction = await database.transaction()
 
     try:
-        check = await database.fetch_one(entries.select().where(entries.c.entry_id == entry_id))
+        check = await database.fetch_one(notes.select().where(notes.c.note_id == note_id))
         if check == None:
             raise HTTPException(status_code=404, detail='Entry not found')
 
@@ -193,7 +189,7 @@ async def add_tag_to_entry(entry_id: int, body: Tag) -> None:
         elif existing_by_name:
             insert_tag = existing_by_name
 
-        query = mm_tags_entries.insert().values({mm_tags_entries.c.tags_tag_id: insert_tag.tag_id, mm_tags_entries.c.entries_entry_id: entry_id})
+        query = mm_tags_notes.insert().values({mm_tags_notes.c.tags_tag_id: insert_tag.tag_id, mm_tags_notes.c.notes_note_id: note_id})
         await database.execute(query=query)
 
     except UniqueViolationError:
@@ -222,8 +218,8 @@ async def delete_tag_from_entry(entry_id: int, body: Tag) -> None:
     if body.id:
         delete_id = body.id
 
-    await database.execute(mm_tags_entries.delete().where(
-        and_(mm_tags_entries.c.tags_tag_id == delete_id, mm_tags_entries.c.entries_entry_id == entry_id)))
+    await database.execute(mm_tags_notes.delete().where(
+        and_(mm_tags_notes.c.tags_tag_id == delete_id, mm_tags_notes.c.notes_note_id == note_id)))
 
 
 @router.post('/entry/{entry_id}/file', dependencies=[Depends(check_oid_authentication)], response_model=None, tags=['files'])
@@ -233,18 +229,18 @@ async def add_file_to_entry(entry_id: int, body: File) -> None:
     '''
 
     # do i need this if there's a FK constraint?
-    check = await database.fetch_one(entries.select().where(entries.c.entry_id == entry_id))
+    check = await database.fetch_one(notes.select().where(notes.c.note_id == note_id))
     if check == None:
         raise HTTPException(status_code=404, detail='Entry not found')
 
     values = {
-        files_entry.c.entry_id: entry_id,
-        files_entry.c.object_name: body.link,
-        files_entry.c.name: body.name.strip(),
-        files_entry.c.type: body.type.strip(),
+        files_note.c.note_id: note_id,
+        files_note.c.object_name: body.link,
+        files_note.c.name: body.name.strip(),
+        files_note.c.type: body.type.strip(),
     }
     try:
-        return await database.fetch_one(files_entry.insert().values(values).returning(files_entry.c.file_id))
+        return await database.fetch_one(files_note.insert().values(values).returning(files_note.c.file_id))
     except UniqueViolationError:
         raise HTTPException(status_code=409, detail='File with same S3 URL already exists')
 
@@ -254,4 +250,4 @@ async def delete_file(file_id: int) -> None:
     '''
     Deletes a file
     '''
-    await database.execute(files_entry.delete().where(files_entry.c.file_id == file_id))
+    await database.execute(files_note.delete().where(files_note.c.file_id == file_id))

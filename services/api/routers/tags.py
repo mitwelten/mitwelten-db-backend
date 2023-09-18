@@ -4,7 +4,7 @@ from typing import List, Optional
 from api.database import database
 from api.dependencies import check_oid_authentication
 from api.models import ApiErrorResponse, Tag, TagStats
-from api.tables import mm_tags_deployments, mm_tags_entries, tags
+from api.tables import mm_tags_deployments, mm_tags_notes, tags
 
 from asyncpg import ForeignKeyViolationError, StringDataRightTruncationError, UniqueViolationError
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -28,9 +28,9 @@ async def read_tags(deployment_id: Optional[int] = None) -> List[Tag]:
 async def read_tags_stats(deployment_id: Optional[int] = None) -> List[TagStats]:
     subquery = select(tags.c.tag_id,
             func.count(mm_tags_deployments.c.tags_tag_id).label('deployments'),
-            func.count(mm_tags_entries.c.tags_tag_id).label('entries')).\
+            func.count(mm_tags_notes.c.tags_tag_id).label('notes')).\
         outerjoin(mm_tags_deployments).\
-        outerjoin(mm_tags_entries).\
+        outerjoin(mm_tags_notes).\
         group_by(tags.c.tag_id).subquery()
 
     query = select(subquery, tags.c.name, tags.c.created_at, tags.c.updated_at).\
