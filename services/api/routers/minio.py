@@ -14,7 +14,7 @@ from minio.error import S3Error
 from sqlalchemy.sql import text
 import json
 
-router = APIRouter(tags=['files', 's3'])
+router = APIRouter(tags=['storage'])
 
 # ------------------------------------------------------------------------------
 # MINIO FILE IO

@@ -222,7 +222,7 @@ async def delete_tag_from_note(note_id: int, body: Tag) -> None:
         and_(mm_tags_notes.c.tags_tag_id == delete_id, mm_tags_notes.c.notes_note_id == note_id)))
 
 
-@router.post('/note/{note_id}/file', dependencies=[Depends(AuthenticationChecker(['internal']))], response_model=None, tags=['files'])
+@router.post('/note/{note_id}/file', dependencies=[Depends(AuthenticationChecker(['internal']))], response_model=None)
 async def add_file_to_note(note_id: int, body: File) -> None:
     '''
     Adds a file for an note
@@ -245,7 +245,7 @@ async def add_file_to_note(note_id: int, body: File) -> None:
         raise HTTPException(status_code=409, detail='File with same S3 URL already exists')
 
 
-@router.delete('/file/{id}', dependencies=[Depends(AuthenticationChecker(['internal']))], response_model=None, tags=['files'])
+@router.delete('/file/{id}', dependencies=[Depends(AuthenticationChecker(['internal']))], response_model=None)
 async def delete_file(file_id: int) -> None:
     '''
     Deletes a file

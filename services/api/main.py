@@ -56,7 +56,7 @@ tags_metadata = [
         'description': 'Sensor / Capture Data',
     },
     {
-        'name': 'files',
+        'name': 'storage',
         'description': 'File up- and download (images, audio, etc.)',
     },
     {
