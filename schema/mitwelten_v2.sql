@@ -418,7 +418,7 @@ ALTER TABLE IF EXISTS mm_tags_notes
     ADD FOREIGN KEY (notes_note_id)
     REFERENCES notes (note_id) MATCH SIMPLE
     ON UPDATE NO ACTION
-    ON DELETE NO ACTION
+    ON DELETE CASCADE
     NOT VALID;
 
 ALTER TABLE IF EXISTS mm_tags_deployments
