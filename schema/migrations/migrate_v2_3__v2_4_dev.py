@@ -76,9 +76,10 @@ def truncate_target(pg, SCHEMA_SRC, SCHEMA_DST):
     ]
     c = pg.cursor()
     for t in tables:
-        print(f'TRUNCATE {SCHEMA_DST}.{t} RESTART IDENTITY CASCADE')
+        sql = f'TRUNCATE {SCHEMA_DST}.{t} RESTART IDENTITY CASCADE;'
+        print(sql)
         # # uncomment/run only if you know what your doing: All data will be erased!
-        # c.execute(f'truncate {SCHEMA_DST}.{t} restart identity cascade')
+        # c.execute(sql)
         # pg.commit()
 
 def check_user_id():
