@@ -38,18 +38,31 @@ async def read_tags_stats(deployment_id: Optional[int] = None) -> List[TagStats]
         order_by(tags.c.name)
     return await database.fetch_all(query)
 
-@router.put('/tags', dependencies=[Depends(AuthenticationChecker())])
-async def upsert_tag(body: Tag) -> None:
-    if hasattr(body, 'tag_id') and body.tag_id != None:
-        return await database.execute(update(tags).where(tags.c.tag_id == body.tag_id).\
-            values({**body.dict(exclude_none=True), tags.c.updated_at: current_timestamp()}).\
-            returning(tags.c.tag_id))
-    else:
-        return await database.execute(insert(tags).values(body.dict(exclude_none=True)).\
-            returning(tags.c.tag_id))
+@router.put('/tags', dependencies=[Depends(AuthenticationChecker())], responses={
+        400: {'model': ApiErrorResponse},
+        401: {'model': ApiErrorResponse},
+        404: {'model': ApiErrorResponse},
+        409: {'model': ApiErrorResponse}})
+async def upsert_tag(body: Tag) -> int:
+    try:
+        if hasattr(body, 'tag_id') and body.tag_id != None:
+            result = await database.execute(update(tags).where(tags.c.tag_id == body.tag_id).\
+                values({**body.dict(exclude_none=True), tags.c.updated_at: current_timestamp()}).\
+                returning(tags.c.tag_id))
+            if result == None:
+                raise HTTPException(status_code=404, detail='Tag not found')
+            return result
+        else:
+            return await database.execute(insert(tags).values(body.dict(exclude_none=True)).\
+                returning(tags.c.tag_id))
+    except UniqueViolationError:
+        raise HTTPException(status_code=409, detail='Tag with same name already exists')
+    except StringDataRightTruncationError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
 
 @router.delete('/tag/{tag_id}', response_model=None, dependencies=[Depends(AuthenticationChecker())])
-async def delete_tag(tag_id: int) -> None:
+async def delete_tag(tag_id: int) -> bool:
     '''
     Deletes a tag
     '''

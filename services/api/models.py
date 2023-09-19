@@ -207,7 +207,7 @@ class Tag(BaseModel):
     Annotation
     '''
 
-    tag_id: int
+    tag_id: Optional[int]
     name: constr(regex=r'\w+')
 
 class TagStats(Tag):
