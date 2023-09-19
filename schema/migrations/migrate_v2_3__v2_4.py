@@ -125,10 +125,10 @@ def main():
 
     try:
         user_id = check_user_id()
+        create_new_tables(connection, SCHEMA_DST)
         notes_idmap = copy_entries_to_notes(cursor, SCHEMA_SRC, SCHEMA_DST, user_id)
         copy_files_entry_to_files_note(cursor, SCHEMA_SRC, SCHEMA_DST, notes_idmap)
         migrate_entry_tag_assignment(cursor, SCHEMA_SRC, SCHEMA_DST, notes_idmap)
-        create_new_tables(connection, SCHEMA_DST)
         drop_old_tables(connection, SCHEMA_SRC)
     except:
         print(traceback.format_exc())
