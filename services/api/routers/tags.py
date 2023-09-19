@@ -53,17 +53,13 @@ async def delete_tag(tag_id: int) -> None:
     '''
     Deletes a tag
     '''
-    transaction = await database.transaction()
     try:
         await database.execute(delete(tags).where(tags.c.tag_id == tag_id))
     except ForeignKeyViolationError:
-        await transaction.rollback()
         raise HTTPException(status_code=400, detail='Tag is referred to by one or more note or deployment records')
     except Exception as e:
-        await transaction.rollback()
         raise HTTPException(status_code=500, detail=str(e))
     else:
-        await transaction.commit()
         return True
 
 @router.put('/viz/tag', response_model=None, dependencies=[Depends(AuthenticationChecker)], tags=['viz'], responses={
