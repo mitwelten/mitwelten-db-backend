@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import List, Optional
 
 from api.database import database
-from api.dependencies import check_oid_authentication
+from api.dependencies import check_oid_authentication, AuthenticationChecker
 from api.models import ApiErrorResponse, Tag, TagStats
 from api.tables import mm_tags_deployments, mm_tags_notes, tags
 
@@ -50,9 +50,15 @@ async def upsert_tag(body: Tag) -> None:
 
 @router.delete('/tag/{tag_id}', response_model=None, dependencies=[Depends(check_oid_authentication)])
 async def delete_tag(tag_id: int) -> None:
+    '''
+    Deletes a tag
+    '''
     transaction = await database.transaction()
     try:
         await database.execute(delete(tags).where(tags.c.tag_id == tag_id))
+    except ForeignKeyViolationError:
+        await transaction.rollback()
+        raise HTTPException(status_code=400, detail='Tag is referred to by one or more note or deployment records')
     except Exception as e:
         await transaction.rollback()
         raise HTTPException(status_code=500, detail=str(e))
@@ -60,7 +66,7 @@ async def delete_tag(tag_id: int) -> None:
         await transaction.commit()
         return True
 
-@router.put('/viz/tag', response_model=None, dependencies=[Depends(check_oid_authentication)], tags=['viz'], responses={
+@router.put('/viz/tag', response_model=None, dependencies=[Depends(AuthenticationChecker(['internal']))], tags=['viz'], responses={
         400: {"model": ApiErrorResponse},
         404: {"model": ApiErrorResponse},
         409: {"model": ApiErrorResponse}})
@@ -115,17 +121,6 @@ async def get_viz_tag_by_id(id: int) -> Tag:
     else:
         return { 'id': result.tag_id, 'name': result.name }
 
-
-@router.delete('/viz/tag/{id}', response_model=None, dependencies=[Depends(check_oid_authentication)], tags=['viz'])
-async def delete_viz_tag(id: int) -> None:
-    '''
-    Deletes a tag
-    '''
-    try:
-        async with database.transaction():
-            await database.execute(tags.delete().where(tags.c.tag_id == id))
-    except ForeignKeyViolationError:
-        raise HTTPException(status_code=400, detail='Tag is referred to by one or more notes')
 
 @router.get('/viz/tags', response_model=List[Tag], tags=['viz'])
 async def list_viz_tags(
