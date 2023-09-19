@@ -104,7 +104,7 @@ def create_new_tables(pg, SCHEMA_DST):
     c.execute(sql)
     pg.commit()
 
-def drop_old_tables(cursor, SCHEMA_SRC):
+def drop_old_tables(pg, SCHEMA_SRC):
     sql = f'''
     SET SEARCH_PATH = "{SCHEMA_SRC}";
     DROP TABLE IF EXISTS mm_tags_entries, files_entry, entries RESTRICT;
@@ -129,7 +129,7 @@ def main():
         copy_files_entry_to_files_note(cursor, SCHEMA_SRC, SCHEMA_DST, notes_idmap)
         migrate_entry_tag_assignment(cursor, SCHEMA_SRC, SCHEMA_DST, notes_idmap)
         create_new_tables(connection, SCHEMA_DST)
-        drop_old_tables(cursor, SCHEMA_SRC)
+        drop_old_tables(connection, SCHEMA_SRC)
     except:
         print(traceback.format_exc())
         print('rolling back...')

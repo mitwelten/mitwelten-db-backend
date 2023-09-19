@@ -97,7 +97,7 @@ def main():
 
     try:
         user_id = check_user_id()
-        truncate_target(cursor, SCHEMA_SRC, SCHEMA_DST)
+        truncate_target(connection, SCHEMA_SRC, SCHEMA_DST)
         tags_idmap = copy_tags(cursor, SCHEMA_SRC, SCHEMA_DST)
         notes_idmap = copy_entries_to_notes(cursor, SCHEMA_SRC, SCHEMA_DST, user_id)
         copy_files_entry_to_files_note(cursor, SCHEMA_SRC, SCHEMA_DST, notes_idmap)
