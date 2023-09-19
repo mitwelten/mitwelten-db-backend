@@ -15,7 +15,7 @@ SCHEMA_SRC = 'prod'
 # If the migration is complete, do not run these migrations again.
 MIGRATION_COMPLETE = True
 
-def migrate_entry_tag_assignment(notes_idmap):
+def migrate_entry_tag_assignment(cursor, notes_idmap):
     print('copy mm_tags_entries to mm_tags_notes')
     cursor.execute(f'select * from {SCHEMA_SRC}.mm_tags_entries')
     mm_tags_entries_records_src = cursor.fetchall()
