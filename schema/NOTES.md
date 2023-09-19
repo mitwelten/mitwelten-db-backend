@@ -21,7 +21,10 @@ Migration procedure:
 1. copy/migrate from `prod` to `dev` for testing: [migrate_v2_3__v2_4_dev.py](./migrations/migrate_v2_3__v2_4_dev.py)
 1. Test apps
 1. Update `prod` to implement [schema mitwelten_v2](./mitwelten_v2.sql)
+    - Add tables `notes`, `mm_tags_notes`, `files_note`
 1. copy/migrate inside `prod`: [migrate_v2_3__v2_4.py](./migrations/migrate_v2_3__v2_4.py)
+1. Remove tables/sequences with old names
+    - `entries`, `mm_tags_entries`, `files_entry`, `entries_entry_id_seq`, `files_entry_file_id_seq`
 
 ## Migration v2 to v2.1
 
