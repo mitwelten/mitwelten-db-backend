@@ -12,7 +12,7 @@ from sqlalchemy.sql import between, select,  text
 from pandas import to_timedelta
 import credentials as crd
 
-router = APIRouter(tags=['data', 'viz'])
+router = APIRouter(tags=['data'])
 
 # ------------------------------------------------------------------------------
 # DATA
