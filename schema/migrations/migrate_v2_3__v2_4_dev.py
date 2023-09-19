@@ -67,7 +67,6 @@ def migrate_entry_tag_assignment(cursor, SCHEMA_SRC, SCHEMA_DST, tags_idmap, not
 
 def truncate_target(pg, SCHEMA_DST):
     print('truncating target...')
-    print('please truncate tables manually:')
     tables = [
         'mm_tags_notes',
         'tags',
