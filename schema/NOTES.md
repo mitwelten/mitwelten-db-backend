@@ -1,5 +1,28 @@
 # Notes on development of schema
 
+## Migration v2.3 to v2.4
+
+- Rename relations `entries` to `notes`, `mm_tags_entries` to `mm_tags_notes` and `files_entry` to `files_note`.
+- Rename endpoints (`entries.py` -> `notes.py`)
+  | previous | current | methods |
+  | --- | --- | --- |
+  | `/entries` | `/notes` | GET, POST |
+  | `/entry/{entry_id}` | `/note/{note_id}` | GET, PATCH, DELETE |
+  | `/entry/{entry_id}/tag` | `/note/{note_id}/tag` | POST, DELETE |
+  | `/entry/{entry_id}/file` | `/note/{note_id}/file` | POST |
+- Update FastAPI models and table definitions
+- Add storage endpoints
+  - `GET /files/discover/{object_name:path}`
+  - `POST /files/discover/`
+
+Migration procedure:
+
+1. Apply [schema mitwelten_v2](./mitwelten_v2.sql) to `dev`
+1. copy/migrate from `prod` to `dev` for testing: [migrate_v2_3__v2_4_dev.py](./migrations/migrate_v2_3__v2_4_dev.py)
+1. Test apps
+1. Update `prod` to implement [schema mitwelten_v2](./mitwelten_v2.sql)
+1. copy/migrate inside `prod`: [migrate_v2_3__v2_4.py](./migrations/migrate_v2_3__v2_4.py)
+
 ## Migration v2 to v2.1
 
 For easier handling of locations and more logical abstraction of real-world processes that database schema has been
