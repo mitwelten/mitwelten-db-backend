@@ -65,7 +65,7 @@ def migrate_entry_tag_assignment(cursor, SCHEMA_SRC, SCHEMA_DST, tags_idmap, not
         insert_stmt = f'insert into {SCHEMA_DST}.mm_tags_notes (tags_tag_id, notes_note_id) values (%s, %s)'
         cursor.execute(insert_stmt, (tag_id_dst, note_id_dst))
 
-def truncate_target(pg, SCHEMA_SRC, SCHEMA_DST):
+def truncate_target(pg, SCHEMA_DST):
     print('truncating target...')
     print('please truncate tables manually:')
     tables = [
@@ -77,10 +77,9 @@ def truncate_target(pg, SCHEMA_SRC, SCHEMA_DST):
     c = pg.cursor()
     for t in tables:
         sql = f'TRUNCATE {SCHEMA_DST}.{t} RESTART IDENTITY CASCADE;'
-        print(sql)
-        # # uncomment/run only if you know what your doing: All data will be erased!
-        # c.execute(sql)
-        # pg.commit()
+        # uncomment/run only if you know what your doing: All data will be erased!
+        c.execute(sql)
+        pg.commit()
 
 def check_user_id():
     if len(sys.argv) == 1:
@@ -91,14 +90,14 @@ def check_user_id():
 
 def main():
     SCHEMA_SRC = 'prod'
-    SCHEMA_DST = 'dev'
+    SCHEMA_DST = 'dev' # WARNING: if set to prod, data may be lost!
 
     connection = pg.connect(host=crd.db.host,port=crd.db.port,database=crd.db.database,user=crd.db.user,password=crd.db.password)
     cursor = connection.cursor(cursor_factory=DictCursor)
 
     try:
         user_id = check_user_id()
-        truncate_target(connection, SCHEMA_SRC, SCHEMA_DST)
+        truncate_target(connection, SCHEMA_DST)
         tags_idmap = copy_tags(cursor, SCHEMA_SRC, SCHEMA_DST)
         notes_idmap = copy_entries_to_notes(cursor, SCHEMA_SRC, SCHEMA_DST, user_id)
         copy_files_entry_to_files_note(cursor, SCHEMA_SRC, SCHEMA_DST, notes_idmap)
