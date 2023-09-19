@@ -11,21 +11,6 @@ import credentials as crd
 # If the migration is complete, do not run these migrations again.
 MIGRATION_COMPLETE = False
 
-# # needs db admin on localhost
-# print('truncating target')
-# tables = [
-#     'mm_tags_notes',
-#     'tags',
-#     'notes',
-#     'files_note',
-# ]
-
-# if not MIGRATION_COMPLETE:
-#     for t in tables:
-#         # # uncomment/run only if you know what your doing: All data will be erased!
-#         cursor.execute(f'truncate {SCHEMA_DST}.{t} restart identity cascade')
-#         connection.commit()
-
 def copy_tags(cursor, SCHEMA_SRC, SCHEMA_DST):
     print('copy tags')
     cursor.execute(f'select * from {SCHEMA_SRC}.tags')
@@ -80,6 +65,22 @@ def migrate_entry_tag_assignment(cursor, SCHEMA_SRC, SCHEMA_DST, tags_idmap, not
         insert_stmt = f'insert into {SCHEMA_DST}.mm_tags_notes (tags_tag_id, notes_note_id) values (%s, %s)'
         cursor.execute(insert_stmt, (tag_id_dst, note_id_dst))
 
+def truncate_target(pg, SCHEMA_SRC, SCHEMA_DST):
+    print('truncating target...')
+    print('please truncate tables manually:')
+    tables = [
+        'mm_tags_notes',
+        'tags',
+        'notes',
+        'files_note',
+    ]
+    c = pg.cursor()
+    for t in tables:
+        print(f'TRUNCATE {SCHEMA_DST}.{t} RESTART IDENTITY CASCADE')
+        # # uncomment/run only if you know what your doing: All data will be erased!
+        # c.execute(f'truncate {SCHEMA_DST}.{t} restart identity cascade')
+        # pg.commit()
+
 def check_user_id():
     if len(sys.argv) == 1:
         print('please supply user-id')
@@ -96,6 +97,7 @@ def main():
 
     try:
         user_id = check_user_id()
+        truncate_target(cursor, SCHEMA_SRC, SCHEMA_DST)
         tags_idmap = copy_tags(cursor, SCHEMA_SRC, SCHEMA_DST)
         notes_idmap = copy_entries_to_notes(cursor, SCHEMA_SRC, SCHEMA_DST, user_id)
         copy_files_entry_to_files_note(cursor, SCHEMA_SRC, SCHEMA_DST, notes_idmap)

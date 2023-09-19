@@ -17,6 +17,8 @@
 
 Migration procedure:
 
+Some of the steps require a PostgreSQL admin role: the corresponding procedure needs to be run on the database host (admin roles have only local access).
+
 1. Apply [schema mitwelten_v2](./mitwelten_v2.sql) to `dev`
 1. copy/migrate from `prod` to `dev` for testing: [migrate_v2_3__v2_4_dev.py](./migrations/migrate_v2_3__v2_4_dev.py)
 1. Test apps
