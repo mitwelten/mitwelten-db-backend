@@ -66,7 +66,7 @@ async def get_walk_download(request: Request, object_name: str):
             if e.code == 'NoSuchKey':
                 raise HTTPException(status_code=404, detail='File not found')
 
-@router.get('/files/discover/{object_name:path}', dependencies=[Depends(AuthenticationChecker)], summary='Media resources for discover app from S3 storage')
+@router.get('/files/discover/{object_name:path}', dependencies=[Depends(AuthenticationChecker())], summary='Media resources for discover app from S3 storage')
 async def get_discover_download(request: Request, object_name: str):
     '''
     ## Media resources for discover app

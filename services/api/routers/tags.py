@@ -38,7 +38,7 @@ async def read_tags_stats(deployment_id: Optional[int] = None) -> List[TagStats]
         order_by(tags.c.name)
     return await database.fetch_all(query)
 
-@router.put('/tags', dependencies=[Depends(AuthenticationChecker)])
+@router.put('/tags', dependencies=[Depends(AuthenticationChecker())])
 async def upsert_tag(body: Tag) -> None:
     if hasattr(body, 'tag_id') and body.tag_id != None:
         return await database.execute(update(tags).where(tags.c.tag_id == body.tag_id).\
@@ -48,7 +48,7 @@ async def upsert_tag(body: Tag) -> None:
         return await database.execute(insert(tags).values(body.dict(exclude_none=True)).\
             returning(tags.c.tag_id))
 
-@router.delete('/tag/{tag_id}', response_model=None, dependencies=[Depends(AuthenticationChecker)])
+@router.delete('/tag/{tag_id}', response_model=None, dependencies=[Depends(AuthenticationChecker())])
 async def delete_tag(tag_id: int) -> None:
     '''
     Deletes a tag
@@ -62,7 +62,7 @@ async def delete_tag(tag_id: int) -> None:
     else:
         return True
 
-@router.put('/viz/tag', response_model=None, dependencies=[Depends(AuthenticationChecker)], tags=['viz'], responses={
+@router.put('/viz/tag', response_model=None, dependencies=[Depends(AuthenticationChecker())], tags=['viz'], responses={
         400: {"model": ApiErrorResponse},
         404: {"model": ApiErrorResponse},
         409: {"model": ApiErrorResponse}})
