@@ -8,9 +8,6 @@ from tqdm import tqdm
 sys.path.append('../../')
 import credentials as crd
 
-SCHEMA_DST = 'dev'
-SCHEMA_SRC = 'prod'
-
 # If the migration is complete, do not run these migrations again.
 MIGRATION_COMPLETE = False
 
@@ -29,7 +26,7 @@ MIGRATION_COMPLETE = False
 #         cursor.execute(f'truncate {SCHEMA_DST}.{t} restart identity cascade')
 #         connection.commit()
 
-def copy_tags(cursor):
+def copy_tags(cursor, SCHEMA_SRC, SCHEMA_DST):
     print('copy tags')
     cursor.execute(f'select * from {SCHEMA_SRC}.tags')
     tags_records_src = cursor.fetchall()
@@ -42,7 +39,7 @@ def copy_tags(cursor):
         tags_idmap[id_src] = cursor.fetchone()[0]
     return tags_idmap
 
-def copy_entries_to_notes(cursor, user_id):
+def copy_entries_to_notes(cursor, SCHEMA_SRC, SCHEMA_DST, user_id):
     print('copy entries to notes')
     cursor.execute(f'select * from {SCHEMA_SRC}.entries')
     entries_records_src = cursor.fetchall()
@@ -55,8 +52,9 @@ def copy_entries_to_notes(cursor, user_id):
         notes_idmap[id_src] = cursor.fetchone()[0]
     return notes_idmap
 
-def copy_files_entry_to_files_note(cursor, notes_idmap):
+def copy_files_entry_to_files_note(cursor, SCHEMA_SRC, SCHEMA_DST, notes_idmap):
     print('copy files_entry to files_note')
+    print(SCHEMA_SRC, SCHEMA_DST)
     cursor.execute(f'select * from {SCHEMA_SRC}.files_entry')
     files_entry_records_src = cursor.fetchall()
     for fer_src in tqdm(files_entry_records_src, ascii=True):
@@ -71,7 +69,7 @@ def copy_files_entry_to_files_note(cursor, notes_idmap):
         vals[on_ind] = vals[on_ind].replace('https://minio.campusderkuenste.ch/ixdm-mitwelten/viz_app/', '', 1)
         cursor.execute(f'insert into {SCHEMA_DST}.files_note (%s) values %s', (AsIs(','.join(cols)), tuple(vals)))
 
-def migrate_entry_tag_assignment(cursor, tags_idmap, notes_idmap):
+def migrate_entry_tag_assignment(cursor, SCHEMA_SRC, SCHEMA_DST, tags_idmap, notes_idmap):
     print('copy mm_tags_entries to mm_tags_notes')
     cursor.execute(f'select * from {SCHEMA_SRC}.mm_tags_entries')
     mm_tags_entries_records_src = cursor.fetchall()
@@ -89,26 +87,31 @@ def check_user_id():
     else:
         return sys.argv[1]
 
-if __name__ == '__main__':
-
-    if MIGRATION_COMPLETE:
-        print('not running migrations')
-        sys.exit(1)
+def main():
+    SCHEMA_SRC = 'prod'
+    SCHEMA_DST = 'dev'
 
     connection = pg.connect(host=crd.db.host,port=crd.db.port,database=crd.db.database,user=crd.db.user,password=crd.db.password)
     cursor = connection.cursor(cursor_factory=DictCursor)
 
     try:
         user_id = check_user_id()
-        tags_idmap = copy_tags(cursor)
-        notes_idmap = copy_entries_to_notes(cursor, user_id)
-        copy_files_entry_to_files_note(cursor, notes_idmap)
-        migrate_entry_tag_assignment(cursor, tags_idmap, notes_idmap)
+        tags_idmap = copy_tags(cursor, SCHEMA_SRC, SCHEMA_DST)
+        notes_idmap = copy_entries_to_notes(cursor, SCHEMA_SRC, SCHEMA_DST, user_id)
+        copy_files_entry_to_files_note(cursor, SCHEMA_SRC, SCHEMA_DST, notes_idmap)
+        migrate_entry_tag_assignment(cursor, SCHEMA_SRC, SCHEMA_DST, tags_idmap, notes_idmap)
     except:
         print(traceback.format_exc())
         print('rolling back...')
         connection.rollback()
     else:
-        if not MIGRATION_COMPLETE:
-            print('committing...')
-            connection.commit()
+        print('committing...')
+        connection.commit()
+
+if __name__ == '__main__':
+
+    if MIGRATION_COMPLETE:
+        print('not running migrations')
+        sys.exit(1)
+
+    main()
