@@ -12,7 +12,7 @@ from sqlalchemy.sql import between, select,  text
 from pandas import to_timedelta
 import credentials as crd
 
-router = APIRouter(tags=['data', 'viz'])
+router = APIRouter(tags=['data'])
 
 # ------------------------------------------------------------------------------
 # DATA
@@ -102,7 +102,7 @@ async def get_pax_measurements_time_of_day(
     time_from_condition = "AND time >= :time_from" if time_from else ""
     time_to_condition = "AND time <= :time_to" if time_to else ""
     query = text(f"""
-    SELECT 
+    SELECT
         FLOOR((EXTRACT(hour FROM time) * 60 + EXTRACT(minute FROM time)) / :bucket_width_m) * :bucket_width_m as minute_of_day,
         sum(pax) as pax
     FROM {crd.db.schema}.sensordata_pax
@@ -137,7 +137,7 @@ async def get_pax_locations(
         time_condition = ""
     query = text(f"""
         SELECT
-            p.deployment_id, 
+            p.deployment_id,
             d.location[0] as lat,
             d.location[1] as lon,
             sum(p.pax) as pax

@@ -207,7 +207,7 @@ class Tag(BaseModel):
     Annotation
     '''
 
-    tag_id: int
+    tag_id: Optional[int]
     name: constr(regex=r'\w+')
 
 class TagStats(Tag):
@@ -254,20 +254,6 @@ class Deployment(BaseModel):
     description: Optional[str] = None
     period: TimeStampRange
     tags: Optional[List[Tag]] = None
-
-class DeployedNode(Node):
-    '''
-    Deployed Node for display in viz dashboard
-
-    This is a compatibility type: Nodes don't have a location,
-    but their associated deployment record does. This type is only used for the
-    purpose of displaying deployed nodes in the viz dashboard.
-    '''
-
-    node_id: Optional[int] = Field(alias='id')
-    node_label: constr(regex=r'\d{4}-\d{4}') = Field(..., alias='name')
-    location: Point
-    location_description: Optional[str] = None
 
 class DeploymentResponse(Deployment):
     '''
