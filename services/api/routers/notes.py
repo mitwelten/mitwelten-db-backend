@@ -70,7 +70,7 @@ async def list_notes(
 
 
 @router.post('/notes', dependencies=[Depends(AuthenticationChecker())], response_model=Note)
-async def add_note(body: Note) -> None:
+async def add_note(body: Note, auth = Depends(get_user)) -> None:
     '''
     ## Add a new note
 
@@ -81,10 +81,14 @@ async def add_note(body: Note) -> None:
     by the user.
     '''
 
+    authorised = 'internal' in auth['realm_access']['roles']
+
     query = notes.insert().values(
-        name=body.title,
+        title=body.title,
         description=body.description,
         type=body.note_type,
+        user_sub=auth.get('sub'),
+        public=body.public if authorised else False, # only 'internal' can create public notes
         location=None if 'location' in body else text(f'point(:lat,:lon)').bindparams(lat=body.location.lat, lon=body.location.lon),
         created_at=body.date or func.now(),
         updated_at=func.now()
@@ -127,7 +131,7 @@ async def get_note_by_id(note_id: int, request: Request) -> NoteResponse:
         return e
 
 @router.patch('/note/{note_id}', response_model=Note, dependencies=[Depends(AuthenticationChecker())])
-async def update_note(note_id: int, body: PatchNote = ...) -> Note:
+async def update_note(note_id: int, body: PatchNote = ..., auth = Depends(get_user)) -> Note:
     '''
     ## Updates an note
 
@@ -148,6 +152,13 @@ async def update_note(note_id: int, body: PatchNote = ...) -> Note:
         del update_data['note_type']
 
     del update_data['note_id']
+
+    # only 'internal' can change public flag
+    if 'internal' not in auth['realm_access']['roles']:
+        del update_data['public']
+
+    # author can't be changed
+    del update_data['user_sub']
 
     update_data['location'] = text('point(:lat,:lon)').bindparams(
         lat=update_data['location']['lat'],
