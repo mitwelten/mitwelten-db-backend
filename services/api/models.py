@@ -366,6 +366,7 @@ class Note(BaseModel):
         example='I discovered an correlation between air humidity level and visitor count',
         description='Details for this note'
     )
+    public: bool = True
     location: Optional[Point]
     note_type: Optional[str] = Field(None, example='A walk in the park', alias='type')
     tags: Optional[List[Tag]] = None
