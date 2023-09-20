@@ -158,7 +158,7 @@ async def update_note(note_id: int, body: PatchNote = ..., auth = Depends(get_us
         del update_data['public']
 
     # author can't be changed
-    del update_data['user_sub']
+    if 'user_sub' in update_data: del update_data['user_sub']
 
     update_data['location'] = text('point(:lat,:lon)').bindparams(
         lat=update_data['location']['lat'],
