@@ -3,12 +3,12 @@ from typing import List, Optional
 from datetime import datetime
 
 from api.database import database
-from api.dependencies import unique_everseen, check_oid_authentication, AuthenticationChecker
+from api.dependencies import unique_everseen, check_oid_authentication, AuthenticationChecker, get_user
 from api.models import ApiErrorResponse, Note, NoteResponse, PatchNote, Tag, File
 from api.tables import notes, files_note, mm_tags_notes, tags, user_entity
 
 from asyncpg import UniqueViolationError
-from fastapi import APIRouter, Depends, Query, HTTPException
+from fastapi import APIRouter, Depends, Query, HTTPException, Request
 from sqlalchemy.sql import and_, between, select, text, func
 
 router = APIRouter(tags=['notes', 'discover'])
@@ -19,6 +19,7 @@ router = APIRouter(tags=['notes', 'discover'])
 
 @router.get('/notes', response_model=List[NoteResponse], response_model_exclude_none=True)
 async def list_notes(
+    request: Request,
     time_from: Optional[datetime] = Query(None, alias='from', example='2022-06-22T18:00:00.000Z'),
     time_to: Optional[datetime] = Query(None, alias='to', example='2022-06-22T20:00:00.000Z'),
 ) -> List[NoteResponse]:
@@ -28,6 +29,13 @@ async def list_notes(
     The note selection can optionally be delimited by supplying either bounded
     or unbounded ranges as a combination of `to` and `from` query parameters.
     '''
+
+    authenticated = False
+    auth_header = request.headers.get('authorization')
+    if auth_header:
+        user = get_user(auth_header.split('Bearer ')[1])
+        if user:
+            authenticated = 'public' in user['realm_access']['roles']
 
     query = select(notes, notes.c.created_at.label('date'), tags.c.tag_id, tags.c.name.label('tag_name'),\
             files_note.c.file_id, files_note.c.object_name, files_note.c.name.label('file_name'), files_note.c.type.label('file_type'),\
@@ -41,6 +49,9 @@ async def list_notes(
         query = query.where(notes.c.created_at >= time_from)
     elif time_to:
         query = query.where(notes.c.created_at < time_to)
+
+    if not authenticated:
+        query = query.where(notes.c.public == True)
 
     # order by itertools groupby key
     query = query.order_by(notes.c.note_id)
@@ -81,16 +92,28 @@ async def add_note(body: Note) -> None:
     return await database.fetch_one(query)
 
 @router.get('/note/{note_id}', response_model=NoteResponse, responses={404: {'model': ApiErrorResponse}}, response_model_exclude_none=True)
-async def get_note_by_id(note_id: int) -> NoteResponse:
+async def get_note_by_id(note_id: int, request: Request) -> NoteResponse:
     '''
     Find note by ID
     '''
+    authenticated = False
+    auth_header = request.headers.get('authorization')
+    if auth_header:
+        user = get_user(auth_header.split('Bearer ')[1])
+        if user:
+            authenticated = 'public' in user['realm_access']['roles']
+
     query = select(notes, notes.c.created_at.label('date'), tags.c.tag_id, tags.c.name.label('tag_name'),
             files_note.c.file_id, files_note.c.name.label('file_name'), files_note.c.object_name, files_note.c.type.label('file_type'),
             user_entity.c.first_name.concat(' ').concat(user_entity.c.last_name).label('author')).\
         select_from(notes.outerjoin(mm_tags_notes).outerjoin(tags).outerjoin(files_note).\
-            outerjoin(user_entity, user_entity.c.id == notes.c.user_sub)).\
-        where(notes.c.note_id == note_id)
+            outerjoin(user_entity, user_entity.c.id == notes.c.user_sub))
+
+    if authenticated:
+        query = query.where(notes.c.note_id == note_id)
+    else:
+        query = query.where(and_(notes.c.note_id == note_id, notes.c.public == True))
+
     result = await database.fetch_all(query=query)
 
     if result == None or len(result) == 0:
