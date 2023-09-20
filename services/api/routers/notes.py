@@ -4,8 +4,8 @@ from datetime import datetime
 
 from api.database import database
 from api.dependencies import unique_everseen, check_oid_authentication, AuthenticationChecker
-from api.models import ApiErrorResponse, Note, PatchNote, Tag, File
-from api.tables import notes, files_note, mm_tags_notes, tags
+from api.models import ApiErrorResponse, Note, NoteResponse, PatchNote, Tag, File
+from api.tables import notes, files_note, mm_tags_notes, tags, user_entity
 
 from asyncpg import UniqueViolationError
 from fastapi import APIRouter, Depends, Query, HTTPException
@@ -17,11 +17,11 @@ router = APIRouter(tags=['notes', 'discover'])
 # NOTES
 # ------------------------------------------------------------------------------
 
-@router.get('/notes', response_model=List[Note], response_model_exclude_none=True)
+@router.get('/notes', response_model=List[NoteResponse], response_model_exclude_none=True)
 async def list_notes(
     time_from: Optional[datetime] = Query(None, alias='from', example='2022-06-22T18:00:00.000Z'),
     time_to: Optional[datetime] = Query(None, alias='to', example='2022-06-22T20:00:00.000Z'),
-) -> List[Note]:
+) -> List[NoteResponse]:
     '''
     ## List all notes
 
@@ -29,8 +29,11 @@ async def list_notes(
     or unbounded ranges as a combination of `to` and `from` query parameters.
     '''
 
-    query = select(notes, notes.c.created_at.label('date'), tags.c.tag_id, tags.c.name.label('tag_name'), files_note.c.file_id, files_note.c.object_name, files_note.c.name.label('file_name'), files_note.c.type.label('file_type')).\
-        select_from(notes.outerjoin(mm_tags_notes).outerjoin(tags).outerjoin(files_note))
+    query = select(notes, notes.c.created_at.label('date'), tags.c.tag_id, tags.c.name.label('tag_name'),\
+            files_note.c.file_id, files_note.c.object_name, files_note.c.name.label('file_name'), files_note.c.type.label('file_type'),\
+            user_entity.c.first_name.concat(' ').concat(user_entity.c.last_name).label('author')).\
+        select_from(notes.outerjoin(mm_tags_notes).outerjoin(tags).outerjoin(files_note).\
+            outerjoin(user_entity, user_entity.c.id == notes.c.user_sub))
 
     if time_from and time_to:
         query = query.where(between(notes.c.created_at, time_from, time_to))
@@ -77,14 +80,17 @@ async def add_note(body: Note) -> None:
     ).returning(notes, notes.c.created_at.label('date'), notes.c.type.label('note_type'))
     return await database.fetch_one(query)
 
-@router.get('/note/{note_id}', response_model=Note, responses={404: {"model": ApiErrorResponse}}, response_model_exclude_none=True)
-async def get_note_by_id(note_id: int) -> Note:
+@router.get('/note/{note_id}', response_model=NoteResponse, responses={404: {'model': ApiErrorResponse}}, response_model_exclude_none=True)
+async def get_note_by_id(note_id: int) -> NoteResponse:
     '''
     Find note by ID
     '''
-    query = select(notes, notes.c.note_id, notes.c.created_at.label('date'), tags.c.tag_id, tags.c.name.label('tag_name'),
-        files_note.c.file_id, files_note.c.name.label('file_name'), files_note.c.object_name, files_note.c.type.label('file_type')).\
-        select_from(notes.outerjoin(mm_tags_notes).outerjoin(tags).outerjoin(files_note)).where(notes.c.note_id == note_id)
+    query = select(notes, notes.c.created_at.label('date'), tags.c.tag_id, tags.c.name.label('tag_name'),
+            files_note.c.file_id, files_note.c.name.label('file_name'), files_note.c.object_name, files_note.c.type.label('file_type'),
+            user_entity.c.first_name.concat(' ').concat(user_entity.c.last_name).label('author')).\
+        select_from(notes.outerjoin(mm_tags_notes).outerjoin(tags).outerjoin(files_note).\
+            outerjoin(user_entity, user_entity.c.id == notes.c.user_sub)).\
+        where(notes.c.note_id == note_id)
     result = await database.fetch_all(query=query)
 
     if result == None or len(result) == 0:

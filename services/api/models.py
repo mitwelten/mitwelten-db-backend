@@ -371,6 +371,9 @@ class Note(BaseModel):
     tags: Optional[List[Tag]] = None
     files: Optional[List[File]] = None
 
+class NoteResponse(Note):
+    author: str
+
 class PatchNote(Note):
     '''
     This is a copy of `Note` with all fields optional
