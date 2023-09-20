@@ -3,7 +3,7 @@ from typing import List, Optional
 from datetime import datetime
 
 from api.database import database
-from api.dependencies import unique_everseen, check_oid_authentication, AuthenticationChecker, get_user
+from api.dependencies import unique_everseen, AuthenticationChecker, get_user
 from api.models import ApiErrorResponse, Note, NoteResponse, PatchNote, Tag, File
 from api.tables import notes, files_note, mm_tags_notes, tags, user_entity
 
@@ -69,7 +69,7 @@ async def list_notes(
     return output
 
 
-@router.post('/notes', dependencies=[Depends(check_oid_authentication)], response_model=Note)
+@router.post('/notes', dependencies=[Depends(AuthenticationChecker())], response_model=Note)
 async def add_note(body: Note) -> None:
     '''
     ## Add a new note
@@ -126,7 +126,7 @@ async def get_note_by_id(note_id: int, request: Request) -> NoteResponse:
         e['tags'] = [{'id': t['tag_id'], 'name': t['tag_name']} for t in t_l if t['tag_id'] != None]
         return e
 
-@router.patch('/note/{note_id}', response_model=Note, dependencies=[Depends(check_oid_authentication)])
+@router.patch('/note/{note_id}', response_model=Note, dependencies=[Depends(AuthenticationChecker())])
 async def update_note(note_id: int, body: PatchNote = ...) -> Note:
     '''
     ## Updates an note
@@ -164,7 +164,7 @@ async def update_note(note_id: int, body: PatchNote = ...) -> Note:
     return await database.fetch_one(query)
 
 
-@router.delete('/note/{note_id}', response_model=None, dependencies=[Depends(check_oid_authentication)])
+@router.delete('/note/{note_id}', response_model=None, dependencies=[Depends(AuthenticationChecker())])
 async def delete_note(note_id: int) -> None:
     '''
     ## Deletes an note
@@ -185,7 +185,7 @@ async def delete_note(note_id: int) -> None:
         await transaction.commit()
 
 
-@router.post('/note/{note_id}/tag',tags=['tags'], response_model=None, dependencies=[Depends(check_oid_authentication)], responses={'404': {'model': ApiErrorResponse}})
+@router.post('/note/{note_id}/tag',tags=['tags'], response_model=None, dependencies=[Depends(AuthenticationChecker())], responses={'404': {'model': ApiErrorResponse}})
 async def add_tag_to_note(note_id: int, body: Tag) -> None:
     '''
     Adds a tag for an note
@@ -231,7 +231,7 @@ async def add_tag_to_note(note_id: int, body: Tag) -> None:
         await transaction.commit()
 
 
-@router.delete('/note/{note_id}/tag', dependencies=[Depends(check_oid_authentication)], response_model=None, tags=['tags'])
+@router.delete('/note/{note_id}/tag', dependencies=[Depends(AuthenticationChecker())], response_model=None, tags=['tags'])
 async def delete_tag_from_note(note_id: int, body: Tag) -> None:
     '''
     Deletes a tag from an note
