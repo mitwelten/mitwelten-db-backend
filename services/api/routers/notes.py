@@ -126,7 +126,7 @@ async def get_note_by_id(note_id: int, request: Request) -> NoteResponse:
         f_l = unique_everseen(result, lambda x: x['file_id'])
         t_l = unique_everseen(result, lambda x: x['tag_id'])
         e = dict(result[0])
-        e['files'] = [{'name': f['file_name'], 'link': f['object_name'], 'type': f['file_type']} for f in f_l if f['file_id'] != None]
+        e['files'] = [{'name': f['file_name'], 'object_name': f['object_name'], 'type': f['file_type']} for f in f_l if f['file_id'] != None]
         e['tags'] = [{'id': t['tag_id'], 'name': t['tag_name']} for t in t_l if t['tag_id'] != None]
         return e
 
@@ -213,7 +213,7 @@ async def add_tag_to_note(note_id: int, body: Tag) -> None:
         existing_by_name = None
         insert_tag = None
 
-        if body.id:
+        if body.tag_id:
             existing_by_id = await database.fetch_one(tags.select().where(tags.c.tag_id == body.tag_id))
 
         if body.name:
@@ -255,8 +255,8 @@ async def delete_tag_from_note(note_id: int, body: Tag) -> None:
         else:
             delete_id = existing.tag_id
 
-    if body.id:
-        delete_id = body.id
+    if body.tag_id:
+        delete_id = body.tag_id
 
     await database.execute(mm_tags_notes.delete().where(
         and_(mm_tags_notes.c.tags_tag_id == delete_id, mm_tags_notes.c.notes_note_id == note_id)))
