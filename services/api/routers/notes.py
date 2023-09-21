@@ -133,7 +133,7 @@ async def get_note_by_id(note_id: int, request: Request) -> NoteResponse:
 @router.patch('/note/{note_id}', response_model=Note, dependencies=[Depends(AuthenticationChecker())])
 async def update_note(note_id: int, body: PatchNote = ..., auth = Depends(get_user)) -> Note:
     '''
-    ## Updates an note
+    ## Updates a note
 
     Patching not implemented for `tags`, `files`
     '''
@@ -178,7 +178,7 @@ async def update_note(note_id: int, body: PatchNote = ..., auth = Depends(get_us
 @router.delete('/note/{note_id}', response_model=None, dependencies=[Depends(AuthenticationChecker())])
 async def delete_note(note_id: int) -> None:
     '''
-    ## Deletes an note
+    ## Deletes a note
 
     __potential for optimisation__: remove related records when record to be
     deleted is the last referring one.
@@ -199,7 +199,7 @@ async def delete_note(note_id: int) -> None:
 @router.post('/note/{note_id}/tag',tags=['tags'], response_model=None, dependencies=[Depends(AuthenticationChecker())], responses={'404': {'model': ApiErrorResponse}})
 async def add_tag_to_note(note_id: int, body: Tag) -> None:
     '''
-    Adds a tag for an note
+    Adds a tag for a note
     '''
 
     transaction = await database.transaction()
@@ -245,7 +245,7 @@ async def add_tag_to_note(note_id: int, body: Tag) -> None:
 @router.delete('/note/{note_id}/tag', dependencies=[Depends(AuthenticationChecker())], response_model=None, tags=['tags'])
 async def delete_tag_from_note(note_id: int, body: Tag) -> None:
     '''
-    Deletes a tag from an note
+    Deletes a tag from a note
     '''
     delete_id = None
     if body.name:
@@ -265,7 +265,7 @@ async def delete_tag_from_note(note_id: int, body: Tag) -> None:
 @router.post('/note/{note_id}/file', dependencies=[Depends(AuthenticationChecker(['internal']))], response_model=None)
 async def add_file_to_note(note_id: int, body: File) -> None:
     '''
-    Adds a file for an note
+    Adds a file for a note
     '''
 
     # do i need this if there's a FK constraint?
