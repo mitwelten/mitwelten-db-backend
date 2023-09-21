@@ -7,10 +7,11 @@ The database backend hosts 3 databases for specific domains of data: Project int
 - The schema is functionally described in [mitwelten_v2.sql](./mitwelten_v2.sql). It was developped on the previous schema ([mitwelten_v1.sql](./mitwelten_v1.sql)) and the schema built for the _ingest process_ of the project [mitwelten-ml-backend](https://github.com/mitwelten/mitwelten-ml-backend). For details see [NOTES.md](./NOTES.md)
 - 05.12.2022: The schema v2.1 was expanded with additional tables for the pollinator model resulting in [schema v2.2](./assets/diagram_v2.2.png) ([mitwelten_v2.sql](./mitwelten_v2.sql))
 - 23.01.2023: The schema v2.2 was expanded with additional tables for environment and imported taxonomy records resulting in [schema v2.3](./assets/diagram_v2.3.png) ([mitwelten_v2.sql](./mitwelten_v2.sql))
+- 21.09.2023: The entity `entries` has been renamed to `notes`, resulting in [schema v2.4](./assets/diagram_v2.4.png) ([mitwelten_v2.sql](./mitwelten_v2.sql)).
 
-![schema_v2.3](./assets/diagram_v2.3.png)
+![schema_v2.4](./assets/diagram_v2.4.png)
 
-_Source: [mitwelten_v2.3.diagram](./mitwelten_v2.3.diagram) generated with TablePlus. Other options: [mitwelten_v2.3.pgerd](./mitwelten_v2.3.pgerd) for use in pgAdmin4._
+_Source: [mitwelten_v2.4.diagram](./assets/mitwelten_v2.4.diagram) generated with TablePlus._
 
 ### Entities
 
@@ -58,8 +59,8 @@ Several types of files, currently audio and images.
 - must have a unique _object name_ by which the file is identified in S3 storage
 - must have unique content, identifyed by `sha256`
 
-There is a separate relation for files uploaded by this _viz-dashboard_, that does not
-have an attributes for `deployment`.
+There is a separate relation for files uploaded by the _discover-app_,
+that does not have an attribute for `deployment`.
 
 #### note
 
