@@ -1,7 +1,7 @@
 from api.database import database, database_cache
 from api.dependencies import crd
 from api.routers import (
-    birdnet, data, deployments, geo, entries, ingest, minio, nodes, queue, tags,
+    birdnet, data, deployments, geo, notes, ingest, minio, nodes, queue, tags,
     taxonomy, validators, walk, meteodata, pollinators, explore, gbif,
     environment, statistics, auth
 )
@@ -40,8 +40,8 @@ tags_metadata = [
         'description': 'Layers for map display',
     },
     {
-        'name': 'entries',
-        'description': 'Pins, added to the map',
+        'name': 'notes',
+        'description': 'Notes, may be added to the map',
     },
     {
         'name': 'nodes',
@@ -56,7 +56,7 @@ tags_metadata = [
         'description': 'Sensor / Capture Data',
     },
     {
-        'name': 'files',
+        'name': 'storage',
         'description': 'File up- and download (images, audio, etc.)',
     },
     {
@@ -115,7 +115,7 @@ app.include_router(auth.router)
 app.include_router(birdnet.router)
 app.include_router(data.router)
 app.include_router(deployments.router)
-app.include_router(entries.router)
+app.include_router(notes.router)
 app.include_router(geo.router)
 app.include_router(ingest.router)
 app.include_router(minio.router)

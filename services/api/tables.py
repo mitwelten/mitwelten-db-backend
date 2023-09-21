@@ -141,16 +141,18 @@ deployments = sqlalchemy.Table(
     schema=crd.db.schema
 )
 
-entries = sqlalchemy.Table(
-    'entries',
+notes = sqlalchemy.Table(
+    'notes',
     metadata,
-    sqlalchemy.Column('entry_id',    sqlalchemy.Integer,     primary_key=True),
-    sqlalchemy.Column('location',    GeometryPoint,          nullable=False),
-    sqlalchemy.Column('name',        sqlalchemy.String(255), nullable=False),
+    sqlalchemy.Column('note_id',     sqlalchemy.Integer,     primary_key=True),
+    sqlalchemy.Column('location',    GeometryPoint,          nullable=True),
+    sqlalchemy.Column('title',       sqlalchemy.String(255), nullable=True),
     sqlalchemy.Column('description', sqlalchemy.Text,        nullable=True),
     sqlalchemy.Column('type',        sqlalchemy.String(255), nullable=True),
-    sqlalchemy.Column('created_at',  sqlalchemy.TIMESTAMP,   nullable=False),
-    sqlalchemy.Column('updated_at',  sqlalchemy.TIMESTAMP,   nullable=False),
+    sqlalchemy.Column('user_sub',    sqlalchemy.Text,        nullable=False),
+    sqlalchemy.Column('public',      sqlalchemy.Boolean,     nullable=False),
+    sqlalchemy.Column('created_at',  sqlalchemy.TIMESTAMP,   nullable=True),
+    sqlalchemy.Column('updated_at',  sqlalchemy.TIMESTAMP,   nullable=True),
     schema=crd.db.schema
 )
 
@@ -172,11 +174,11 @@ mm_tags_deployments = sqlalchemy.Table(
     schema=crd.db.schema
 )
 
-mm_tags_entries = sqlalchemy.Table(
-    'mm_tags_entries',
+mm_tags_notes = sqlalchemy.Table(
+    'mm_tags_notes',
     metadata,
     sqlalchemy.Column('tags_tag_id',               None, ForeignKey(tags.c.tag_id)),
-    sqlalchemy.Column('entries_entry_id',          None, ForeignKey(entries.c.entry_id)),
+    sqlalchemy.Column('notes_note_id',          None, ForeignKey(notes.c.note_id)),
     schema=crd.db.schema
 )
 
@@ -230,11 +232,11 @@ files_image = sqlalchemy.Table(
     sqlalchemy.Column('updated_at',     sqlalchemy.TIMESTAMP(timezone=True),  nullable=False),
 )
 
-files_entry = sqlalchemy.Table(
-    'files_entry',
+files_note = sqlalchemy.Table(
+    'files_note',
     metadata,
     sqlalchemy.Column('file_id',     sqlalchemy.Integer,     primary_key=True),
-    sqlalchemy.Column('entry_id',    None,                   ForeignKey(entries.c.entry_id, ondelete='CASCADE')),
+    sqlalchemy.Column('note_id',    None,                   ForeignKey(notes.c.note_id, ondelete='CASCADE')),
     sqlalchemy.Column('object_name', sqlalchemy.String(255), nullable=False), # file url in S3
     sqlalchemy.Column('name',        sqlalchemy.String(255), nullable=False),
     sqlalchemy.Column('type',        sqlalchemy.String(255), nullable=False),

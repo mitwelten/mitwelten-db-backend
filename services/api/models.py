@@ -2,8 +2,6 @@ from datetime import datetime
 from enum import Enum
 from typing import List, Literal, Optional, Tuple, Union
 
-from api.config import s3_file_url_regex
-
 from asyncpg.types import Range
 from pydantic import BaseModel, Field, PositiveInt, constr
 from sqlalchemy.dialects.postgresql import TSTZRANGE
@@ -209,7 +207,7 @@ class Tag(BaseModel):
     Annotation
     '''
 
-    tag_id: int
+    tag_id: Optional[int]
     name: constr(regex=r'\w+')
 
 class TagStats(Tag):
@@ -218,7 +216,7 @@ class TagStats(Tag):
     '''
 
     deployments: int
-    entries: int
+    notes: int
     created_at: datetime
     updated_at: datetime
 
@@ -257,20 +255,6 @@ class Deployment(BaseModel):
     period: TimeStampRange
     tags: Optional[List[Tag]] = None
 
-class DeployedNode(Node):
-    '''
-    Deployed Node for display in viz dashboard
-
-    This is a compatibility type: Nodes don't have a location,
-    but their associated deployment record does. This type is only used for the
-    purpose of displaying deployed nodes in the viz dashboard.
-    '''
-
-    node_id: Optional[int] = Field(alias='id')
-    node_label: constr(regex=r'\d{4}-\d{4}') = Field(..., alias='name')
-    location: Point
-    location_description: Optional[str] = None
-
 class DeploymentResponse(Deployment):
     '''
     DeploymentResponse: Deployment including associated node record
@@ -300,29 +284,15 @@ class QueueUpdateDefinition(BaseModel):
 
 class File(BaseModel):
     '''
-    File uploaded through front end to S3, associated to an entry
+    File uploaded through front end to S3, associated to a note
     '''
     id: Optional[int] = None
     type: str = Field(title='MIME type', example='application/pdf')
     name: str = Field(title='File name')
-    link: constr(strip_whitespace=True, regex=s3_file_url_regex) = Field(
+    object_name: constr(strip_whitespace=True) = Field(
         title='Link to S3 object',
         description='Constrained to project specific S3 bucket'
     )
-
-class Comment(BaseModel):
-    '''
-    User-created comment in form of a __marker__ or __range label__
-    '''
-    id: Optional[int] = None
-    comment: str = Field(..., example='We have observed this as well.')
-    timeStart: datetime = Field(
-        ...,
-        example='2022-03-06T12:23:42.777Z',
-        description='Point in time the comment is referring to. If `timeEnd` is given, `timeStart` indicates the beginning of a range.'
-    )
-    timeEnd: Optional[datetime] = Field(None, example='2022-03-06T12:42:23.777Z', description='End of the time range the comment is referring to')
-    author: Optional[str] = None
 
 class EnvTypeEnum(str, Enum):
     temperature = 'temperature'
@@ -381,41 +351,38 @@ class ApiResponse(BaseModel):
 class ApiErrorResponse(BaseModel):
     detail: Optional[str] = None
 
-class EntryIdFilePostRequest(BaseModel):
-    additionalMetadata: Optional[str] = Field(
-        None, description='Additional data to pass to server'
-    )
-    file: Optional[bytes] = Field(None, description='File to upload')
 
-class Entry(BaseModel):
+class Note(BaseModel):
     '''
-    A user generated "pin" on the map to which `files`, `tags` and `comments` can be associated
+    A user generated note than can be pinned to the map and to which `files` and `tags` can be associated
     '''
-    entry_id: Optional[int] = None
+    note_id: Optional[int] = None
     date: Optional[datetime] = Field(None, example='2022-12-31T23:59:59.999Z', description='Date of creation')
-    name: str = Field(
-        ..., example='Interesting Observation', description='Title of this entry'
+    title: str = Field(
+        ..., example='Interesting Observation', description='Title of this note'
     )
     description: Optional[str] = Field(
         None,
         example='I discovered an correlation between air humidity level and visitor count',
-        description='Details for this entry'
+        description='Details for this note'
     )
-    location: Point
-    entry_type: Optional[str] = Field(None, example='A walk in the park', alias='type')
+    public: bool = True
+    location: Optional[Point]
+    note_type: Optional[str] = Field(None, example='A walk in the park', alias='type')
     tags: Optional[List[Tag]] = None
-    comments: Optional[List[Comment]] = None
     files: Optional[List[File]] = None
 
-class PatchEntry(Entry):
+class NoteResponse(Note):
+    author: str
+
+class PatchNote(Note):
     '''
-    This is a copy of `Entry` with all fields optional
+    This is a copy of `Note` with all fields optional
     for patching existing records.
     '''
-    name: Optional[str] = Field(
-        None, example='Interesting Observation', description='Title of this entry'
+    title: Optional[str] = Field(
+        None, example='Interesting Observation', description='Title of this note'
     )
-    location: Optional[Point]
 
 # Meteo Models
 

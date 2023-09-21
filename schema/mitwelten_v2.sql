@@ -1,17 +1,22 @@
 --
--- Mitwelten Database - Schema V2.3
+-- Mitwelten Database - Schema V2.4
 --
+
+-- search/replace "dev" by target schema
+SET SEARCH_PATH = "dev";
 
 BEGIN;
 
-CREATE SCHEMA IF NOT EXISTS prod
+-- DROP SCHEMA "dev" CASCADE;
+
+CREATE SCHEMA IF NOT EXISTS "dev"
     AUTHORIZATION mitwelten_admin;
 
 CREATE EXTENSION IF NOT EXISTS btree_gist;
 CREATE EXTENSION IF NOT EXISTS timescaledb;
 CREATE EXTENSION IF NOT EXISTS postgres_fdw;
 
-CREATE TABLE IF NOT EXISTS prod.birdnet_configs
+CREATE TABLE IF NOT EXISTS birdnet_configs
 (
     config_id serial,
     config jsonb NOT NULL,
@@ -22,7 +27,7 @@ CREATE TABLE IF NOT EXISTS prod.birdnet_configs
     UNIQUE (config)
 );
 
-CREATE TABLE IF NOT EXISTS prod.files_audio
+CREATE TABLE IF NOT EXISTS files_audio
 (
     file_id serial,
     object_name text NOT NULL,
@@ -51,7 +56,7 @@ CREATE TABLE IF NOT EXISTS prod.files_audio
     UNIQUE (sha256)
 );
 
-CREATE TABLE IF NOT EXISTS prod.files_image
+CREATE TABLE IF NOT EXISTS files_image
 (
     file_id serial,
     object_name text NOT NULL,
@@ -67,7 +72,7 @@ CREATE TABLE IF NOT EXISTS prod.files_image
     UNIQUE (sha256)
 );
 
-CREATE TABLE IF NOT EXISTS prod.birdnet_results
+CREATE TABLE IF NOT EXISTS birdnet_results
 (
     result_id serial,
     task_id integer NOT NULL,
@@ -79,7 +84,7 @@ CREATE TABLE IF NOT EXISTS prod.birdnet_results
     PRIMARY KEY (result_id)
 );
 
-CREATE TABLE IF NOT EXISTS prod.birdnet_species_occurrence
+CREATE TABLE IF NOT EXISTS birdnet_species_occurrence
 (
     id serial,
     species character varying(255) NOT NULL,
@@ -92,7 +97,7 @@ CREATE TABLE IF NOT EXISTS prod.birdnet_species_occurrence
     UNIQUE (species)
 );
 
-CREATE TABLE IF NOT EXISTS prod.birdnet_tasks
+CREATE TABLE IF NOT EXISTS birdnet_tasks
 (
     task_id serial,
     file_id integer NOT NULL,
@@ -106,7 +111,7 @@ CREATE TABLE IF NOT EXISTS prod.birdnet_tasks
     CONSTRAINT unique_task_in_batch UNIQUE (file_id, config_id, batch_id)
 );
 
-CREATE TABLE IF NOT EXISTS prod.nodes
+CREATE TABLE IF NOT EXISTS nodes
 (
     node_id serial,
     node_label character varying(32) NOT NULL,
@@ -125,7 +130,7 @@ CREATE TABLE IF NOT EXISTS prod.nodes
     UNIQUE (node_label)
 );
 
-CREATE TABLE IF NOT EXISTS prod.deployments
+CREATE TABLE IF NOT EXISTS deployments
 (
     deployment_id serial,
     node_id integer NOT NULL,
@@ -136,7 +141,7 @@ CREATE TABLE IF NOT EXISTS prod.deployments
     EXCLUDE USING GIST (node_id WITH =, period WITH &&)
 );
 
-CREATE TABLE IF NOT EXISTS prod.sensordata_env
+CREATE TABLE IF NOT EXISTS sensordata_env
 (
     time timestamptz NOT NULL,
     deployment_id integer NOT NULL,
@@ -146,7 +151,7 @@ CREATE TABLE IF NOT EXISTS prod.sensordata_env
     voltage real
 );
 
-CREATE TABLE IF NOT EXISTS prod.sensordata_pax
+CREATE TABLE IF NOT EXISTS sensordata_pax
 (
     time timestamptz NOT NULL,
     deployment_id integer NOT NULL,
@@ -154,19 +159,21 @@ CREATE TABLE IF NOT EXISTS prod.sensordata_pax
     voltage real
 );
 
-CREATE TABLE IF NOT EXISTS prod.entries
+CREATE TABLE IF NOT EXISTS notes
 (
-    entry_id serial,
-    location point NOT NULL,
-    name character varying(255),
+    note_id serial,
+    location point,
+    title character varying(255),
     description text,
     type character varying(255),
+    user_sub text NOT NULL,
+    public boolean NOT NULL DEFAULT FALSE,
     created_at timestamptz NOT NULL DEFAULT current_timestamp,
     updated_at timestamptz NOT NULL DEFAULT current_timestamp,
-    PRIMARY KEY (entry_id)
+    PRIMARY KEY (note_id)
 );
 
-CREATE TABLE IF NOT EXISTS prod.tags
+CREATE TABLE IF NOT EXISTS tags
 (
     tag_id serial,
     name character varying(255) NOT NULL,
@@ -176,24 +183,24 @@ CREATE TABLE IF NOT EXISTS prod.tags
     UNIQUE (name)
 );
 
-CREATE TABLE IF NOT EXISTS prod.mm_tags_entries
+CREATE TABLE IF NOT EXISTS mm_tags_notes
 (
     tags_tag_id integer,
-    entries_entry_id integer,
-    PRIMARY KEY (tags_tag_id, entries_entry_id)
+    notes_note_id integer,
+    PRIMARY KEY (tags_tag_id, notes_note_id)
 );
 
-CREATE TABLE IF NOT EXISTS prod.mm_tags_deployments
+CREATE TABLE IF NOT EXISTS mm_tags_deployments
 (
     tags_tag_id integer,
     deployments_deployment_id integer,
     PRIMARY KEY (tags_tag_id, deployments_deployment_id)
 );
 
-CREATE TABLE IF NOT EXISTS prod.files_entry
+CREATE TABLE IF NOT EXISTS files_note
 (
     file_id serial,
-    entry_id integer NOT NULL,
+    note_id integer NOT NULL,
     object_name text NOT NULL,
     name character varying(255) NOT NULL,
     type character varying(128),
@@ -203,13 +210,13 @@ CREATE TABLE IF NOT EXISTS prod.files_entry
     UNIQUE (object_name)
 );
 
-CREATE TABLE IF NOT EXISTS prod.image_results (
+CREATE TABLE IF NOT EXISTS image_results (
   result_id serial PRIMARY KEY,
   file_id int NOT NULL,
   config_id varchar NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS prod.flowers (
+CREATE TABLE IF NOT EXISTS flowers (
   flower_id serial PRIMARY KEY,
   result_id int NOT NULL,
   class varchar NOT NULL,
@@ -220,7 +227,7 @@ CREATE TABLE IF NOT EXISTS prod.flowers (
   y1 int NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS prod.pollinators (
+CREATE TABLE IF NOT EXISTS pollinators (
   pollinator_id serial PRIMARY KEY,
   result_id int NOT NULL,
   flower_id int NOT NULL,
@@ -232,12 +239,12 @@ CREATE TABLE IF NOT EXISTS prod.pollinators (
   y1 int NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS prod.pollinator_inference_config (
+CREATE TABLE IF NOT EXISTS pollinator_inference_config (
   config_id varchar PRIMARY KEY,
   configuration json NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS prod.environment
+CREATE TABLE IF NOT EXISTS environment
 (
     environment_id serial,
     location point NOT NULL,
@@ -257,14 +264,14 @@ CREATE TABLE IF NOT EXISTS prod.environment
     PRIMARY KEY (environment_id)
 );
 
-CREATE TABLE IF NOT EXISTS prod.user_collections
+CREATE TABLE IF NOT EXISTS user_collections
 (
     user_sub text,
     datasets json,
     UNIQUE (user_sub)
 );
 
-CREATE TABLE IF NOT EXISTS prod.annotations
+CREATE TABLE IF NOT EXISTS annotations
 (
     annot_id serial,
     title text NOT NULL,
@@ -279,9 +286,9 @@ CREATE TABLE IF NOT EXISTS prod.annotations
 
 -- no foreign key constraints for taxonomy tables
 -- data is ever only imported, all taxonomy_tree ids and
--- taxonomy_labels.label_id contain the unique GBIF species_id
+-- taxonomy_data.datum_id contain the unique GBIF species_id
 -- which may also be used in our own records
-CREATE TABLE IF NOT EXISTS prod.taxonomy_tree
+CREATE TABLE IF NOT EXISTS taxonomy_tree
 (
     species_id bigint,
     genus_id bigint,
@@ -293,7 +300,7 @@ CREATE TABLE IF NOT EXISTS prod.taxonomy_tree
     CONSTRAINT unique_definition UNIQUE (species_id, genus_id, family_id, order_id, class_id, phylum_id, kingdom_id)
 );
 
-CREATE TABLE IF NOT EXISTS prod.taxonomy_data
+CREATE TABLE IF NOT EXISTS taxonomy_data
 (
     datum_id bigint NOT NULL,
     label_sci character varying(255) NOT NULL,
@@ -305,7 +312,7 @@ CREATE TABLE IF NOT EXISTS prod.taxonomy_data
     PRIMARY KEY (datum_id)
 );
 
-CREATE TABLE prod.walk
+CREATE TABLE walk
 (
     walk_id serial,
     title character varying(255),
@@ -316,7 +323,7 @@ CREATE TABLE prod.walk
     PRIMARY KEY (walk_id)
 );
 
-CREATE TABLE IF NOT EXISTS prod.walk_text
+CREATE TABLE IF NOT EXISTS walk_text
 (
     text_id serial,
     walk_id int NOT NULL,
@@ -329,143 +336,143 @@ CREATE TABLE IF NOT EXISTS prod.walk_text
     PRIMARY KEY (text_id)
 );
 
-CREATE TABLE IF NOT EXISTS prod.storage_whitelist
+CREATE TABLE IF NOT EXISTS storage_whitelist
 (
     object_name TEXT,
     PRIMARY KEY (object_name)
 );
 
-ALTER TABLE IF EXISTS prod.files_audio
+ALTER TABLE IF EXISTS files_audio
     ADD FOREIGN KEY (deployment_id)
-    REFERENCES prod.deployments (deployment_id) MATCH SIMPLE
+    REFERENCES deployments (deployment_id) MATCH SIMPLE
     ON UPDATE NO ACTION
     ON DELETE NO ACTION
     NOT VALID;
 
-ALTER TABLE IF EXISTS prod.files_image
+ALTER TABLE IF EXISTS files_image
     ADD FOREIGN KEY (deployment_id)
-    REFERENCES prod.deployments (deployment_id) MATCH SIMPLE
+    REFERENCES deployments (deployment_id) MATCH SIMPLE
     ON UPDATE NO ACTION
     ON DELETE NO ACTION
     NOT VALID;
 
 
-ALTER TABLE IF EXISTS prod.birdnet_results
+ALTER TABLE IF EXISTS birdnet_results
     ADD FOREIGN KEY (file_id)
-    REFERENCES prod.files_audio (file_id) MATCH SIMPLE
+    REFERENCES files_audio (file_id) MATCH SIMPLE
     ON UPDATE NO ACTION
     ON DELETE NO ACTION
     NOT VALID;
 
-ALTER TABLE IF EXISTS prod.birdnet_results
+ALTER TABLE IF EXISTS birdnet_results
     ADD FOREIGN KEY (task_id)
-    REFERENCES prod.birdnet_tasks (task_id) MATCH SIMPLE
+    REFERENCES birdnet_tasks (task_id) MATCH SIMPLE
     ON UPDATE NO ACTION
     ON DELETE NO ACTION
     NOT VALID;
 
-ALTER TABLE IF EXISTS prod.birdnet_tasks
+ALTER TABLE IF EXISTS birdnet_tasks
     ADD FOREIGN KEY (config_id)
-    REFERENCES prod.birdnet_configs (config_id) MATCH SIMPLE
+    REFERENCES birdnet_configs (config_id) MATCH SIMPLE
     ON UPDATE NO ACTION
     ON DELETE RESTRICT;
 
-ALTER TABLE IF EXISTS prod.birdnet_tasks
+ALTER TABLE IF EXISTS birdnet_tasks
     ADD FOREIGN KEY (file_id)
-    REFERENCES prod.files_audio (file_id) MATCH SIMPLE
+    REFERENCES files_audio (file_id) MATCH SIMPLE
     ON UPDATE NO ACTION
     ON DELETE RESTRICT;
 
-ALTER TABLE IF EXISTS prod.deployments
+ALTER TABLE IF EXISTS deployments
     ADD FOREIGN KEY (node_id)
-    REFERENCES prod.nodes (node_id) MATCH SIMPLE
+    REFERENCES nodes (node_id) MATCH SIMPLE
     ON UPDATE NO ACTION
     ON DELETE RESTRICT;
 
 
 
-ALTER TABLE IF EXISTS prod.sensordata_env
+ALTER TABLE IF EXISTS sensordata_env
     ADD FOREIGN KEY (deployment_id)
-    REFERENCES prod.deployments (deployment_id) MATCH SIMPLE
+    REFERENCES deployments (deployment_id) MATCH SIMPLE
     ON UPDATE NO ACTION
     ON DELETE NO ACTION
     NOT VALID;
 
 
-ALTER TABLE IF EXISTS prod.sensordata_pax
+ALTER TABLE IF EXISTS sensordata_pax
     ADD FOREIGN KEY (deployment_id)
-    REFERENCES prod.deployments (deployment_id) MATCH SIMPLE
+    REFERENCES deployments (deployment_id) MATCH SIMPLE
     ON UPDATE NO ACTION
     ON DELETE NO ACTION
     NOT VALID;
 
 
-ALTER TABLE IF EXISTS prod.mm_tags_entries
+ALTER TABLE IF EXISTS mm_tags_notes
     ADD FOREIGN KEY (tags_tag_id)
-    REFERENCES prod.tags (tag_id) MATCH SIMPLE
-    ON UPDATE NO ACTION
-    ON DELETE NO ACTION
-    NOT VALID;
-
-ALTER TABLE IF EXISTS prod.mm_tags_entries
-    ADD FOREIGN KEY (entries_entry_id)
-    REFERENCES prod.entries (entry_id) MATCH SIMPLE
-    ON UPDATE NO ACTION
-    ON DELETE NO ACTION
-    NOT VALID;
-
-ALTER TABLE IF EXISTS prod.mm_tags_deployments
-    ADD FOREIGN KEY (tags_tag_id)
-    REFERENCES prod.tags (tag_id) MATCH SIMPLE
+    REFERENCES tags (tag_id) MATCH SIMPLE
     ON UPDATE NO ACTION
     ON DELETE RESTRICT
     NOT VALID;
 
-ALTER TABLE IF EXISTS prod.mm_tags_deployments
+ALTER TABLE IF EXISTS mm_tags_notes
+    ADD FOREIGN KEY (notes_note_id)
+    REFERENCES notes (note_id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE CASCADE
+    NOT VALID;
+
+ALTER TABLE IF EXISTS mm_tags_deployments
+    ADD FOREIGN KEY (tags_tag_id)
+    REFERENCES tags (tag_id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE RESTRICT
+    NOT VALID;
+
+ALTER TABLE IF EXISTS mm_tags_deployments
     ADD FOREIGN KEY (deployments_deployment_id)
-    REFERENCES prod.deployments (deployment_id) MATCH SIMPLE
+    REFERENCES deployments (deployment_id) MATCH SIMPLE
     ON UPDATE NO ACTION
     ON DELETE CASCADE
     NOT VALID;
 
-ALTER TABLE IF EXISTS prod.files_entry
-    ADD FOREIGN KEY (entry_id)
-    REFERENCES prod.entries (entry_id) MATCH SIMPLE
+ALTER TABLE IF EXISTS files_note
+    ADD FOREIGN KEY (note_id)
+    REFERENCES notes (note_id) MATCH SIMPLE
     ON UPDATE NO ACTION
     ON DELETE CASCADE
     NOT VALID;
 
-ALTER TABLE IF EXISTS prod.image_results
+ALTER TABLE IF EXISTS image_results
   ADD FOREIGN KEY (config_id)
-  REFERENCES prod.pollinator_inference_config (config_id) MATCH SIMPLE
+  REFERENCES pollinator_inference_config (config_id) MATCH SIMPLE
   ON UPDATE NO ACTION
   ON DELETE NO ACTION
   NOT VALID;
 
-ALTER TABLE IF EXISTS prod.flowers
+ALTER TABLE IF EXISTS flowers
   ADD FOREIGN KEY (result_id)
-  REFERENCES  prod.image_results  (result_id) MATCH SIMPLE
+  REFERENCES  image_results  (result_id) MATCH SIMPLE
   ON UPDATE NO ACTION
   ON DELETE NO ACTION
   NOT VALID;
 
-ALTER TABLE IF EXISTS prod.pollinators
+ALTER TABLE IF EXISTS pollinators
   ADD FOREIGN KEY (flower_id)
-  REFERENCES  prod.flowers  (flower_id) MATCH SIMPLE
+  REFERENCES  flowers  (flower_id) MATCH SIMPLE
   ON UPDATE NO ACTION
   ON DELETE NO ACTION
   NOT VALID;
 
-ALTER TABLE IF EXISTS prod.image_results
+ALTER TABLE IF EXISTS image_results
   ADD FOREIGN KEY (file_id)
-  REFERENCES  prod.files_image  (file_id) MATCH SIMPLE
+  REFERENCES  files_image  (file_id) MATCH SIMPLE
   ON UPDATE NO ACTION
   ON DELETE NO ACTION
   NOT VALID;
 
-ALTER TABLE IF EXISTS prod.pollinators
+ALTER TABLE IF EXISTS pollinators
   ADD FOREIGN KEY (result_id)
-  REFERENCES  prod.image_results  (result_id) MATCH SIMPLE
+  REFERENCES  image_results  (result_id) MATCH SIMPLE
   ON UPDATE NO ACTION
   ON DELETE NO ACTION
   NOT VALID;
@@ -473,40 +480,40 @@ ALTER TABLE IF EXISTS prod.pollinators
 
 -- fast delete queries in birdnet_tasks
 CREATE INDEX IF NOT EXISTS birdnet_results_tasks_fk_index
-    ON prod.birdnet_results USING btree
+    ON birdnet_results USING btree
     (task_id ASC NULLS LAST);
 
 -- fast lookup of duplicates
 CREATE INDEX IF NOT EXISTS files_audio_object_name_idx
-    ON prod.files_audio USING btree
+    ON files_audio USING btree
     (object_name ASC NULLS LAST);
 
 -- fast lookup of duplicates
 CREATE INDEX IF NOT EXISTS files_audio_sha256_idx
-    ON prod.files_audio USING btree
+    ON files_audio USING btree
     (sha256 ASC NULLS LAST);
 
 -- fast lookup of duplicates
 CREATE INDEX IF NOT EXISTS files_image_object_name_idx
-    ON prod.files_image USING btree
+    ON files_image USING btree
     (object_name ASC NULLS LAST);
 
 -- fast lookup of duplicates
 CREATE INDEX IF NOT EXISTS files_image_sha256_idx
-    ON prod.files_image USING btree
+    ON files_image USING btree
     (sha256 ASC NULLS LAST);
 
 -- fast lookup of scientific names for joins of taxonomy
-CREATE INDEX IF NOT EXISTS taxonomy_labels_label_sci_idx
-    ON prod.taxonomy_labels USING btree
+CREATE INDEX IF NOT EXISTS taxonomy_data_label_sci_idx
+    ON taxonomy_data USING btree
     (label_sci ASC NULLS LAST);
 
 -- fast lookup of whitelist entries
-CREATE INDEX IF NOT EXISTS storate_whitelist_object_name_idx
-    ON prod.storate_whitelist USING btree
+CREATE INDEX IF NOT EXISTS storage_whitelist_object_name_idx
+    ON storage_whitelist USING btree
     (object_name ASC NULLS LAST);
 
-CREATE OR REPLACE VIEW prod.birdnet_input
+CREATE OR REPLACE VIEW birdnet_input
     AS
     SELECT f.file_id,
         f.object_name,
@@ -516,26 +523,26 @@ CREATE OR REPLACE VIEW prod.birdnet_input
         n.node_label,
         f.duration,
         d.location
-      FROM prod.files_audio f
-        LEFT JOIN prod.deployments d ON f.deployment_id = d.deployment_id
-        LEFT JOIN prod.nodes n ON d.node_id = n.node_id;
+      FROM files_audio f
+        LEFT JOIN deployments d ON f.deployment_id = d.deployment_id
+        LEFT JOIN nodes n ON d.node_id = n.node_id;
 
-CREATE OR REPLACE VIEW prod.birdnet_inferred_species
+CREATE OR REPLACE VIEW birdnet_inferred_species
     AS
     SELECT o.species,
         o.confidence,
         f.time + ((o.time_start || ' seconds')::interval) AS time_start
-    FROM prod.birdnet_results o
-    LEFT JOIN prod.files_audio f ON o.file_id = f.file_id;
+    FROM birdnet_results o
+    LEFT JOIN files_audio f ON o.file_id = f.file_id;
 
-CREATE OR REPLACE VIEW prod.birdnet_inferred_species_day
+CREATE OR REPLACE VIEW birdnet_inferred_species_day
     AS
     SELECT s.species,
         s.confidence,
         to_char(s.time_start at time zone 'UTC', 'YYYY-mm-DD') AS date
-    FROM prod.birdnet_inferred_species s;
+    FROM birdnet_inferred_species s;
 
-CREATE OR REPLACE VIEW prod.birdnet_inferred_species_file_taxonomy
+CREATE OR REPLACE VIEW birdnet_inferred_species_file_taxonomy
     AS
     SELECT r.species,
         r.confidence,
@@ -555,40 +562,40 @@ CREATE OR REPLACE VIEW prod.birdnet_inferred_species_file_taxonomy
         d6.label_sci phylum,
         d7.label_sci kingdom
 
-    FROM prod.birdnet_results r
+    FROM birdnet_results r
 
     -- link file information
-    LEFT JOIN prod.files_audio     f  ON r.file_id    = f.file_id
+    LEFT JOIN files_audio     f  ON r.file_id    = f.file_id
 
     -- link to species label (scientific name in GBIF taxonomy)
-    LEFT JOIN prod.taxonomy_data d1 ON r.species    = d1.label_sci
+    LEFT JOIN taxonomy_data d1 ON r.species    = d1.label_sci
 
     -- link to species tree (species key to GBIF taxonomy tree)
-    LEFT JOIN prod.taxonomy_tree   t  ON d1.datum_id  = t.species_id
+    LEFT JOIN taxonomy_tree   t  ON d1.datum_id  = t.species_id
 
     -- link taxonomy tree keys to scientific labels
-    LEFT JOIN prod.taxonomy_data d2 ON t.genus_id   = d2.datum_id
-    LEFT JOIN prod.taxonomy_data d3 ON t.family_id  = d3.datum_id
-    LEFT JOIN prod.taxonomy_data d4 ON t.order_id   = d4.datum_id
-    LEFT JOIN prod.taxonomy_data d5 ON t.class_id   = d5.datum_id
-    LEFT JOIN prod.taxonomy_data d6 ON t.phylum_id  = d6.datum_id
-    LEFT JOIN prod.taxonomy_data d7 ON t.kingdom_id = d7.datum_id
+    LEFT JOIN taxonomy_data d2 ON t.genus_id   = d2.datum_id
+    LEFT JOIN taxonomy_data d3 ON t.family_id  = d3.datum_id
+    LEFT JOIN taxonomy_data d4 ON t.order_id   = d4.datum_id
+    LEFT JOIN taxonomy_data d5 ON t.class_id   = d5.datum_id
+    LEFT JOIN taxonomy_data d6 ON t.phylum_id  = d6.datum_id
+    LEFT JOIN taxonomy_data d7 ON t.kingdom_id = d7.datum_id
 
     -- link location data
-    LEFT JOIN prod.deployments     d ON f.deployment_id = d.deployment_id
+    LEFT JOIN deployments     d ON f.deployment_id = d.deployment_id
 
     -- make sure its a species
     WHERE t.species_id IS NOT NULL;
 
-CREATE OR REPLACE VIEW prod.data_records
+CREATE OR REPLACE VIEW data_records
     AS
     SELECT file_id AS record_id, deployment_id, 'audio' AS type
-    FROM prod.files_audio
+    FROM files_audio
     UNION
     SELECT file_id AS record_id, deployment_id, 'image' AS type
-    FROM prod.files_image;
+    FROM files_image;
 
-CREATE SERVER IF NOT EXISTS auth;
+CREATE SERVER IF NOT EXISTS auth
 FOREIGN DATA WRAPPER postgres_fdw
 OPTIONS (host 'localhost', dbname 'mitwelten_auth', port '5432');
 
@@ -602,59 +609,48 @@ FOR mitwelten_admin
 SERVER auth
 OPTIONS (user 'mw_data_auth_fdw');
 
+-- this requires the password for the corresponding users to be set
+-- see 'schema/README.md#foreign-tables'
 IMPORT FOREIGN SCHEMA public LIMIT TO (user_entity)
-    FROM SERVER auth INTO prod;
+    FROM SERVER auth INTO "dev";
 
 END;
 
-GRANT USAGE ON SCHEMA prod TO
+GRANT USAGE ON SCHEMA "dev" TO
   mitwelten_internal,
   mitwelten_rest,
-  mitwelten_upload,
   mitwelten_public;
 
-GRANT ALL ON ALL TABLES IN SCHEMA prod TO mitwelten_internal;
-GRANT UPDATE ON ALL SEQUENCES IN SCHEMA prod TO mitwelten_internal;
+GRANT ALL ON ALL TABLES IN SCHEMA "dev" TO mitwelten_internal;
+GRANT UPDATE ON ALL SEQUENCES IN SCHEMA "dev" TO mitwelten_internal;
 
 GRANT ALL ON
-  prod.nodes,
-  prod.sensordata_env,
-  prod.sensordata_pax,
-  prod.entries,
-  prod.tags,
-  prod.mm_tags_entries,
-  prod.mm_tags_deployments,
-  prod.files_entry,
-  prod.user_collections,
-  prod.annotations
+  nodes,
+  sensordata_env,
+  sensordata_pax,
+  notes,
+  tags,
+  mm_tags_notes,
+  mm_tags_deployments,
+  files_note,
+  user_collections,
+  annotations
 TO mitwelten_rest;
 
 GRANT SELECT ON
-  prod.birdnet_configs,
-  prod.files_audio,
-  prod.files_image,
-  prod.birdnet_results,
-  prod.birdnet_species_occurrence,
-  prod.birdnet_tasks
+  birdnet_configs,
+  files_audio,
+  files_image,
+  birdnet_results,
+  birdnet_species_occurrence,
+  birdnet_tasks
 TO mitwelten_rest;
 
 GRANT UPDATE ON
-  prod.entries_entry_id_seq,
-  prod.files_entry_file_id_seq,
-  prod.nodes_node_id_seq,
-  prod.tags_tag_id_seq
+  notes_note_id_seq,
+  files_note_file_id_seq,
+  nodes_node_id_seq,
+  tags_tag_id_seq
 TO mitwelten_rest;
 
-GRANT ALL ON
-  prod.files_audio,
-  prod.files_image,
-  prod.nodes
-TO mitwelten_upload;
-
-GRANT UPDATE ON
-  prod.files_audio_file_id_seq,
-  prod.files_image_file_id_seq,
-  prod.nodes_node_id_seq
-TO mitwelten_upload;
-
-GRANT SELECT ON ALL TABLES IN SCHEMA prod TO mitwelten_public;
+GRANT SELECT ON ALL TABLES IN SCHEMA "dev" TO mitwelten_public;

@@ -2,7 +2,7 @@ from os import path
 
 from api.config import crd
 from api.database import database
-from api.dependencies import check_oid_authentication, check_oid_m2m_authentication
+from api.dependencies import check_oid_authentication, check_oid_m2m_authentication, AuthenticationChecker
 
 from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile
 from fastapi.responses import StreamingResponse
@@ -14,7 +14,7 @@ from minio.error import S3Error
 from sqlalchemy.sql import text
 import json
 
-router = APIRouter(tags=['files', 's3'])
+router = APIRouter(tags=['storage'])
 
 # ------------------------------------------------------------------------------
 # MINIO FILE IO
@@ -66,6 +66,20 @@ async def get_walk_download(request: Request, object_name: str):
             if e.code == 'NoSuchKey':
                 raise HTTPException(status_code=404, detail='File not found')
 
+@router.get('/files/discover/{object_name:path}', dependencies=[Depends(AuthenticationChecker())], summary='Media resources for discover app from S3 storage')
+async def get_discover_download(request: Request, object_name: str):
+    '''
+    ## Media resources for discover app
+
+    Requested media will be returned if request is authenticated and role is authorized for access.
+    '''
+    try:
+        response = storage.get_object(crd.minio.bucket, f'discover/{object_name}')
+        return StreamingResponse(stream_minio_response(response), headers=response.headers)
+    except S3Error as e:
+        if e.code == 'NoSuchKey':
+            raise HTTPException(status_code=404, detail='File not found')
+
 @router.get('/files/{object_name:path}', dependencies=[Depends(check_oid_authentication)], summary='Media resources from S3 storage')
 async def get_download(request: Request, object_name: str):
     '''
@@ -88,10 +102,27 @@ async def post_upload(file: UploadFile):
     except S3Error as e:
         if e.code != 'NoSuchKey':
             raise e
+    else:
+        return { 'object_name': stat.object_name, 'etag': stat.etag }
     # upload
     upload = storage.put_object(crd.minio.bucket, file.filename, file.file, length=-1, part_size=10*1024*1024)
     return { 'object_name': upload.object_name, 'etag': upload.etag }
 
+@router.post('/files/discover', dependencies=[Depends(AuthenticationChecker(['internal']))])
+async def post_discover_upload(file: UploadFile):
+    # compose object name
+    object_name = f'discover/{file.filename}'
+    # make sure object doesn't already exist
+    try:
+        stat = storage.stat_object(crd.minio.bucket, object_name)
+    except S3Error as e:
+        if e.code != 'NoSuchKey':
+            raise e
+    else:
+        return { 'object_name': stat.object_name, 'etag': stat.etag }
+    # upload
+    upload = storage.put_object(crd.minio.bucket, object_name, file.file, length=-1, part_size=10*1024*1024)
+    return { 'object_name': upload.object_name, 'etag': upload.etag }
 
 @router.get('/walk/imagestack_s3/{walk_id}')
 async def get_imagestack_from_s3(walk_id):

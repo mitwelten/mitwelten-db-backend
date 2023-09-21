@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.sql import select, text, update, delete, insert
 from sqlalchemy.sql.functions import current_timestamp
 
-router = APIRouter(tags=['files', 'images', 'walk'])
+router = APIRouter(tags=['images', 'walk'])
 
 # ------------------------------------------------------------------------------
 # DATA WALKING

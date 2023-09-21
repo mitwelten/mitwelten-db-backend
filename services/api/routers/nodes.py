@@ -1,9 +1,8 @@
 from typing import List, Optional
-from datetime import datetime
 
 from api.database import database
 from api.dependencies import check_oid_authentication
-from api.models import Node, DeployedNode
+from api.models import Node
 from api.tables import deployments, nodes
 
 from asyncpg.exceptions import ForeignKeyViolationError
@@ -86,39 +85,3 @@ async def delete_node(id: int) -> None:
         raise HTTPException(status_code=409, detail=str(e))
     else:
         return True
-
-# ----------------------------
-
-@router.get('/viz/nodes', response_model=List[DeployedNode], tags=['deployments', 'viz'],
-    summary='Deployed nodes for viz dashboard')
-async def list_viz_nodes(
-    time_from: Optional[datetime] = Query(None, alias='from', example='2021-09-01T00:00:00.000Z'),
-    time_to: Optional[datetime] = Query(None, alias='to', example='2022-08-31T23:59:59.999Z'),
-) -> List[DeployedNode]:
-    '''
-    List all deployed nodes
-    '''
-
-    query = select(deployments.alias('d').outerjoin(nodes.alias('n'))).\
-        set_label_style(LABEL_STYLE_TABLENAME_PLUS_COL)
-
-    # define time range criteria
-    if time_from and time_to:
-        query = query.where(text("n.type != 'Test'"), text("d.period && tstzrange(:time_from, :time_to)").bindparams(time_from=time_from, time_to=time_to))
-    elif time_from:
-        query = query.where(text("n.type != 'Test'"), text("d.period && tstzrange(:time_from, 'infinity')").bindparams(time_from=time_from))
-    elif time_to:
-        query = query.where(text("n.type != 'Test'"), text("d.period && tstzrange('-infinity', :time_to)").bindparams(time_to=time_to))
-    else:
-        query = query.where(text("n.type != 'Test'"))
-
-    result = await database.fetch_all(query)
-    return [{
-        'id': r['n_node_id'],
-        'name': r['n_node_label'],
-        'location': r['d_location'],
-        'location_description': r['d_description'],
-        'type': r['n_type'],
-        'platform': r['n_platform'],
-        'description': r['n_description'],
-    } for r in result]
