@@ -108,7 +108,7 @@ async def post_upload(file: UploadFile):
     upload = storage.put_object(crd.minio.bucket, file.filename, file.file, length=-1, part_size=10*1024*1024)
     return { 'object_name': upload.object_name, 'etag': upload.etag }
 
-@router.post('/files/discover/', dependencies=[Depends(AuthenticationChecker(['internal']))])
+@router.post('/files/discover', dependencies=[Depends(AuthenticationChecker(['internal']))])
 async def post_discover_upload(file: UploadFile):
     # compose object name
     object_name = f'discover/{file.filename}'
