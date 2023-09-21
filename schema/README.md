@@ -11,7 +11,7 @@ The database backend hosts 3 databases for specific domains of data: Project int
 
 ![schema_v2.4](./assets/diagram_v2.4.png)
 
-_Source: [mitwelten_v2.4.diagram](./mitwelten_v2.4.diagram) generated with TablePlus._
+_Source: [mitwelten_v2.4.diagram](./assets/mitwelten_v2.4.diagram) generated with TablePlus._
 
 ### Entities
 
