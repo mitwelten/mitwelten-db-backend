@@ -9,7 +9,7 @@ sys.path.append('../../')
 import credentials as crd
 
 # If the migration is complete, do not run these migrations again.
-MIGRATION_COMPLETE = False
+MIGRATION_COMPLETE = True
 
 def copy_tags(cursor, SCHEMA_SRC, SCHEMA_DST):
     print('copy tags')

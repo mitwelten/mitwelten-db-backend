@@ -10,7 +10,7 @@ sys.path.append('../../')
 import credentials as crd
 
 # If the migration is complete, do not run these migrations again.
-MIGRATION_COMPLETE = False
+MIGRATION_COMPLETE = True
 
 def migrate_entry_tag_assignment(cursor, SCHEMA_SRC, SCHEMA_DST, notes_idmap):
     print('copy mm_tags_entries to mm_tags_notes')
