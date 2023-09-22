@@ -8,7 +8,7 @@ from api.tables import mm_tags_deployments, mm_tags_notes, tags
 
 from asyncpg import ForeignKeyViolationError, StringDataRightTruncationError, UniqueViolationError
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.sql import between, delete, func, insert, select, update
+from sqlalchemy.sql import between, delete, func, insert, select, update, distinct
 from sqlalchemy.sql.functions import current_timestamp
 
 router = APIRouter(tags=['tags'])
@@ -27,8 +27,8 @@ async def read_tags(deployment_id: Optional[int] = None) -> List[Tag]:
 @router.get('/tags_stats', response_model=List[TagStats], tags=['deployments'])
 async def read_tags_stats(deployment_id: Optional[int] = None) -> List[TagStats]:
     subquery = select(tags.c.tag_id,
-            func.count(mm_tags_deployments.c.tags_tag_id).label('deployments'),
-            func.count(mm_tags_notes.c.tags_tag_id).label('notes')).\
+            func.count(distinct(mm_tags_deployments.c.deployments_deployment_id)).label('deployments'),
+            func.count(distinct(mm_tags_notes.c.notes_note_id)).label('notes')).\
         outerjoin(mm_tags_deployments).\
         outerjoin(mm_tags_notes).\
         group_by(tags.c.tag_id).subquery()
