@@ -60,7 +60,7 @@ async def get_walk_download(request: Request, object_name: str):
                 raise HTTPException(status_code=404, detail='File not found')
     else:
         try:
-            response = storage.get_object(crd.minio.bucket, path.splitext(object_name)[0] + '.webp')
+            response = storage.get_object(crd.minio.bucket, object_name)
             return StreamingResponse(stream_minio_response(response), headers=response.headers)
         except S3Error as e:
             if e.code == 'NoSuchKey':
