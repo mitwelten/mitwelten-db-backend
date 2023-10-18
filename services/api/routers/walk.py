@@ -3,7 +3,7 @@ from typing import List
 from api.database import database
 from api.dependencies import AuthenticationChecker
 from api.tables import files_image, deployments, nodes, walk_text, walk_hotspot, walk
-from api.models import SectionText, Walk, HotspotImageSingle, HotspotImageSequence, HotspotInfotext
+from api.models import SectionText, Walk, HotspotImageSingle, HotspotImageSequence, HotspotInfotext, HotspotAudioText
 
 from asyncpg.exceptions import ForeignKeyViolationError
 from fastapi import APIRouter, Depends, HTTPException
@@ -45,7 +45,7 @@ async def get_walk_text(walk_id: int)-> List[SectionText]:
     return await database.fetch_all(texts)
 
 @router.get('/walk/hotspots/{walk_id}')
-async def get_walk_hotspots(walk_id: int)-> List[HotspotInfotext|HotspotImageSingle|HotspotImageSequence]:
+async def get_walk_hotspots(walk_id: int)-> List[HotspotInfotext|HotspotImageSingle|HotspotImageSequence|HotspotAudioText]:
     hotspots = select(walk_hotspot).\
         where(walk_hotspot.c.walk_id == walk_id)
     response = await database.fetch_all(hotspots)

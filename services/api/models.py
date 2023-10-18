@@ -485,6 +485,10 @@ class HotspotImageSequence(HotspotImage):
     hotspot_type: int = Field(2, alias='type')
     sequence: List[ImageReference]
 
+class HotspotAudioText(HotSpot):
+    portraitUrl: str
+    audioUrl: str
+
 class HotspotInfotext(HotSpot):
     hotspot_type: int = Field(3, alias='type')
     title: str
