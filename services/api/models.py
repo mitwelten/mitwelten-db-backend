@@ -460,6 +460,36 @@ class SectionText(BaseModel):
     title: Optional[str]
     text: Optional[str]
 
+class HotSpot(BaseModel):
+    hotspot_id: int = Field(None, alias='id')
+    walk_id: int
+    location: Point
+    hotspot_type: int = Field(None, alias='type')
+    subject: Optional[str]
+
+    class Config:
+        allow_population_by_field_name = True
+
+class HotspotImage(HotSpot):
+    title: str
+    description: str
+
+class ImageReference(BaseModel):
+    url: str
+    image_credits: str = Field(None, alias='credits')
+
+class HotspotImageSingle(HotspotImage, ImageReference):
+    hotspot_type: int = Field(1, alias='type')
+
+class HotspotImageSequence(HotspotImage):
+    hotspot_type: int = Field(2, alias='type')
+    sequence: List[ImageReference]
+
+class HotspotInfotext(HotSpot):
+    hotspot_type: int = Field(3, alias='type')
+    title: str
+    text: str
+
 
 class PollinatorTypeEnum(str, Enum):
     fliege = 'fliege'

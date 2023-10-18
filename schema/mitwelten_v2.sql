@@ -312,7 +312,7 @@ CREATE TABLE IF NOT EXISTS taxonomy_data
     PRIMARY KEY (datum_id)
 );
 
-CREATE TABLE walk
+CREATE TABLE IF NOT EXISTS walk
 (
     walk_id serial,
     title character varying(255),
@@ -334,6 +334,19 @@ CREATE TABLE IF NOT EXISTS walk_text
     created_at timestamptz NOT NULL DEFAULT current_timestamp,
     updated_at timestamptz NOT NULL DEFAULT current_timestamp,
     PRIMARY KEY (text_id)
+);
+
+CREATE TABLE IF NOT EXISTS walk_hotspot
+(
+    hotspot_id serial,
+    walk_id int NOT NULL,
+    location point NOT NULL,
+    type integer NOT NULL,
+    subject character varying(255),
+    data jsonb NOT NULL,
+    created_at timestamptz NOT NULL DEFAULT current_timestamp,
+    updated_at timestamptz NOT NULL DEFAULT current_timestamp,
+    PRIMARY KEY (hotspot_id)
 );
 
 CREATE TABLE IF NOT EXISTS storage_whitelist

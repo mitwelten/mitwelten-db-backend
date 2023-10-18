@@ -2,13 +2,14 @@ from typing import List
 
 from api.database import database
 from api.dependencies import AuthenticationChecker
-from api.tables import files_image, deployments, nodes, walk_text, walk
-from api.models import SectionText, Walk
+from api.tables import files_image, deployments, nodes, walk_text, walk_hotspot, walk
+from api.models import SectionText, Walk, HotspotImageSingle, HotspotImageSequence, HotspotInfotext
 
 from asyncpg.exceptions import ForeignKeyViolationError
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.sql import select, text, update, delete, insert
 from sqlalchemy.sql.functions import current_timestamp
+import json
 
 router = APIRouter(tags=['images', 'walk'])
 
@@ -37,12 +38,23 @@ async def get_imagestack():
     return await database.fetch_all(images)
 
 @router.get('/walk/text/{walk_id}')
-async def get_imagestack(walk_id: int)-> List[SectionText]:
+async def get_walk_text(walk_id: int)-> List[SectionText]:
     texts = select(walk_text).\
         where(walk_text.c.walk_id == walk_id).\
         order_by(walk_text.c.percent_in)
     return await database.fetch_all(texts)
 
+@router.get('/walk/hotspots/{walk_id}')
+async def get_walk_hotspots(walk_id: int)-> List[HotspotInfotext|HotspotImageSingle|HotspotImageSequence]:
+    hotspots = select(walk_hotspot).\
+        where(walk_hotspot.c.walk_id == walk_id)
+    response = await database.fetch_all(hotspots)
+    result = []
+    for r in response:
+        rd = dict(r)
+        rd.update(json.loads(rd.pop('data')))
+        result.append(rd)
+    return result
 
 @router.get('/walk/{walk_id}')
 async def get_walkpath(walk_id: int):

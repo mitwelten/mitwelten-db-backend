@@ -327,6 +327,20 @@ walk_text = sqlalchemy.Table(
     schema=crd.db.schema,
 )
 
+walk_hotspot = sqlalchemy.Table(
+    'walk_hotspot',
+    metadata,
+    sqlalchemy.Column('hotspot_id'  , sqlalchemy.Integer,   primary_key=True),
+    sqlalchemy.Column('walk_id'     , sqlalchemy.Integer,   nullable=False),
+    sqlalchemy.Column('location'    , GeometryPoint,        nullable=False),
+    sqlalchemy.Column('type'        , sqlalchemy.Integer,   nullable=False),
+    sqlalchemy.Column('subject'     , sqlalchemy.Text,      nullable=True),
+    sqlalchemy.Column('data'        , sqlalchemy.Text,      nullable=False),
+    sqlalchemy.Column('created_at'  , sqlalchemy.TIMESTAMP, nullable=False),
+    sqlalchemy.Column('updated_at'  , sqlalchemy.TIMESTAMP, nullable=True),
+    schema=crd.db.schema,
+)
+
 # Explore
 
 user_collections = sqlalchemy.Table(
