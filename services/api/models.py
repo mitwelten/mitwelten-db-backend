@@ -486,6 +486,7 @@ class HotspotImageSequence(HotspotImage):
     sequence: List[ImageReference]
 
 class HotspotAudioText(HotSpot):
+    hotspot_type: int = Field(4, alias='type')
     portraitUrl: str
     audioUrl: str
 
@@ -493,6 +494,12 @@ class HotspotInfotext(HotSpot):
     hotspot_type: int = Field(3, alias='type')
     title: str
     text: str
+
+class HotspotData(HotSpot):
+    hotspot_type: int = Field(6, alias='type')
+    title: str
+    text: str
+    endpoint: str
 
 
 class PollinatorTypeEnum(str, Enum):
