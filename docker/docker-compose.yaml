@@ -527,7 +527,7 @@ services:
       - mitwelten
 
   mitwelten-discover:
-    image: cr.gitlab.fhnw.ch/mitwelten/docker-infrastructure/mitwelten-discover_app:01
+    image: cr.gitlab.fhnw.ch/mitwelten/docker-infrastructure/mitwelten-discover_app:latest
     networks:
       - mitwelten
     restart: always
