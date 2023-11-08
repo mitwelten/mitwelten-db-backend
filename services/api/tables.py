@@ -51,6 +51,28 @@ species_day = sqlalchemy.Table(
     sqlalchemy.Column('date',       sqlalchemy.String)
 )
 
+pollinators = sqlalchemy.Table(
+    'pollinators',
+    metadata,
+    sqlalchemy.Column('pollinator_id', sqlalchemy.Integer, primary_key=True),
+    sqlalchemy.Column('result_id', sqlalchemy.Integer, ForeignKey('image_results.result_id', onupdate='NO ACTION', ondelete='NO ACTION')),
+    sqlalchemy.Column('flower_id', sqlalchemy.Integer, ForeignKey('flowers.flower_id', onupdate='NO ACTION', ondelete='NO ACTION')),
+    sqlalchemy.Column('class', sqlalchemy.String),
+    sqlalchemy.Column('confidence', sqlalchemy.REAL),
+    sqlalchemy.Column('x0', sqlalchemy.Integer),
+    sqlalchemy.Column('y0', sqlalchemy.Integer),
+    sqlalchemy.Column('x1', sqlalchemy.Integer),
+    sqlalchemy.Column('y1', sqlalchemy.Integer),
+)
+
+image_results = sqlalchemy.Table(
+    'image_results',
+    metadata,
+    sqlalchemy.Column('result_id', sqlalchemy.Integer, primary_key=True),
+    sqlalchemy.Column('file_id', sqlalchemy.Integer, ForeignKey('files_image.file_id')),
+    sqlalchemy.Column('config_id', sqlalchemy.String, ForeignKey('pollinator_inference_config.config_id')),
+)
+
 results_file_taxonomy = sqlalchemy.Table(
     'birdnet_inferred_species_file_taxonomy',
     metadata,

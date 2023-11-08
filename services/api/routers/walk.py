@@ -1,19 +1,21 @@
 from typing import List, Optional
+from datetime import datetime
 
 from api.database import database
 from api.dependencies import AuthenticationChecker
 from api.tables import (
     files_image, deployments, nodes, walk_text, walk_hotspot, walk, data_pax,
-    tags, mm_tags_deployments
+    tags, mm_tags_deployments, pollinators, image_results
 )
 from api.models import (
     SectionText, Walk, HotspotImageSingle, HotspotImageSequence,
-    HotspotInfotext, HotspotAudioText, HotspotData
+    HotspotInfotext, HotspotAudioText, HotspotData, HotspotDataPaxResponse,
+    HotspotDataPollinatorsResponse
 )
 
 from asyncpg.exceptions import ForeignKeyViolationError
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.sql import select, text, update, delete, insert, func
+from sqlalchemy.sql import select, text, update, delete, insert, func, between
 from sqlalchemy.sql.functions import current_timestamp
 import json
 
@@ -62,9 +64,9 @@ async def get_walk_hotspots(walk_id: int)-> List[HotspotData|HotspotInfotext|Hot
         result.append(rd)
     return result
 
-@router.get('/walk/data-hotspots/pax')
+@router.get('/walk/data-hotspots/pax', response_model=HotspotDataPaxResponse)
 async def get_pax_hotspots(summary: Optional[int] = Query(1, alias='summary', example=1),
-                           tag_ids: Optional[List[int]] = Query([136, 137], alias='tag', example=[136, 137, 158])):
+                           tag_ids: Optional[List[int]] = Query([136, 137], alias='tag', example='tag=136&tag=137')):
     interval = '7 days' if summary == 1 else '1 month' if summary == 2 else '1 year'
     options = [
         {'label': 'letzte 7 Tage', 'value': 1},
@@ -82,8 +84,42 @@ async def get_pax_hotspots(summary: Optional[int] = Query(1, alias='summary', ex
             func.round(func.min(subquery.c.pax_avg), 1).label('pax_min'),
             func.round(func.max(subquery.c.pax_avg), 1).label('pax_max')).\
         group_by(subquery.c.tag)
-    response = await database.fetch_all(result)
-    return { 'datapoints': response, 'summaryOptions': options, 'chart': 'bar' }
+    return HotspotDataPaxResponse(
+        datapoints = await database.fetch_all(result),
+        summaryOptions = options,
+        chart = 'bar'
+    )
+
+@router.get('/walk/data-hotspots/pollinators', response_model=HotspotDataPollinatorsResponse)
+async def get_pollinator_hotspots(tag_id: int = Query(136, alias='tag', example='tag=136'),
+                           summary: Optional[int] = Query(1, alias='summary', example=1)):
+
+    # TODO: decide for summary options: years, or locations?
+    # for now, the summary options are the locations
+    options = [
+        {'label': 'Erlebnisweiher', 'value': 136},
+        {'label': 'Velodach', 'value': 133}
+    ]
+    if summary == None or summary == 1:
+        summary = 136
+
+    time_from = datetime.fromisoformat('2022-01-01')
+    time_to = datetime.fromisoformat('2022-12-31')
+
+    query = select(pollinators.c['class'], func.extract('month', func.date(files_image.c.time)).label('month'), func.count().label('count')).\
+        select_from(files_image).\
+        outerjoin(mm_tags_deployments, mm_tags_deployments.c.deployments_deployment_id == files_image.c.deployment_id).\
+            outerjoin(image_results).outerjoin(pollinators).\
+        where(mm_tags_deployments.c.tags_tag_id == summary).\
+        where(between(files_image.c.time, time_from, time_to)).\
+        where(pollinators.c.confidence > 0.75).\
+        group_by(pollinators.c['class'], text('month')).\
+        order_by(pollinators.c['class'], text('month'))
+    return HotspotDataPollinatorsResponse(
+        datapoints = await database.fetch_all(query),
+        summaryOptions = options,
+        chart = 'heatmap'
+    )
 
 @router.get('/walk/{walk_id}')
 async def get_walkpath(walk_id: int):

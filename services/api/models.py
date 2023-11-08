@@ -501,6 +501,34 @@ class HotspotData(HotSpot):
     text: str
     endpoint: str
 
+class PaxDataPoint(BaseModel):
+    tag: str
+    pax_avg: float
+    pax_sdev: float
+    pax_min: float
+    pax_max: float
+
+class PollinatorDataPoint(BaseModel):
+    class_: str = Field(..., alias='class')
+    month: int
+    count: int
+
+class ChartSummaryOption(BaseModel):
+    label: str
+    value: int
+
+class HotspotDataPaxResponse(BaseModel):
+    datapoints: List[PaxDataPoint]
+    summaryOptions: List[ChartSummaryOption]
+    chart: str
+
+class HotspotDataPollinatorsResponse(BaseModel):
+    datapoints: List[PollinatorDataPoint]
+    summaryOptions: List[ChartSummaryOption]
+    chart: str
+
+    class Config:
+        response_model_by_alias = True
 
 class PollinatorTypeEnum(str, Enum):
     fliege = 'fliege'
