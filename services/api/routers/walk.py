@@ -77,7 +77,7 @@ async def get_pax_hotspots(summary: Optional[int] = Query(1, alias='summary', ex
             func.round(func.max(subquery.c.pax_avg), 1).label('pax_max')).\
         group_by(subquery.c.tag)
     response = await database.fetch_all(result)
-    return { 'datapoints': response, 'summaryOptions': options }
+    return { 'datapoints': response, 'summaryOptions': options, 'chart': 'bar' }
 
 @router.get('/walk/{walk_id}')
 async def get_walkpath(walk_id: int):
