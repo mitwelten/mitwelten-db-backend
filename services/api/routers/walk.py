@@ -2,8 +2,14 @@ from typing import List, Optional
 
 from api.database import database
 from api.dependencies import AuthenticationChecker
-from api.tables import files_image, deployments, nodes, walk_text, walk_hotspot, walk, data_pax, tags, mm_tags_deployments
-from api.models import SectionText, Walk, HotspotImageSingle, HotspotImageSequence, HotspotInfotext, HotspotAudioText, HotspotData
+from api.tables import (
+    files_image, deployments, nodes, walk_text, walk_hotspot, walk, data_pax,
+    tags, mm_tags_deployments
+)
+from api.models import (
+    SectionText, Walk, HotspotImageSingle, HotspotImageSequence,
+    HotspotInfotext, HotspotAudioText, HotspotData
+)
 
 from asyncpg.exceptions import ForeignKeyViolationError
 from fastapi import APIRouter, Depends, HTTPException, Query
