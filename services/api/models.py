@@ -489,6 +489,9 @@ class HotspotAudioText(HotSpot):
     hotspot_type: int = Field(4, alias='type')
     portraitUrl: str
     audioUrl: str
+    speakerName: Optional[str]
+    speakerFunction: Optional[str]
+    contentSubject: Optional[str]
 
 class HotspotInfotext(HotSpot):
     hotspot_type: int = Field(3, alias='type')
