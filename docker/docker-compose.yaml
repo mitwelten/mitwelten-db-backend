@@ -78,47 +78,6 @@ services:
       - "traefik.http.routers.kc.entrypoints=https"
       - "traefik.http.routers.kc.tls.certresolver=ssl"
 
-
-  manager-api-v2:
-    image: mitwelten-manager:0.1
-    networks:
-      - mitwelten
-    container_name: mitwelten-manager-api-v2
-    restart: unless-stopped
-    volumes:
-      - /opt/mitwelten-db-backend/services/manager:/app
-      - /opt/mitwelten-db-backend/credentials.py:/app/credentials.py
-    labels:
-      - traefik.enable=true
-      - traefik.http.services.manager_api_v2.loadbalancer.server.port=80
-
-      # http entrypoint
-      - traefik.http.routers.manager_api_v2_http.rule=Host(`data.mitwelten.org`)&&PathPrefix(`/manager/v2/`)
-      - traefik.http.routers.manager_api_v2_http.entrypoints=http
-      # redirect to https
-      - traefik.http.middlewares.manager_api_v2_https.redirectscheme.scheme=https
-      - traefik.http.routers.manager_api_v2_http.middlewares=manager_api_v2_https
-      # https entrypoint
-      - traefik.http.routers.manager_api_v2.rule=Host(`data.mitwelten.org`)&&PathPrefix(`/manager/v2/`)
-      - traefik.http.routers.manager_api_v2.entrypoints=https
-      - traefik.http.routers.manager_api_v2.tls.certresolver=ssl
-      #  middlewares for https
-      - traefik.http.routers.manager_api_v2.middlewares=manager_api_v2_cors,manager_api_v2_stripprefix,manager_api_v2_basic-auth
-
-      # strip prefix /manager/v2
-      - traefik.http.middlewares.manager_api_v2_stripprefix.stripprefix.prefixes=/manager/v2
-
-      # basic auth
-      - traefik.http.middlewares.manager_api_v2_basic-auth.basicauth.users=${MANAGER_API_BASIC_AUTH_USER_PW}
-
-      # CORS
-      - traefik.http.middlewares.manager_api_v2_cors.headers.accesscontrolallowmethods=GET,OPTIONS,PUT,POST,PATCH,DELETE
-      - traefik.http.middlewares.manager_api_v2_cors.headers.accessControlAllowOriginList=*
-      - traefik.http.middlewares.manager_api_v2_cors.headers.accessControlAllowHeaders=*
-      - traefik.http.middlewares.manager_api_v2_cors.headers.accessControlExposeHeaders=*
-      - traefik.http.middlewares.manager_api_v2_cors.headers.accesscontrolmaxage=100
-      - traefik.http.middlewares.manager_api_v2_cors.headers.addvaryheader=true
-
   data-api:
     image: mitwelten-data-api:3.3
     networks:
