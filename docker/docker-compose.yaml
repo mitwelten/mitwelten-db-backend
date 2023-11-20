@@ -78,6 +78,42 @@ services:
       - "traefik.http.routers.kc.entrypoints=https"
       - "traefik.http.routers.kc.tls.certresolver=ssl"
 
+  labelstudio:
+    container_name: labelstudio
+    image: heartexlabs/label-studio:latest
+    networks:
+      - mitwelten
+    restart: unless-stopped
+    volumes:
+      - /opt/label-studio:/label-studio/data
+    environment:
+      # DJANGO_DB: default
+      # POSTGRE_NAME: ${LS_DB_NAME}
+      # POSTGRE_USER: ${LS_DB_USERNAME}
+      # POSTGRE_PASSWORD: ${LS_DB_PASSWORD}
+      # POSTGRE_PORT: ${LS_DB_PORT}
+      # POSTGRE_HOST: ${LS_DB_HOST}
+      LABEL_STUDIO_USERNAME: ${LS_USERNAME}
+      LABEL_STUDIO_PASSWORD: ${LS_PASSWORD}
+      LABEL_STUDIO_DISABLE_SIGNUP_WITHOUT_LINK: true
+      S3_ENDPOINT: ${LS_S3_ENDPOINT}
+
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.services.ls.loadbalancer.server.port=8080"
+
+      # for http
+      - "traefik.http.routers.ls_insecure.rule=Host(`label.mitwelten.org`)"
+      - "traefik.http.routers.ls_insecure.entrypoints=http"
+
+      # redirect to https
+      - "traefik.http.middlewares.ls-https.redirectscheme.scheme=https"
+      - "traefik.http.routers.ls_insecure.middlewares=ls-https"
+
+      # for https
+      - "traefik.http.routers.ls.rule=Host(`label.mitwelten.org`)"
+      - "traefik.http.routers.ls.entrypoints=https"
+      - "traefik.http.routers.ls.tls.certresolver=ssl"
 
   manager-api-v2:
     image: mitwelten-manager:0.1
