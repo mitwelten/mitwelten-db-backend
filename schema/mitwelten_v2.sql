@@ -111,6 +111,68 @@ CREATE TABLE IF NOT EXISTS birdnet_tasks
     CONSTRAINT unique_task_in_batch UNIQUE (file_id, config_id, batch_id)
 );
 
+-- batdetect2 SpectrogramParameters, ModelParameters, ProcessingConfiguration
+CREATE TABLE IF NOT EXISTS batnet_configs
+(
+    config_id serial,
+    config jsonb NOT NULL,
+    comment text,
+    created_at timestamptz NOT NULL DEFAULT current_timestamp,
+    updated_at timestamptz NOT NULL DEFAULT current_timestamp,
+    PRIMARY KEY (config_id),
+    UNIQUE (config)
+);
+
+CREATE TABLE IF NOT EXISTS batnet_tasks
+(
+    task_id serial,
+    file_id integer NOT NULL,
+    config_id integer NOT NULL,
+    state integer NOT NULL,
+    scheduled_on timestamptz NOT NULL,
+    pickup_on timestamptz,
+    end_on timestamptz,
+    PRIMARY KEY (task_id),
+    CONSTRAINT unique_task UNIQUE (file_id, config_id),
+    CONSTRAINT batnet_tasks_config_id_fkey FOREIGN KEY (config_id)
+        REFERENCES batnet_configs (config_id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE RESTRICT,
+    CONSTRAINT batnet_tasks_file_id_fkey FOREIGN KEY (file_id)
+        REFERENCES files_audio (file_id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE RESTRICT
+);
+
+CREATE TABLE IF NOT EXISTS batnet_results
+(
+    result_id serial,
+    task_id integer NOT NULL,
+    file_id integer NOT NULL,
+
+    class character varying(128),
+    event character varying(128),
+    individual integer,
+    class_prob real,
+    det_prob real,
+    start_time real,
+    end_time real,
+    high_freq real,
+    low_freq real,
+
+    PRIMARY KEY (result_id),
+    CONSTRAINT batnet_results_file_id_fkey FOREIGN KEY (file_id)
+        REFERENCES files_audio (file_id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
+        NOT VALID,
+    CONSTRAINT batnet_results_task_id_fkey FOREIGN KEY (task_id)
+        REFERENCES batnet_tasks (task_id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
+        NOT VALID
+);
+
 CREATE TABLE IF NOT EXISTS nodes
 (
     node_id serial,
@@ -652,6 +714,7 @@ TO mitwelten_rest;
 
 GRANT SELECT ON
   birdnet_configs,
+  batnet_configs,
   files_audio,
   files_image,
   birdnet_results,
