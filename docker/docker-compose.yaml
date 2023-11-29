@@ -78,6 +78,30 @@ services:
       - "traefik.http.routers.kc.entrypoints=https"
       - "traefik.http.routers.kc.tls.certresolver=ssl"
 
+  pushprox:
+    container_name: pushprox
+    image: prom/pushprox:master
+    networks:
+      - mitwelten
+    restart: unless-stopped
+    entrypoint: ["/app/pushprox-proxy", "--web.listen-address=:8082"]
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.services.pushprox.loadbalancer.server.port=8082"
+
+      # for http
+      - "traefik.http.routers.pushprox_insecure.rule=Host(`push.mitwelten.org`)"
+      - "traefik.http.routers.pushprox_insecure.entrypoints=http"
+
+      # redirect to https
+      - "traefik.http.middlewares.pushprox-https.redirectscheme.scheme=https"
+      - "traefik.http.routers.pushprox_insecure.middlewares=pushprox-https"
+
+      # for https
+      - "traefik.http.routers.pushprox.rule=Host(`push.mitwelten.org`)"
+      - "traefik.http.routers.pushprox.entrypoints=https"
+      - "traefik.http.routers.pushprox.tls.certresolver=ssl"
+
   labelstudio:
     container_name: labelstudio
     image: heartexlabs/label-studio:latest
