@@ -36,3 +36,23 @@ scrape_configs:
   - files:
     - /etc/prometheus/sd/mitwelten_capture-nodes.json
     refresh_interval: 5m
+
+- job_name: node_proxy
+  proxy_url: http://pushprox:8082/
+  scheme: http
+  static_configs:
+    - targets: ['ba14ns21425.adm.ds.fhnw.ch:9100']
+  relabel_configs:
+    - source_labels: [__address__]
+      target_label: instance
+    - target_label: job
+      replacement: node
+
+- job_name: node_local
+  static_configs:
+    - targets: ['v000744.fhnw.ch:9100']
+  relabel_configs:
+    - source_labels: [__address__]
+      target_label: instance
+    - target_label: job
+      replacement: node
