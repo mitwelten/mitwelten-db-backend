@@ -97,7 +97,7 @@ async def read_species_day(spec: str, start: int = 0, end: int = 0, conf: float 
 
 @router.get('/birds/{identifier}/date' , response_model=TimeSeriesResult)
 async def detection_dates_by_id(
-    identifier: int,  
+    identifier: int,
     conf: float = 0.9,
     bucket_width:str = "1d",
     time_from: Optional[datetime] = Query(None, alias='from', example='2021-09-01T00:00:00.000Z'),
@@ -114,11 +114,11 @@ async def detection_dates_by_id(
     SELECT time_bucket(:bucket_width, (f.time + interval '1 second' * r.time_start)) AS bucket,
     count({distinct_arg} r.species) as detections
     from {crd.db.schema}.birdnet_results r
-    left join {crd.db.schema}.files_audio f on f.file_id = r.file_id 
+    left join {crd.db.schema}.files_audio f on f.file_id = r.file_id
     where r.confidence >= :conf
     and r.species in (
         select s.label_sci from {crd.db.schema}.taxonomy_data s where datum_id in (
-            select species_id from {crd.db.schema}.taxonomy_tree 
+            select species_id from {crd.db.schema}.taxonomy_tree
             where species_id = :identifier
             or genus_id = :identifier
             or family_id = :identifier
@@ -127,7 +127,7 @@ async def detection_dates_by_id(
             or phylum_id = :identifier
             or kingdom_id = :identifier
             )
-        ) 
+        )
     {deployment_filter}
     {time_from_condition}
     {time_to_condition}
@@ -150,7 +150,7 @@ async def detection_dates_by_id(
 
 @router.get('/birds/{identifier}/location' , response_model=List[DetectionLocationResult])
 async def detection_locations_by_id(
-    identifier: int,  
+    identifier: int,
     conf: float = 0.9,
     time_from: Optional[datetime] = Query(None, alias='from', example='2021-09-01T00:00:00.000Z'),
     time_to: Optional[datetime] = Query(None, alias='to', example='2022-08-31T23:59:59.999Z'),
@@ -163,17 +163,17 @@ async def detection_locations_by_id(
     deployment_filter = "AND f.deployment_id in :deployment_ids" if deployment_ids else ""
     query = text(
     f"""
-    SELECT 
+    SELECT
     d.location,
     d.deployment_id,
     count({distinct_arg} r.species) as detections
     from {crd.db.schema}.birdnet_results r
-    left join {crd.db.schema}.files_audio f on f.file_id = r.file_id 
+    left join {crd.db.schema}.files_audio f on f.file_id = r.file_id
     left join {crd.db.schema}.deployments d on f.deployment_id = d.deployment_id
     where r.confidence >= :conf
     and r.species in (
         select s.label_sci from {crd.db.schema}.taxonomy_data s where datum_id in (
-            select species_id from {crd.db.schema}.taxonomy_tree 
+            select species_id from {crd.db.schema}.taxonomy_tree
             where species_id = :identifier
             or genus_id = :identifier
             or family_id = :identifier
@@ -182,7 +182,7 @@ async def detection_locations_by_id(
             or phylum_id = :identifier
             or kingdom_id = :identifier
             )
-        ) 
+        )
     {deployment_filter}
     {time_from_condition}
     {time_to_condition}
@@ -210,7 +210,7 @@ async def detection_locations_by_id(
 
 @router.get('/birds/{identifier}/count')#, response_model=List[DetectionLocationResult])
 async def detection_count(
-    identifier: int,  
+    identifier: int,
     conf: float = 0.9,
     time_from: Optional[datetime] = Query(None, alias='from', example='2021-09-01T00:00:00.000Z'),
     time_to: Optional[datetime] = Query(None, alias='to', example='2022-08-31T23:59:59.999Z'),
@@ -219,15 +219,15 @@ async def detection_count(
     time_to_condition = "AND (f.time + interval '1 second' * r.time_start) <= :time_to" if time_to else ""
     query = text(
     f"""
-    SELECT 
+    SELECT
     count(r.species) as detections
     from {crd.db.schema}.birdnet_results r
-    left join {crd.db.schema}.files_audio f on f.file_id = r.file_id 
+    left join {crd.db.schema}.files_audio f on f.file_id = r.file_id
     left join {crd.db.schema}.deployments d on f.deployment_id = d.deployment_id
     where r.confidence >= :conf
     and r.species in (
         select s.label_sci from {crd.db.schema}.taxonomy_data s where datum_id in (
-            select species_id from {crd.db.schema}.taxonomy_tree 
+            select species_id from {crd.db.schema}.taxonomy_tree
             where species_id = :identifier
             or genus_id = :identifier
             or family_id = :identifier
@@ -236,7 +236,7 @@ async def detection_count(
             or phylum_id = :identifier
             or kingdom_id = :identifier
             )
-        ) 
+        )
     {time_from_condition}
     {time_to_condition}
     """
@@ -251,7 +251,7 @@ async def detection_count(
 
 @router.get('/birds/{identifier}/time_of_day')
 async def detection_time_of_day(
-    identifier: int,  
+    identifier: int,
     conf: float = 0.9,
     bucket_width_m:int = 60,
     time_from: Optional[datetime] = Query(None, alias='from', example='2021-09-01T00:00:00.000Z'),
@@ -264,32 +264,32 @@ async def detection_time_of_day(
     deployment_filter = "AND f.deployment_id in :deployment_ids" if deployment_ids else ""
     if distinctspecies:
         query = text(f"""
-        SELECT 
+        SELECT
             EXTRACT (hour from (f.time + interval '1 second' * r.time_start))*60 as minute_of_day,
             COUNT(DISTINCT r.species) AS detections
         FROM {crd.db.schema}.birdnet_results r
-        LEFT JOIN {crd.db.schema}.files_audio f ON f.file_id = r.file_id 
+        LEFT JOIN {crd.db.schema}.files_audio f ON f.file_id = r.file_id
         WHERE r.confidence >=  :conf
         {deployment_filter}
         {time_from_condition}
         {time_to_condition}
         AND r.species IN (
                 SELECT s.label_sci FROM {crd.db.schema}.taxonomy_data s WHERE datum_id IN (
-                    SELECT species_id FROM {crd.db.schema}.taxonomy_tree 
-                    WHERE species_id =  :identifier 
-                    OR genus_id =  :identifier 
-                    OR family_id =  :identifier 
-                    OR order_id =  :identifier 
-                    OR class_id =  :identifier 
-                    OR phylum_id =  :identifier 
-                    OR kingdom_id =  :identifier 
+                    SELECT species_id FROM {crd.db.schema}.taxonomy_tree
+                    WHERE species_id =  :identifier
+                    OR genus_id =  :identifier
+                    OR family_id =  :identifier
+                    OR order_id =  :identifier
+                    OR class_id =  :identifier
+                    OR phylum_id =  :identifier
+                    OR kingdom_id =  :identifier
                 )
             )
         GROUP BY minute_of_day
         ORDER BY minute_of_day
         """
         ).bindparams(identifier=identifier, conf = conf)
-        
+
     else:
         query = text(
         f"""
@@ -297,22 +297,22 @@ async def detection_time_of_day(
         unnest((hist.minute_buckets[2:])[: array_length(hist.minute_buckets,1)-2]) as detections,
         generate_series(0, 24*60-1, :bucket_width_m) AS minute_of_day
         FROM (
-            SELECT 
+            SELECT
             histogram(
                 EXTRACT (hour from (f.time + interval '1 second' * r.time_start))*60 + EXTRACT (minute from (f.time + interval '1 second' * r.time_start)), 0, 24*60, (24*60)/:bucket_width_m) as minute_buckets
             FROM {crd.db.schema}.birdnet_results r
-            LEFT JOIN {crd.db.schema}.files_audio f ON f.file_id = r.file_id 
+            LEFT JOIN {crd.db.schema}.files_audio f ON f.file_id = r.file_id
             WHERE r.confidence >=  :conf
             AND r.species IN (
                 SELECT s.label_sci FROM {crd.db.schema}.taxonomy_data s WHERE datum_id IN (
-                    SELECT species_id FROM {crd.db.schema}.taxonomy_tree 
-                    WHERE species_id =  :identifier 
-                    OR genus_id =  :identifier 
-                    OR family_id =  :identifier 
-                    OR order_id =  :identifier 
-                    OR class_id =  :identifier 
-                    OR phylum_id =  :identifier 
-                    OR kingdom_id =  :identifier 
+                    SELECT species_id FROM {crd.db.schema}.taxonomy_tree
+                    WHERE species_id =  :identifier
+                    OR genus_id =  :identifier
+                    OR family_id =  :identifier
+                    OR order_id =  :identifier
+                    OR class_id =  :identifier
+                    OR phylum_id =  :identifier
+                    OR kingdom_id =  :identifier
                 )
             )
         {deployment_filter}
@@ -332,16 +332,17 @@ async def detection_time_of_day(
         "minuteOfDay":[r.minute_of_day for r in results],
         "detections":[r.detections for r in results]
         }
-    
+
 @router.get('/species/parent_taxon/{identifier}/count')#, response_model=List[DetectionLocationResult])
 async def species_count_by_parent_taxon(
-    identifier: int,  
+    identifier: int,
     conf: float = 0.9,
     limit: int = 20,
+    config_id: Optional[int] = 1
     ):
     query = text(
     f"""
-    SELECT 
+    SELECT
         s.datum_id,
         s.label_sci,
         s.label_de,
@@ -376,7 +377,7 @@ async def species_count_by_parent_taxon(
         detections =r.detections
         )
         for r in results]
-    
+
     return typed_results
 
 @router.get('/birds/detectionlist')
@@ -394,9 +395,9 @@ async def get_detected_species_list(
         select
             distinct(r.species),
             count(r.species) as detections,
-            t.datum_id, 
+            t.datum_id,
             t.label_en,
-            t.label_de 
+            t.label_de
         from {crd.db.schema}.birdnet_results r
         left join {crd.db.schema}.files_audio f on f.file_id = r.file_id
         join {crd.db.schema}.taxonomy_data t on t.label_sci = r.species
