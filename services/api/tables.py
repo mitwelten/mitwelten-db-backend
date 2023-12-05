@@ -28,6 +28,7 @@ birdnet_results = sqlalchemy.Table(
     'birdnet_results',
     metadata,
     sqlalchemy.Column('result_id',    sqlalchemy.Integer    , primary_key=True),
+    sqlalchemy.Column('task_id',      sqlalchemy.Integer    , ForeignKey('birdnet_tasks.task_id')),
     sqlalchemy.Column('file_id',      sqlalchemy.Integer    , nullable=False),
     sqlalchemy.Column('time_start',   sqlalchemy.REAL       , nullable=False),
     sqlalchemy.Column('time_end',     sqlalchemy.REAL       , nullable=False),
@@ -123,13 +124,13 @@ birdnet_tasks = sqlalchemy.Table(
     'birdnet_tasks',
     metadata,
     sqlalchemy.Column('task_id',        sqlalchemy.Integer    , primary_key=True),
-    sqlalchemy.Column('file_id',        None                  , sqlalchemy.ForeignKey('birdnet_input.file_id')),
-    sqlalchemy.Column('config_id',      sqlalchemy.Integer    , nullable=False),
+    sqlalchemy.Column('file_id',        sqlalchemy.Integer    , ForeignKey('files_audio.file_id')),
+    sqlalchemy.Column('config_id',      sqlalchemy.Integer    , ForeignKey('birdnet_config.config_id')),
     sqlalchemy.Column('state',          sqlalchemy.Integer    , nullable=False),
     sqlalchemy.Column('scheduled_on',   sqlalchemy.TIMESTAMP  , nullable=False),
-    sqlalchemy.Column('pickup_on',      sqlalchemy.TIMESTAMP  , nullable=False),
-    sqlalchemy.Column('end_on',         sqlalchemy.TIMESTAMP  , nullable=False),
-    sqlalchemy.Column('batch_id',       sqlalchemy.Integer,     nullable=False),
+    sqlalchemy.Column('pickup_on',      sqlalchemy.TIMESTAMP  , nullable=True),
+    sqlalchemy.Column('end_on',         sqlalchemy.TIMESTAMP  , nullable=True),
+    sqlalchemy.Column('batch_id',       sqlalchemy.Integer    , nullable=True),
     schema=crd.db.schema
 )
 

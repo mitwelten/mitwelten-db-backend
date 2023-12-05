@@ -3,7 +3,9 @@ from typing import List, Optional
 
 from api.database import database
 from api.models import Result, ResultFull, ResultsGrouped, TimeSeriesResult, DetectionLocationResult, Point
-from api.tables import birdnet_results, birdnet_results_file_taxonomy, birdnet_species, birdnet_species_day, taxonomy_data
+from api.tables import (birdnet_results, birdnet_tasks,
+    birdnet_results_file_taxonomy, birdnet_species, birdnet_species_day, taxonomy_data
+)
 
 from fastapi import APIRouter, Query
 from sqlalchemy.sql import and_, desc, func, select, text, bindparam
@@ -20,8 +22,11 @@ router = APIRouter(tags=['inferrence'])
 # todo: give endOfRecords (select +1, see if array is full)
 # todo: adjustable confidence
 @router.get('/results/', response_model=List[Result])
-async def read_results(offset: int = 0, pagesize: int = Query(1000, gte=0, lte=1000)):
-    query = birdnet_results.select().where(birdnet_results.c.confidence > 0.9).\
+async def read_results(offset: int = 0, pagesize: int = Query(1000, gte=0, lte=1000), config_id: Optional[int] = 1):
+    query = birdnet_results.select().\
+        outerjoin(birdnet_tasks).\
+        where(birdnet_results.c.confidence > 0.9).\
+        where(birdnet_tasks.c.config_id == config_id).\
         limit(pagesize).offset(offset)
     return await database.fetch_all(query)
 
@@ -337,7 +342,8 @@ async def detection_time_of_day(
 async def species_count_by_parent_taxon(
     identifier: int,
     conf: float = 0.9,
-    limit: int = 20
+    limit: int = 20,
+    config_id: Optional[int] = 1
     ):
     query = text(
     f"""
@@ -349,6 +355,7 @@ async def species_count_by_parent_taxon(
         count(r.species) as detections
     FROM {crd.db.schema}.taxonomy_data s
     left join {crd.db.schema}.birdnet_results r on r.species = s.label_sci
+    left join {crd.db.schema}.birdnet_tasks t on t.task_id = r.task_id
     WHERE s.datum_id IN (
         select species_id from {crd.db.schema}.taxonomy_tree
                 where species_id = :identifier
@@ -359,12 +366,13 @@ async def species_count_by_parent_taxon(
                 or phylum_id = :identifier
                 or kingdom_id =:identifier
         )
+    AND t.config_id = :config_id
     AND r.confidence > :conf
     group by s.datum_id
     order by detections desc
     LIMIT :limit
     """
-    ).bindparams(conf=conf, identifier=identifier, limit=limit)
+    ).bindparams(conf=conf, identifier=identifier, limit=limit, config_id=config_id)
 
     results = await database.fetch_all(query)
     typed_results = [
@@ -386,6 +394,7 @@ async def get_detected_species_list(
     time_to: Optional[datetime] = Query(None, alias='to', example='2022-08-31T23:59:59.999Z'),
     deployment_ids:List[int] = Query(default=None),
     limit: int = 1000,
+    config_id: Optional[int] = 1
     ):
     time_from_condition = "AND (f.time + interval '1 second' * r.time_start) >= :time_from" if time_from else ""
     time_to_condition = "AND (f.time + interval '1 second' * r.time_start) <= :time_to" if time_to else ""
@@ -399,8 +408,10 @@ async def get_detected_species_list(
             t.label_de
         from {crd.db.schema}.birdnet_results r
         left join {crd.db.schema}.files_audio f on f.file_id = r.file_id
+        left join {crd.db.schema}.birdnet_tasks task on task.task_id = r.task_id
         join {crd.db.schema}.taxonomy_data t on t.label_sci = r.species
         where r.confidence >= :conf
+        AND task.config_id = :config_id
         {deployment_filter}
         {time_from_condition}
         {time_to_condition}
@@ -408,7 +419,7 @@ async def get_detected_species_list(
         order by detections DESC
         LIMIT :limit
     """
-    ).bindparams(conf=conf, limit=limit)
+    ).bindparams(conf=conf, limit=limit, config_id=config_id)
     if time_from:
         query = query.bindparams(time_from = time_from)
     if time_to:
