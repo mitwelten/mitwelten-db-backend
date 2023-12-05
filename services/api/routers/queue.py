@@ -2,7 +2,7 @@ from api.config import crd
 from api.database import database
 from api.dependencies import check_authentication
 from api.models import QueueInputDefinition, QueueUpdateDefinition
-from api.tables import birdnet_input, tasks
+from api.tables import birdnet_input, birdnet_tasks
 
 from fastapi import APIRouter, Depends
 from sqlalchemy.sql import insert, func, select, text
@@ -16,12 +16,12 @@ router = APIRouter(tags=['queue'])
 
 @router.get('/queue/progress/')
 async def read_progress():
-    query = select(birdnet_input.c.node_label, tasks.c.state,
+    query = select(birdnet_input.c.node_label, birdnet_tasks.c.state,
             func.sum(birdnet_input.c.file_size).label('size'),
             func.count(birdnet_input.c.file_id).label('count')).\
-        outerjoin(tasks).\
+        outerjoin(birdnet_tasks).\
         where(birdnet_input.c.sample_rate == 48000, birdnet_input.c.duration >= 3).\
-        group_by(tasks.c.state, birdnet_input.c.node_label).\
+        group_by(birdnet_tasks.c.state, birdnet_input.c.node_label).\
         order_by(birdnet_input.c.node_label)
     progess = await database.fetch_all(query)
     node_progress = {}
@@ -74,10 +74,10 @@ async def read_input():
 async def queue_input(definition: QueueInputDefinition):
 
     select_query = select(birdnet_input.c.file_id, 1, 0, current_timestamp()).\
-        outerjoin(tasks).\
+        outerjoin(birdnet_tasks).\
         where(birdnet_input.c.sample_rate == 48000, birdnet_input.c.duration >= 3,
-            tasks.c.state == None, birdnet_input.c.node_label == definition.node_label)
-    insert_query = insert(tasks).from_select(['file_id', 'config_id', 'state', 'scheduled_on'], select_query)
+            birdnet_tasks.c.state == None, birdnet_input.c.node_label == definition.node_label)
+    insert_query = insert(birdnet_tasks).from_select(['file_id', 'config_id', 'state', 'scheduled_on'], select_query)
     # 'on conflict do nothing' not implemented.
     # not required here as the records are selected by the fact that they are absent.
 

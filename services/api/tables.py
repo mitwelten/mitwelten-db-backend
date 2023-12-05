@@ -24,7 +24,7 @@ birdnet_input = sqlalchemy.Table(
     sqlalchemy.Column('location',     GeometryPoint        , nullable=False)
 )
 
-results = sqlalchemy.Table(
+birdnet_results = sqlalchemy.Table(
     'birdnet_results',
     metadata,
     sqlalchemy.Column('result_id',    sqlalchemy.Integer    , primary_key=True),
@@ -35,7 +35,7 @@ results = sqlalchemy.Table(
     sqlalchemy.Column('species',      sqlalchemy.String(255), nullable=False)
 )
 
-species = sqlalchemy.Table(
+birdnet_species = sqlalchemy.Table(
     'birdnet_inferred_species',
     metadata,
     sqlalchemy.Column('species',    sqlalchemy.String(255)),
@@ -43,7 +43,7 @@ species = sqlalchemy.Table(
     sqlalchemy.Column('time_start', sqlalchemy.TIMESTAMP)
 )
 
-species_day = sqlalchemy.Table(
+birdnet_species_day = sqlalchemy.Table(
     'birdnet_inferred_species_day',
     metadata,
     sqlalchemy.Column('species',    sqlalchemy.String(255)),
@@ -73,7 +73,7 @@ image_results = sqlalchemy.Table(
     sqlalchemy.Column('config_id', sqlalchemy.String, ForeignKey('pollinator_inference_config.config_id')),
 )
 
-results_file_taxonomy = sqlalchemy.Table(
+birdnet_results_file_taxonomy = sqlalchemy.Table(
     'birdnet_inferred_species_file_taxonomy',
     metadata,
     sqlalchemy.Column('species',     sqlalchemy.String(255)),
@@ -119,7 +119,7 @@ taxonomy_data = sqlalchemy.Table(
     sqlalchemy.Column('updated_at',  sqlalchemy.TIMESTAMP, nullable=False),
 )
 
-tasks = sqlalchemy.Table(
+birdnet_tasks = sqlalchemy.Table(
     'birdnet_tasks',
     metadata,
     sqlalchemy.Column('task_id',        sqlalchemy.Integer    , primary_key=True),

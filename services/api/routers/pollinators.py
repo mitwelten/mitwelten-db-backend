@@ -84,7 +84,7 @@ async def detection_time_of_day(
     unnest((hist.minute_buckets[2:])[: array_length(hist.minute_buckets,1)-2]) as detections,
     generate_series(0, 24*60-1, :bucket_width_m) AS minute_of_day
     FROM (
-        SELECT 
+        SELECT
         histogram(
             EXTRACT (hour from i.time)*60 + EXTRACT (minute from i.time), 0, 24*60, (24*60)/:bucket_width_m
         ) as minute_buckets
@@ -129,7 +129,7 @@ async def detection_locations_by_id(
 
     query = text(
     f"""
-    SELECT 
+    SELECT
     d.location,
     d.deployment_id,
     count(p.class) as detections
@@ -180,7 +180,7 @@ async def get_detected_species_list(
     pollinator_class_condition = "and p.class in :pollinator_classes" if pollinator_class is not None else ""
     query = text(
     f"""
-    SELECT 
+    SELECT
         distinct(p.class) as polli_class,
         count(p.class) as detections
     from {crd.db.schema}.pollinators p
@@ -230,10 +230,9 @@ async def get_latest_image_entries():
     where
         upper(d.period) is NULL
     """)
-   
+
     results = await database.fetch_all(query)
     return [
         {"deployment_id":r.deployment_id, "object_name":r.object_name,"time":r.time}
         for r in results
     ]
-    

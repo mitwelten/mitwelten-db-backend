@@ -85,8 +85,8 @@ async def get_recording_duration_per_day(
         query = query.bindparams( bindparam('deployment_ids', value=deployment_ids, expanding=True))
     result = await database.fetch_all(query)
     return result
-    
-    
+
+
 @router.get('/statistics/image/count')
 async def get_total_image_count(
     time_from: Optional[datetime] = Query(None, alias='from', example='2021-09-01T00:00:00.000Z'),
