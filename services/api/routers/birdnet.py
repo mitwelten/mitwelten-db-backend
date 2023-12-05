@@ -337,8 +337,7 @@ async def detection_time_of_day(
 async def species_count_by_parent_taxon(
     identifier: int,
     conf: float = 0.9,
-    limit: int = 20,
-    config_id: Optional[int] = 1
+    limit: int = 20
     ):
     query = text(
     f"""
