@@ -30,13 +30,15 @@ async def read_results(offset: int = 0, pagesize: int = Query(1000, gte=0, lte=1
         limit(pagesize).offset(offset)
     return await database.fetch_all(query)
 
-# todo: adjustable confidence
+# TODO: adjustable confidence
+# TODO: add config_id filter
 @router.get('/results_full/', response_model=List[ResultFull])
 async def read_results_full(offset: int = 0, pagesize: int = Query(1000, gte=0, lte=1000)):
     query = birdnet_results_file_taxonomy.select().where(birdnet_results.c.confidence > 0.9).\
         limit(pagesize).offset(offset)
     return await database.fetch_all(query)
 
+# TODO: add config_id filter
 @router.get('/results_full/{on_date}', response_model=List[ResultFull])
 async def read_results_full_on_date(on_date: date, offset: int = 0, pagesize: int = Query(1000, gte=0, lte=1000)):
     query = birdnet_results_file_taxonomy.select().where(and_(func.date(birdnet_results_file_taxonomy.c.object_time) == on_date, birdnet_results_file_taxonomy.c.confidence > 0.9)).\
@@ -45,6 +47,7 @@ async def read_results_full_on_date(on_date: date, offset: int = 0, pagesize: in
 
     return await database.fetch_all(query)
 
+# TODO: add config_id filter
 @router.get('/results_full/single/{filter:path}', response_model=List[ResultsGrouped])
 async def read_results_full(filter: str):
     query = select([birdnet_results_file_taxonomy.c.species, birdnet_results_file_taxonomy.c.time_start_relative, birdnet_results_file_taxonomy.c.duration, birdnet_results_file_taxonomy.c.image_url])\
@@ -53,6 +56,7 @@ async def read_results_full(filter: str):
     results = await database.fetch_all(query)
     return results
 
+# TODO: add config_id filter
 @router.get('/results_full/grouped/{from_date}', response_model=List[str])
 async def read_grouped_full(from_date: date, offset: int = 0, pagesize: int = Query(1000, gte=0, lte=1000)):
     query = select(birdnet_results_file_taxonomy.c.object_name, func.count(birdnet_results_file_taxonomy.c.object_name))\
@@ -63,6 +67,7 @@ async def read_grouped_full(from_date: date, offset: int = 0, pagesize: int = Qu
     results = await database.fetch_all(query)
     return [result.object_name for result in results]
 
+# TODO: add config_id filter
 @router.get('/species/')
 async def read_species(start: int = 0, end: int = 0, conf: float = 0.9):
     query = select(birdnet_results.c.species, func.count(birdnet_results.c.species).label('count')).\
@@ -75,6 +80,7 @@ async def read_species(start: int = 0, end: int = 0, conf: float = 0.9):
         with_only_columns(query, taxonomy_data.c.label_de, taxonomy_data.c.label_en, taxonomy_data.c.image_url)
     return await database.fetch_all(labelled_query)
 
+# TODO: add config_id filter
 @router.get('/species/{spec}') # , response_model=List[Species]
 async def read_species_detail(spec: str, start: int = 0, end: int = 0, conf: float = 0.9):
     query = select(birdnet_species.c.species, func.min(birdnet_species.c.time_start).label('earliest'),
@@ -87,6 +93,7 @@ async def read_species_detail(spec: str, start: int = 0, end: int = 0, conf: flo
         with_only_columns(query, taxonomy_data.c.label_de, taxonomy_data.c.label_en, taxonomy_data.c.image_url)
     return await database.fetch_all(labelled_query)
 
+# TODO: add config_id filter
 @router.get('/species/{spec}/day/') # , response_model=List[Species]
 async def read_species_day(spec: str, start: int = 0, end: int = 0, conf: float = 0.9):
     query = select(birdnet_species_day.c.species, birdnet_species_day.c.date,
@@ -100,6 +107,7 @@ async def read_species_day(spec: str, start: int = 0, end: int = 0, conf: float 
         with_only_columns(query, taxonomy_data.c.label_de, taxonomy_data.c.label_en)
     return await database.fetch_all(labelled_query)
 
+# TODO: add config_id filter
 @router.get('/birds/{identifier}/date' , response_model=TimeSeriesResult)
 async def detection_dates_by_id(
     identifier: int,
@@ -153,6 +161,7 @@ async def detection_dates_by_id(
         response.detections.append(result.detections)
     return response
 
+# TODO: add config_id filter
 @router.get('/birds/{identifier}/location' , response_model=List[DetectionLocationResult])
 async def detection_locations_by_id(
     identifier: int,
@@ -212,7 +221,7 @@ async def detection_locations_by_id(
         )
     return typed_results
 
-
+# TODO: add config_id filter
 @router.get('/birds/{identifier}/count')#, response_model=List[DetectionLocationResult])
 async def detection_count(
     identifier: int,
@@ -254,6 +263,7 @@ async def detection_count(
     result = await database.fetch_one(query)
     return result.detections
 
+# TODO: add config_id filter
 @router.get('/birds/{identifier}/time_of_day')
 async def detection_time_of_day(
     identifier: int,
