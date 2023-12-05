@@ -3,7 +3,7 @@ from typing import List, Optional
 
 from api.database import database
 from api.models import Result, ResultFull, ResultsGrouped, TimeSeriesResult, DetectionLocationResult, Point
-from api.tables import results, results_file_taxonomy, species, species_day, taxonomy_data
+from api.tables import birdnet_results, birdnet_results_file_taxonomy, birdnet_species, birdnet_species_day, taxonomy_data
 
 from fastapi import APIRouter, Query
 from sqlalchemy.sql import and_, desc, func, select, text, bindparam
@@ -21,38 +21,38 @@ router = APIRouter(tags=['inferrence'])
 # todo: adjustable confidence
 @router.get('/results/', response_model=List[Result])
 async def read_results(offset: int = 0, pagesize: int = Query(1000, gte=0, lte=1000)):
-    query = results.select().where(results.c.confidence > 0.9).\
+    query = birdnet_results.select().where(birdnet_results.c.confidence > 0.9).\
         limit(pagesize).offset(offset)
     return await database.fetch_all(query)
 
 # todo: adjustable confidence
 @router.get('/results_full/', response_model=List[ResultFull])
 async def read_results_full(offset: int = 0, pagesize: int = Query(1000, gte=0, lte=1000)):
-    query = results_file_taxonomy.select().where(results.c.confidence > 0.9).\
+    query = birdnet_results_file_taxonomy.select().where(birdnet_results.c.confidence > 0.9).\
         limit(pagesize).offset(offset)
     return await database.fetch_all(query)
 
 @router.get('/results_full/{on_date}', response_model=List[ResultFull])
 async def read_results_full_on_date(on_date: date, offset: int = 0, pagesize: int = Query(1000, gte=0, lte=1000)):
-    query = results_file_taxonomy.select().where(and_(func.date(results_file_taxonomy.c.object_time) == on_date, results_file_taxonomy.c.confidence > 0.9)).\
+    query = birdnet_results_file_taxonomy.select().where(and_(func.date(birdnet_results_file_taxonomy.c.object_time) == on_date, birdnet_results_file_taxonomy.c.confidence > 0.9)).\
         limit(pagesize).offset(offset)\
-        .order_by(results_file_taxonomy.c.object_time)
+        .order_by(birdnet_results_file_taxonomy.c.object_time)
 
     return await database.fetch_all(query)
 
 @router.get('/results_full/single/{filter:path}', response_model=List[ResultsGrouped])
 async def read_results_full(filter: str):
-    query = select([results_file_taxonomy.c.species, results_file_taxonomy.c.time_start_relative, results_file_taxonomy.c.duration, results_file_taxonomy.c.image_url])\
-            .where(and_(results_file_taxonomy.c.confidence > 0.9, results_file_taxonomy.c.object_name == filter))\
-            .group_by(results_file_taxonomy.c.species, results_file_taxonomy.c.time_start_relative, results_file_taxonomy.c.duration, results_file_taxonomy.c.image_url)
+    query = select([birdnet_results_file_taxonomy.c.species, birdnet_results_file_taxonomy.c.time_start_relative, birdnet_results_file_taxonomy.c.duration, birdnet_results_file_taxonomy.c.image_url])\
+            .where(and_(birdnet_results_file_taxonomy.c.confidence > 0.9, birdnet_results_file_taxonomy.c.object_name == filter))\
+            .group_by(birdnet_results_file_taxonomy.c.species, birdnet_results_file_taxonomy.c.time_start_relative, birdnet_results_file_taxonomy.c.duration, birdnet_results_file_taxonomy.c.image_url)
     results = await database.fetch_all(query)
     return results
 
 @router.get('/results_full/grouped/{from_date}', response_model=List[str])
 async def read_grouped_full(from_date: date, offset: int = 0, pagesize: int = Query(1000, gte=0, lte=1000)):
-    query = select(results_file_taxonomy.c.object_name, func.count(results_file_taxonomy.c.object_name))\
-        .filter(and_(results_file_taxonomy.c.confidence > 0.9, results_file_taxonomy.c.object_time >= from_date))\
-        .group_by(results_file_taxonomy.c.object_name, results_file_taxonomy.c.object_time)\
+    query = select(birdnet_results_file_taxonomy.c.object_name, func.count(birdnet_results_file_taxonomy.c.object_name))\
+        .filter(and_(birdnet_results_file_taxonomy.c.confidence > 0.9, birdnet_results_file_taxonomy.c.object_time >= from_date))\
+        .group_by(birdnet_results_file_taxonomy.c.object_name, birdnet_results_file_taxonomy.c.object_time)\
         .limit(pagesize).offset(offset)
 
     results = await database.fetch_all(query)
@@ -60,9 +60,9 @@ async def read_grouped_full(from_date: date, offset: int = 0, pagesize: int = Qu
 
 @router.get('/species/')
 async def read_species(start: int = 0, end: int = 0, conf: float = 0.9):
-    query = select(results.c.species, func.count(results.c.species).label('count')).\
-        where(results.c.confidence >= conf).\
-        group_by(results.c.species).\
+    query = select(birdnet_results.c.species, func.count(birdnet_results.c.species).label('count')).\
+        where(birdnet_results.c.confidence >= conf).\
+        group_by(birdnet_results.c.species).\
         subquery(name='species')
     labelled_query = select(query).\
         outerjoin(taxonomy_data, query.c.species == taxonomy_data.c.label_sci).\
@@ -72,11 +72,11 @@ async def read_species(start: int = 0, end: int = 0, conf: float = 0.9):
 
 @router.get('/species/{spec}') # , response_model=List[Species]
 async def read_species_detail(spec: str, start: int = 0, end: int = 0, conf: float = 0.9):
-    query = select(species.c.species, func.min(species.c.time_start).label('earliest'),
-            func.max(species.c.time_start).label('latest'),
-            func.count(species.c.time_start).label('count')).\
-        where(and_(species.c.species == spec, species.c.confidence >= conf)).\
-        group_by(species.c.species).subquery(name='species')
+    query = select(birdnet_species.c.species, func.min(birdnet_species.c.time_start).label('earliest'),
+            func.max(birdnet_species.c.time_start).label('latest'),
+            func.count(birdnet_species.c.time_start).label('count')).\
+        where(and_(birdnet_species.c.species == spec, birdnet_species.c.confidence >= conf)).\
+        group_by(birdnet_species.c.species).subquery(name='species')
     labelled_query = select(query).\
         outerjoin(taxonomy_data, query.c.species == taxonomy_data.c.label_sci).\
         with_only_columns(query, taxonomy_data.c.label_de, taxonomy_data.c.label_en, taxonomy_data.c.image_url)
@@ -84,10 +84,10 @@ async def read_species_detail(spec: str, start: int = 0, end: int = 0, conf: flo
 
 @router.get('/species/{spec}/day/') # , response_model=List[Species]
 async def read_species_day(spec: str, start: int = 0, end: int = 0, conf: float = 0.9):
-    query = select(species_day.c.species, species_day.c.date,
-            func.count(species_day.c.species).label('count')).\
-        where(and_(species_day.c.species == spec, species_day.c.confidence >= conf)).\
-        group_by(species_day.c.species, species_day.c.date).\
+    query = select(birdnet_species_day.c.species, birdnet_species_day.c.date,
+            func.count(birdnet_species_day.c.species).label('count')).\
+        where(and_(birdnet_species_day.c.species == spec, birdnet_species_day.c.confidence >= conf)).\
+        group_by(birdnet_species_day.c.species, birdnet_species_day.c.date).\
         subquery(name='species')
     labelled_query = select(query).\
         outerjoin(taxonomy_data, query.c.species == taxonomy_data.c.label_sci).\
