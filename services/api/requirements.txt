@@ -41,3 +41,4 @@ typing_extensions==4.5.0
 tzdata==2023.3
 urllib3==1.26.14
 uvicorn==0.20.0
+fastapi-cache2==0.2.1

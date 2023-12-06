@@ -17,6 +17,7 @@ from api.models import (
 
 from asyncpg.exceptions import ForeignKeyViolationError
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi_cache.decorator import cache
 from sqlalchemy.sql import select, text, update, delete, insert, func, between
 from sqlalchemy.sql.functions import current_timestamp
 
@@ -66,6 +67,7 @@ async def get_walk_hotspots(walk_id: int)-> List[HotspotData|HotspotInfotext|Hot
     return result
 
 @router.get('/walk/community-hotspots')
+@cache(expire=3600)
 def get_community_hotspots():
     url = 'https://beidebasel.wildenachbarn.ch/api/v1.0/mitwelten'
     response = requests.get(url)
