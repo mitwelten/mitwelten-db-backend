@@ -1,3 +1,5 @@
+import json
+import requests
 from typing import List, Optional
 from datetime import datetime
 
@@ -17,7 +19,6 @@ from asyncpg.exceptions import ForeignKeyViolationError
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.sql import select, text, update, delete, insert, func, between
 from sqlalchemy.sql.functions import current_timestamp
-import json
 
 router = APIRouter(tags=['images', 'walk'])
 
@@ -63,6 +64,13 @@ async def get_walk_hotspots(walk_id: int)-> List[HotspotData|HotspotInfotext|Hot
         rd.update(json.loads(rd.pop('data')))
         result.append(rd)
     return result
+
+@router.get('/walk/community-hotspots')
+def get_community_hotspots():
+    url = 'https://beidebasel.wildenachbarn.ch/api/v1.0/mitwelten'
+    response = requests.get(url)
+    response.raise_for_status()
+    return response.json()
 
 @router.get('/walk/data-hotspots/pax', response_model=HotspotDataPaxResponse)
 async def get_pax_hotspots(summary: Optional[int] = Query(1, alias='summary', example=1),
