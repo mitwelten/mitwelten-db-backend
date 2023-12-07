@@ -297,6 +297,33 @@ services:
 
     restart: always
 
+  batdetect-gui:
+    image: cr.gitlab.fhnw.ch/mitwelten/docker-infrastructure/mitwelten-batdetect-gui:1.2
+    networks:
+      - mitwelten
+    container_name: batdetect-gui
+    volumes:
+      - /opt/batdetect:/batdetect2_gui/annotations
+    labels:
+      - traefik.enable=true
+      - traefik.http.services.batdetect_gui.loadbalancer.server.port=8000
+      - traefik.http.middlewares.batdetect_gui-auth.basicauth.users=${MANAGER_API_BASIC_AUTH_USER_PW}
+
+      # for http
+      - traefik.http.routers.batdetect_gui_insecure.rule=Host(`bats.mitwelten.org`)
+      - traefik.http.routers.batdetect_gui_insecure.entrypoints=http
+
+      # redirect to https
+      - traefik.http.middlewares.batdetect_gui-https.redirectscheme.scheme=https
+      - traefik.http.routers.batdetect_gui_insecure.middlewares=batdetect_gui-https
+
+      # for https
+      - traefik.http.routers.batdetect_gui.rule=Host(`bats.mitwelten.org`)
+      - traefik.http.routers.batdetect_gui.entrypoints=https
+      - traefik.http.routers.batdetect_gui.tls.certresolver=ssl
+
+    restart: always
+
   geo:
     image: mitwelten-geo:0.1
     networks:
