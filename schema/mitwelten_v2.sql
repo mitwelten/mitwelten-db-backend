@@ -524,6 +524,10 @@ ALTER TABLE IF EXISTS image_results
   ON DELETE NO ACTION
   NOT VALID;
 
+ALTER TABLE image_results
+  ADD CONSTRAINT unique_file_config
+  UNIQUE (file_id, config_id);
+
 ALTER TABLE IF EXISTS flowers
   ADD FOREIGN KEY (result_id)
   REFERENCES  image_results  (result_id) MATCH SIMPLE
