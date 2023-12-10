@@ -322,6 +322,9 @@ services:
       - traefik.http.routers.batdetect_gui.entrypoints=https
       - traefik.http.routers.batdetect_gui.tls.certresolver=ssl
 
+      #  middlewares for https
+      - traefik.http.routers.batdetect_gui.middlewares=batdetect_gui-auth
+
     restart: always
 
   geo:
