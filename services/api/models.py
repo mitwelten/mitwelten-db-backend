@@ -373,7 +373,7 @@ class Note(BaseModel):
     files: Optional[List[File]] = None
 
 class NoteResponse(Note):
-    author: str
+    author: Optional[str] = None
 
 class PatchNote(Note):
     '''
