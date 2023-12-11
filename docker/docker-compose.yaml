@@ -298,12 +298,13 @@ services:
     restart: always
 
   batdetect-gui:
-    image: cr.gitlab.fhnw.ch/mitwelten/docker-infrastructure/mitwelten-batdetect-gui:1.2
+    image: cr.gitlab.fhnw.ch/mitwelten/docker-infrastructure/mitwelten-batdetect-gui:1.3
     networks:
       - mitwelten
     container_name: batdetect-gui
     volumes:
-      - /opt/batdetect:/batdetect2_gui/annotations
+      - /opt/batdetect/annotations:/batdetect2_gui/annotations
+      - /opt/batdetect/spectrogram:/batdetect2_gui/data
     labels:
       - traefik.enable=true
       - traefik.http.services.batdetect_gui.loadbalancer.server.port=8000
