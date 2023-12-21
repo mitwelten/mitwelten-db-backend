@@ -343,6 +343,15 @@ class PaxMeasurement(BaseModel):
     pax: int
     voltage: float
 
+class EnvMeasurement(BaseModel):
+    time: datetime
+    nodeLabel: Optional[constr(regex=r'\d{4}-\d{4}')] = None
+    deviceEui: Optional[str] = None
+    voltage: float
+    temperature: float
+    humidity: float
+    moisture: float
+
 class ApiResponse(BaseModel):
     code: Optional[int] = None
     type: Optional[str] = None
