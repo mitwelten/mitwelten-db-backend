@@ -63,7 +63,7 @@ async def list_notes(
         f_l = unique_everseen(grp, lambda x: x['file_id'])
         t_l = unique_everseen(grp, lambda x: x['tag_id'])
         e = dict(grp[0])
-        e['files'] = [{'name': f['file_name'], 'object_name': f['object_name'], 'type': f['file_type']} for f in f_l if f['file_id'] != None]
+        e['files'] = [{'id': f['file_id'], 'name': f['file_name'], 'object_name': f['object_name'], 'type': f['file_type']} for f in f_l if f['file_id'] != None]
         e['tags'] = [{'tag_id': t['tag_id'], 'name': t['tag_name']} for t in t_l if t['tag_id'] != None]
         output.append(e)
     return output
@@ -126,7 +126,7 @@ async def get_note_by_id(note_id: int, request: Request) -> NoteResponse:
         f_l = unique_everseen(result, lambda x: x['file_id'])
         t_l = unique_everseen(result, lambda x: x['tag_id'])
         e = dict(result[0])
-        e['files'] = [{'name': f['file_name'], 'object_name': f['object_name'], 'type': f['file_type']} for f in f_l if f['file_id'] != None]
+        e['files'] = [{'id': f['file_id'], 'name': f['file_name'], 'object_name': f['object_name'], 'type': f['file_type']} for f in f_l if f['file_id'] != None]
         e['tags'] = [{'id': t['tag_id'], 'name': t['tag_name']} for t in t_l if t['tag_id'] != None]
         return e
 
