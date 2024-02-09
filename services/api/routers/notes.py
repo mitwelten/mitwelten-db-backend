@@ -285,7 +285,7 @@ async def add_file_to_note(note_id: int, body: File) -> None:
         raise HTTPException(status_code=409, detail='File with same S3 URL already exists')
 
 
-@router.delete('/file/{id}', dependencies=[Depends(AuthenticationChecker(['internal']))], response_model=None)
+@router.delete('/file/{file_id}', dependencies=[Depends(AuthenticationChecker(['internal']))], response_model=None)
 async def delete_file(file_id: int) -> None:
     '''
     Deletes a file
