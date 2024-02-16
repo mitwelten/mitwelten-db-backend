@@ -14,6 +14,9 @@ from minio.error import S3Error
 from sqlalchemy.sql import text
 import json
 
+from PIL import Image
+import io
+
 router = APIRouter(tags=['storage'])
 
 # ------------------------------------------------------------------------------
@@ -120,8 +123,36 @@ async def post_discover_upload(file: UploadFile):
             raise e
     else:
         return { 'object_name': stat.object_name, 'etag': stat.etag }
-    # upload
+
+    # upload original size image
     upload = storage.put_object(crd.minio.bucket, object_name, file.file, length=-1, part_size=10*1024*1024)
+
+    # if file is an image, create and upload thumbnail image
+    supported_formats = {
+        'image/png':  'png',
+        'image/jpg':  'jpg',
+        'image/jpeg': 'jpeg',
+        'image/gif':  'gif'
+    }
+
+    if file.content_type in supported_formats:
+        file.file.seek(0)
+        thumbnail_size = (64, 64)
+        filename, _ = object_name.rsplit('.', 1)
+        image_format = supported_formats.get(file.content_type)
+
+        try:
+            content = await file.read()
+            image = Image.open(io.BytesIO(content))
+            image.thumbnail(thumbnail_size)
+            buffer = io.BytesIO()
+            image.save(buffer, format=image_format)
+            buffer.seek(0)
+            storage.put_object(crd.minio.bucket, f'{filename}_thumbnail.{image_format}', buffer, length=-1, part_size=10*1024*1024)
+        except Exception:
+            # thumbnail is optional, no action required
+            pass
+
     return { 'object_name': upload.object_name, 'etag': upload.etag }
 
 @router.get('/walk/imagestack_s3/{walk_id}')
