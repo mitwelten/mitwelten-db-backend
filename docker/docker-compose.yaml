@@ -308,7 +308,7 @@ services:
     labels:
       - traefik.enable=true
       - traefik.http.services.batdetect_gui.loadbalancer.server.port=8000
-      - traefik.http.middlewares.batdetect_gui-auth.basicauth.users=${MANAGER_API_BASIC_AUTH_USER_PW}
+      - traefik.http.middlewares.batdetect_gui-auth.basicauth.users=${MITWELTEN_BATS_BASIC_AUTH_USER_PW}
 
       # for http
       - traefik.http.routers.batdetect_gui_insecure.rule=Host(`bats.mitwelten.org`)
