@@ -216,7 +216,7 @@ data_records = sqlalchemy.Table(
 files_audio = sqlalchemy.Table(
     'files_audio',
     metadata,
-    sqlalchemy.Column('file_id',        sqlalchemy.BigInteger,                primary_key=True),
+    sqlalchemy.Column('file_id',        sqlalchemy.Integer,                   primary_key=True),
     sqlalchemy.Column('object_name',    sqlalchemy.Text,                      nullable=False),
     sqlalchemy.Column('sha256',         sqlalchemy.String(64),                nullable=False),
     sqlalchemy.Column('time',           sqlalchemy.TIMESTAMP,                 nullable=False),
@@ -243,7 +243,7 @@ files_audio = sqlalchemy.Table(
 files_image = sqlalchemy.Table(
     'files_image',
     metadata,
-    sqlalchemy.Column('file_id',        sqlalchemy.BigInteger,                primary_key=True),
+    sqlalchemy.Column('file_id',        sqlalchemy.Integer,                   primary_key=True),
     sqlalchemy.Column('object_name',    sqlalchemy.Text,                      nullable=False),
     sqlalchemy.Column('sha256',         sqlalchemy.String(64),                nullable=False),
     sqlalchemy.Column('time',           sqlalchemy.TIMESTAMP,                 nullable=False),
