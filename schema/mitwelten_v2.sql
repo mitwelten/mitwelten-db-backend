@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS files_audio
     duration double precision NOT NULL,
     serial_number character varying(32),
     format character varying(64),
-    file_size integer NOT NULL,
+    file_size bigint NOT NULL,
     sample_rate integer NOT NULL,
     bit_depth smallint,
     channels smallint,
