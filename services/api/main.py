@@ -107,6 +107,7 @@ if crd.DEV == True:
         allow_origins=[
             'http://localhost',              # dev environment
             'http://localhost:4200',         # angular dev environment
+            'http://localhost:8000',         # dash dev environment
         ],
         allow_credentials=True,
         allow_methods=['*'],
