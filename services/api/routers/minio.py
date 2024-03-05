@@ -1,7 +1,6 @@
 from os import path
-from typing import Annotated
 
-from api.config import crd
+from api.config import crd, supported_image_formats, thumbnail_size
 from api.database import database
 from api.dependencies import check_oid_authentication, check_oid_m2m_authentication, AuthenticationChecker, get_user
 from api.tables import files_note, storage_whitelist
@@ -16,6 +15,9 @@ from minio.api import CopySource
 
 from sqlalchemy.sql import text, func
 import json
+
+from PIL import Image
+import io
 
 router = APIRouter(tags=['storage'])
 
@@ -190,6 +192,44 @@ async def post_upload(file: UploadFile):
         return { 'object_name': stat.object_name, 'etag': stat.etag }
     # upload
     upload = storage.put_object(crd.minio.bucket, file.filename, file.file, length=-1, part_size=10*1024*1024)
+    return { 'object_name': upload.object_name, 'etag': upload.etag }
+
+@router.post('/files/discover', dependencies=[Depends(AuthenticationChecker(['internal']))])
+async def post_discover_upload(file: UploadFile):
+    # compose object name
+    object_name = f'discover/{file.filename}'
+    # make sure object doesn't already exist
+    try:
+        stat = storage.stat_object(crd.minio.bucket, object_name)
+    except S3Error as e:
+        if e.code != 'NoSuchKey':
+            raise e
+    else:
+        return { 'object_name': stat.object_name, 'etag': stat.etag }
+
+    # upload original size image
+    upload = storage.put_object(crd.minio.bucket, object_name, file.file, length=-1, part_size=10*1024*1024)
+
+    # if file is an image, create and upload thumbnail image
+
+    if file.content_type in supported_image_formats:
+        file.file.seek(0)
+        filename = object_name.rsplit('.', 1)[0]
+        image_format = supported_image_formats.get(file.content_type)
+
+        try:
+            content = await file.read()
+            image = Image.open(io.BytesIO(content))
+            image.thumbnail(thumbnail_size)
+            buffer = io.BytesIO()
+            image.save(buffer, format=image_format)
+            buffer.seek(0)
+            thumbnail_name = f'{filename}_{thumbnail_size[0]}x{thumbnail_size[1]}.{image_format}'
+            storage.put_object(crd.minio.bucket, thumbnail_name, buffer, length=-1, part_size=10*1024*1024)
+        except Exception:
+            # thumbnail is optional, no action required
+            pass
+
     return { 'object_name': upload.object_name, 'etag': upload.etag }
 
 @router.get('/walk/imagestack_s3/{walk_id}')
