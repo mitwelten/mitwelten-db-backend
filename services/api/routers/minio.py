@@ -1,11 +1,13 @@
 from os import path
 from typing import Annotated
 
+from sqlalchemy import select
+
 from api.config import crd, supported_image_formats, thumbnail_size
 from api.database import database
 from api.dependencies import check_oid_authentication, check_oid_m2m_authentication, AuthenticationChecker, get_user
 from api.tables import files_note, storage_whitelist
-from api.models import PatchFile
+from api.models import PatchFile, DeleteResponse
 
 from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, Body
 from fastapi.responses import StreamingResponse
@@ -13,6 +15,8 @@ from fastapi.responses import StreamingResponse
 from minio import Minio
 from minio.error import S3Error
 from minio.api import CopySource
+
+from asyncpg.exceptions import ForeignKeyViolationError
 
 from sqlalchemy.sql import text, func
 import json
@@ -221,6 +225,42 @@ async def post_discover_upload(file: UploadFile):
             pass
 
     return { 'object_name': upload.object_name, 'etag': upload.etag }
+
+@router.delete('/files/discover/{file_id}', response_model=None, dependencies=[Depends(AuthenticationChecker(['internal']))])
+async def delete_tag(file_id: int) -> DeleteResponse:
+    '''
+    Deletes a discover file and its thumbnail if it exists.
+    '''
+    try:
+        file = await database.fetch_one(files_note.select().where(files_note.c.file_id == file_id))
+    except ForeignKeyViolationError:
+        raise HTTPException(status_code=400, detail='file is referred to by one or more note records')
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+    has_thumbnail = file.type in supported_image_formats
+    files_to_delete = [file.object_name]
+
+    whitelisted_obj = await database.fetch_one(
+        select(func.count()).select_from(storage_whitelist).where(storage_whitelist.c.object_name == file.object_name))
+    is_whitelisted = whitelisted_obj[0] > 0 if whitelisted_obj is not None else False
+
+    if has_thumbnail:
+        thumbnail_name = get_thumbnail_name(file.object_name, supported_image_formats.get(file.type))
+        files_to_delete.append(thumbnail_name)
+    try:
+        [storage.remove_object(crd.minio.bucket, object_name) for object_name in files_to_delete]
+    except S3Error as e:
+        if e.code == 'NoSuchKey':
+            raise HTTPException(status_code=404, detail='File not found')
+
+    # delete entries in database
+    await database.execute(files_note.delete().where(files_note.c.file_id == file_id))
+    if is_whitelisted:
+        for object_name in files_to_delete:
+            await database.execute(storage_whitelist.delete().where(storage_whitelist.c.object_name == object_name))
+
+    return { 'status': 'deleted', 'id': file_id }
 
 @router.post('/files/', dependencies=[Depends(check_oid_m2m_authentication)])
 async def post_upload(file: UploadFile):
