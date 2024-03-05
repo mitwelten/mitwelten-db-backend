@@ -1,6 +1,6 @@
 from os import path
 
-from api.config import crd
+from api.config import crd, supported_image_formats, thumbnail_size
 from api.database import database
 from api.dependencies import check_oid_authentication, check_oid_m2m_authentication, AuthenticationChecker
 
@@ -128,18 +128,11 @@ async def post_discover_upload(file: UploadFile):
     upload = storage.put_object(crd.minio.bucket, object_name, file.file, length=-1, part_size=10*1024*1024)
 
     # if file is an image, create and upload thumbnail image
-    supported_formats = {
-        'image/png':  'png',
-        'image/jpg':  'jpg',
-        'image/jpeg': 'jpeg',
-        'image/gif':  'gif'
-    }
 
-    if file.content_type in supported_formats:
+    if file.content_type in supported_image_formats:
         file.file.seek(0)
-        thumbnail_size = (64, 64)
-        filename, _ = object_name.rsplit('.', 1)
-        image_format = supported_formats.get(file.content_type)
+        filename, _ = object_name.rsplit('.', 1)[0]
+        image_format = supported_image_formats.get(file.content_type)
 
         try:
             content = await file.read()
@@ -148,7 +141,8 @@ async def post_discover_upload(file: UploadFile):
             buffer = io.BytesIO()
             image.save(buffer, format=image_format)
             buffer.seek(0)
-            storage.put_object(crd.minio.bucket, f'{filename}_thumbnail.{image_format}', buffer, length=-1, part_size=10*1024*1024)
+            thumbnail_name = f'{filename}_{thumbnail_size[0]}x{thumbnail_size[1]}.{image_format}'
+            storage.put_object(crd.minio.bucket, thumbnail_name, buffer, length=-1, part_size=10*1024*1024)
         except Exception:
             # thumbnail is optional, no action required
             pass
