@@ -46,6 +46,17 @@ def stream_minio_response(response):
         response.close()
         response.release_conn()
 
+
+def get_thumbnail_name(object_name: str, image_format: str):
+    """
+    :param object_name: the name of the file including path and extension
+    :param image_format: the mime-type of the image
+    :return: standardized thumbnail file name
+    """
+    name = object_name.rsplit('.', 1)[0]
+    return f'{name}_{thumbnail_size[0]}x{thumbnail_size[1]}.{image_format}'
+
+
 @router.get('/files/walk/{object_name:path}', summary='Whitelisted media resources from S3 storage for Walk App')
 async def get_walk_download(request: Request, object_name: str):
     '''
