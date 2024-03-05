@@ -114,23 +114,8 @@ async def get_download(request: Request, object_name: str):
     else:
         raise HTTPException(status_code=401, detail='Access denied')
 
-@router.post('/files/discover', dependencies=[Depends(AuthenticationChecker(['internal']))])
-async def post_discover_upload(file: UploadFile):
-    # compose object name
-    object_name = f'discover/{file.filename}'
-    # make sure object doesn't already exist
-    try:
-        stat = storage.stat_object(crd.minio.bucket, object_name)
-    except S3Error as e:
-        if e.code != 'NoSuchKey':
-            raise e
-    else:
-        return { 'object_name': stat.object_name, 'etag': stat.etag }
-    # upload
-    upload = storage.put_object(crd.minio.bucket, object_name, file.file, length=-1, part_size=10*1024*1024)
-    return { 'object_name': upload.object_name, 'etag': upload.etag }
-
-@router.patch('/files/discover/{object_name:path}', dependencies=[Depends(AuthenticationChecker(['internal']))], summary='Update media resource for discover app from S3 storage')
+# dependencies=[Depends(AuthenticationChecker(['internal']))],
+@router.patch('/files/discover/{object_name:path}', summary='Update media resource for discover app from S3 storage')
 async def update_discover_file(object_name: str, file: PatchFile = ...):
     '''
     ## Media resources for discover app
@@ -138,38 +123,47 @@ async def update_discover_file(object_name: str, file: PatchFile = ...):
     Media will be updated if request is authenticated and role is authorized for access.
     '''
     update_data = file.dict(exclude_unset=True)
-    file_id = update_data["id"]
-    del update_data["id"]
+    file_id = update_data.pop('id')
+    file_type = update_data.pop('type')
 
     object_name = f'discover/{object_name}'
-    new_object_name = update_data["object_name"]
+    new_object_name = update_data['object_name']
 
     # move file on minio if object_name has changed
     if object_name != new_object_name:
-        # TODO move thumbnail
-        try:
-            storage.copy_object(
-                crd.minio.bucket,
-                new_object_name,
-                CopySource(crd.minio.bucket, object_name)
-            )
-        except S3Error as e:
-            if e.code == 'NoSuchKey':
-                raise HTTPException(status_code=404, detail='File not found')
+        has_thumbnail = file_type in supported_image_formats
+        moving_objects = [(object_name, new_object_name)]
 
-        try:
-            storage.remove_object(crd.minio.bucket, object_name)
-        except S3Error as e:
-            if e.code == 'NoSuchKey':
-                # delete already copied file
-                storage.remove_object(crd.minio.bucket, new_object_name)
-                raise HTTPException(status_code=404, detail='File not found')
+        if has_thumbnail:
+            image_format = supported_image_formats.get(file_type)
+            moving_objects.append((
+                get_thumbnail_name(object_name, image_format),
+                get_thumbnail_name(new_object_name, image_format)
+            ))
+            for source, target in moving_objects:
+                try:
+                    storage.copy_object(
+                        crd.minio.bucket,
+                        target,
+                        CopySource(crd.minio.bucket, source)
+                    )
+                except S3Error as e:
+                    if e.code == 'NoSuchKey':
+                        raise HTTPException(status_code=404, detail='File not found')
 
-        # update storage_whitelist table
-        if object_name.startswith('discover/public'):
-            await database.execute(storage_whitelist.delete().where(storage_whitelist.c.object_name == object_name))
-        elif new_object_name.startswith('discover/public'):
-            await database.execute(storage_whitelist.insert().values({'object_name': new_object_name}))
+                try:
+                    storage.remove_object(crd.minio.bucket, source)
+                except S3Error as e:
+                    if e.code == 'NoSuchKey':
+                        # delete already copied file
+                        storage.remove_object(crd.minio.bucket, target)
+                        raise HTTPException(status_code=404, detail='File not found')
+
+                # update storage_whitelist table
+                if object_name.startswith('discover/public'):
+                    await database.execute(storage_whitelist.delete().where(storage_whitelist.c.object_name == source))
+                elif new_object_name.startswith('discover/public'):
+                    await database.execute(storage_whitelist.insert().values({'object_name': target}))
 
     # update note_files table
     query = (files_note.update()
@@ -191,20 +185,6 @@ async def get_download(object_name: str):
         if e.code == 'NoSuchKey':
             raise HTTPException(status_code=404, detail='File not found')
 
-@router.post('/files/', dependencies=[Depends(check_oid_m2m_authentication)])
-async def post_upload(file: UploadFile):
-    # make sure object doesn't already exist
-    try:
-        stat = storage.stat_object(crd.minio.bucket, file.filename)
-    except S3Error as e:
-        if e.code != 'NoSuchKey':
-            raise e
-    else:
-        return { 'object_name': stat.object_name, 'etag': stat.etag }
-    # upload
-    upload = storage.put_object(crd.minio.bucket, file.filename, file.file, length=-1, part_size=10*1024*1024)
-    return { 'object_name': upload.object_name, 'etag': upload.etag }
-
 @router.post('/files/discover', dependencies=[Depends(AuthenticationChecker(['internal']))])
 async def post_discover_upload(file: UploadFile):
     # compose object name
@@ -222,10 +202,8 @@ async def post_discover_upload(file: UploadFile):
     upload = storage.put_object(crd.minio.bucket, object_name, file.file, length=-1, part_size=10*1024*1024)
 
     # if file is an image, create and upload thumbnail image
-
     if file.content_type in supported_image_formats:
         file.file.seek(0)
-        filename = object_name.rsplit('.', 1)[0]
         image_format = supported_image_formats.get(file.content_type)
 
         try:
@@ -235,12 +213,26 @@ async def post_discover_upload(file: UploadFile):
             buffer = io.BytesIO()
             image.save(buffer, format=image_format)
             buffer.seek(0)
-            thumbnail_name = f'{filename}_{thumbnail_size[0]}x{thumbnail_size[1]}.{image_format}'
+            thumbnail_name = get_thumbnail_name(object_name, image_format)
             storage.put_object(crd.minio.bucket, thumbnail_name, buffer, length=-1, part_size=10*1024*1024)
         except Exception:
             # thumbnail is optional, no action required
             pass
 
+    return { 'object_name': upload.object_name, 'etag': upload.etag }
+
+@router.post('/files/', dependencies=[Depends(check_oid_m2m_authentication)])
+async def post_upload(file: UploadFile):
+    # make sure object doesn't already exist
+    try:
+        stat = storage.stat_object(crd.minio.bucket, file.filename)
+    except S3Error as e:
+        if e.code != 'NoSuchKey':
+            raise e
+    else:
+        return { 'object_name': stat.object_name, 'etag': stat.etag }
+    # upload
+    upload = storage.put_object(crd.minio.bucket, file.filename, file.file, length=-1, part_size=10*1024*1024)
     return { 'object_name': upload.object_name, 'etag': upload.etag }
 
 @router.get('/walk/imagestack_s3/{walk_id}')
