@@ -144,30 +144,30 @@ async def update_discover_file(object_name: str, file: PatchFile = ...):
                 get_thumbnail_name(object_name, image_format),
                 get_thumbnail_name(new_object_name, image_format)
             ))
-            for source, target in moving_objects:
-                try:
-                    storage.copy_object(
-                        crd.minio.bucket,
-                        target,
-                        CopySource(crd.minio.bucket, source)
-                    )
-                except S3Error as e:
-                    if e.code == 'NoSuchKey':
-                        raise HTTPException(status_code=404, detail='File not found')
+        for source, target in moving_objects:
+            try:
+                storage.copy_object(
+                    crd.minio.bucket,
+                    target,
+                    CopySource(crd.minio.bucket, source)
+                )
+            except S3Error as e:
+                if e.code == 'NoSuchKey':
+                    raise HTTPException(status_code=404, detail='File not found')
 
-                try:
-                    storage.remove_object(crd.minio.bucket, source)
-                except S3Error as e:
-                    if e.code == 'NoSuchKey':
-                        # delete already copied file
-                        storage.remove_object(crd.minio.bucket, target)
-                        raise HTTPException(status_code=404, detail='File not found')
+            try:
+                storage.remove_object(crd.minio.bucket, source)
+            except S3Error as e:
+                if e.code == 'NoSuchKey':
+                    # delete already copied file
+                    storage.remove_object(crd.minio.bucket, target)
+                    raise HTTPException(status_code=404, detail='File not found')
 
-                # update storage_whitelist table
-                if object_name.startswith('discover/public'):
-                    await database.execute(storage_whitelist.delete().where(storage_whitelist.c.object_name == source))
-                elif new_object_name.startswith('discover/public'):
-                    await database.execute(storage_whitelist.insert().values({'object_name': target}))
+            # update storage_whitelist table
+            if object_name.startswith('discover/public'):
+                await database.execute(storage_whitelist.delete().where(storage_whitelist.c.object_name == source))
+            elif new_object_name.startswith('discover/public'):
+                await database.execute(storage_whitelist.insert().values({'object_name': target}))
 
     # update note_files table
     query = (files_note.update()
