@@ -131,7 +131,7 @@ async def post_discover_upload(file: UploadFile):
 
     if file.content_type in supported_image_formats:
         file.file.seek(0)
-        filename, _ = object_name.rsplit('.', 1)[0]
+        filename = object_name.rsplit('.', 1)[0]
         image_format = supported_image_formats.get(file.content_type)
 
         try:
