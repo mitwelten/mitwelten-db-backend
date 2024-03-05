@@ -420,3 +420,9 @@ environment = sqlalchemy.Table(
     sqlalchemy.Column('updated_at'     , sqlalchemy.TIMESTAMP, nullable=True),
     schema=crd.db.schema,
 )
+
+storage_whitelist = sqlalchemy.Table(
+    'storage_whitelist',
+    metadata,
+    sqlalchemy.Column('object_name', sqlalchemy.Text, primary_key=True),
+)
