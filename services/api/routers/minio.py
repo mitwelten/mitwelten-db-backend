@@ -105,7 +105,7 @@ async def get_download(request: Request, object_name: str):
             authenticated = 'internal' in user['realm_access']['roles']
 
     if not authenticated:
-        query = text('select count(object_name) from dev.storage_whitelist where object_name = :object_name').bindparams(object_name=object_name)
+        query = text('select count(object_name) from prod.storage_whitelist where object_name = :object_name').bindparams(object_name=object_name)
         whitelisted_obj = await database.fetch_one(query)
         whitelisted = whitelisted_obj['count'] > 0 if whitelisted_obj is not None else False
 
