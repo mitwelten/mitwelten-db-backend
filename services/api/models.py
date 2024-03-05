@@ -296,10 +296,10 @@ class File(BaseModel):
 
 class PatchFile(File):
     '''
-    This is a copy of `File` with all fields optional
+    This is a copy of `File` with some fields optional
     for patching existing records.
     '''
-    type: Optional[str] = Field(title='MIME type', example='application/pdf')
+    id: int
     name: Optional[str] = Field(title='File name')
     object_name: Optional[constr(strip_whitespace=True)] = Field(
         title='Link to S3 object',
