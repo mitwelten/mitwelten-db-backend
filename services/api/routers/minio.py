@@ -50,7 +50,6 @@ def stream_minio_response(response):
         response.close()
         response.release_conn()
 
-
 def get_thumbnail_name(object_name: str, image_format: str):
     """
     :param object_name: the name of the file including path and extension
@@ -59,7 +58,6 @@ def get_thumbnail_name(object_name: str, image_format: str):
     """
     name = object_name.rsplit('.', 1)[0]
     return f'{name}_{thumbnail_size[0]}x{thumbnail_size[1]}.{image_format}'
-
 
 @router.get('/files/walk/{object_name:path}', summary='Whitelisted media resources from S3 storage for Walk App')
 async def get_walk_download(request: Request, object_name: str):
@@ -119,8 +117,7 @@ async def get_download(request: Request, object_name: str):
     else:
         raise HTTPException(status_code=401, detail='Access denied')
 
-# dependencies=[Depends(AuthenticationChecker(['internal']))],
-@router.patch('/files/discover/{object_name:path}', summary='Update media resource for discover app from S3 storage')
+@router.patch('/files/discover/{object_name:path}', dependencies=[Depends(AuthenticationChecker(['internal']))],summary='Update media resource for discover app from S3 storage')
 async def update_discover_file(object_name: str, file: PatchFile = ...):
     '''
     ## Media resources for discover app
