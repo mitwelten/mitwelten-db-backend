@@ -13,11 +13,11 @@ from fastapi.responses import StreamingResponse
 
 from minio import Minio
 from minio.error import S3Error
-from minio.api import CopySource
 
 from asyncpg.exceptions import ForeignKeyViolationError
 
 from sqlalchemy.sql import text, func
+from uuid import uuid4
 import json
 
 from PIL import Image
@@ -128,8 +128,14 @@ async def get_download(object_name: str):
 
 @router.post('/files/discover', dependencies=[Depends(AuthenticationChecker(['internal']))])
 async def post_discover_upload(file: UploadFile):
+    '''
+    ## Media resources
+
+    File upload for discover app.
+    '''
     # compose object name
-    object_name = f'discover/{file.filename}'
+    uuid = uuid4()
+    object_name = f'discover/{uuid}/{file.filename}'
     # make sure object doesn't already exist
     try:
         stat = storage.stat_object(crd.minio.bucket, object_name)
@@ -161,6 +167,7 @@ async def post_discover_upload(file: UploadFile):
             pass
 
     return { 'object_name': upload.object_name, 'etag': upload.etag }
+
 
 @router.delete('/files/discover/{file_id}', response_model=None, dependencies=[Depends(AuthenticationChecker(['internal']))])
 async def delete_tag(file_id: int) -> DeleteResponse:
