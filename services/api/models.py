@@ -586,3 +586,7 @@ class EnvironmentEntry(EnvironmentRawEntry):
     created_at: Optional[datetime]
     updated_at: Optional[datetime]
     distance: Optional[float]
+
+class BirdSpeciesCount(BaseModel):
+    species: str = Field(..., example='Parus major')
+    count: int = Field(..., example=42)
