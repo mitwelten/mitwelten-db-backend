@@ -90,7 +90,7 @@ async def get_discover_file(object_name: str):
     '''
     ## Media resources
 
-    Requested media will be returned if request is authenticated and role is authorized for access or file is whitelisted.
+    Requested media will be returned if it exists.
     '''
     object_name = f'discover/{object_name}'
     try:
@@ -100,17 +100,6 @@ async def get_discover_file(object_name: str):
         if e.code == 'NoSuchKey':
             raise HTTPException(status_code=404, detail='File not found')
 
-            # update storage_whitelist table
-            if object_name.startswith('discover/public'):
-                await database.execute(storage_whitelist.delete().where(storage_whitelist.c.object_name == source))
-            elif new_object_name.startswith('discover/public'):
-                await database.execute(storage_whitelist.insert().values({'object_name': target}))
-
-    # update note_files table
-    query = (files_note.update()
-             .where(files_note.c.file_id == file_id)
-             .values({**update_data, files_note.c.updated_at: func.current_timestamp()}))
-    return await database.fetch_one(query)
 
 @router.get('/files/{object_name:path}', dependencies=[Depends(check_oid_authentication)], summary='Media resources from S3 storage')
 async def get_download(object_name: str):
