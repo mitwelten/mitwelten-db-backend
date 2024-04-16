@@ -294,18 +294,6 @@ class File(BaseModel):
         description='Constrained to project specific S3 bucket'
     )
 
-class PatchFile(File):
-    '''
-    This is a copy of `File` with some fields optional
-    for patching existing records.
-    '''
-    id: int
-    name: Optional[str] = Field(title='File name')
-    object_name: Optional[constr(strip_whitespace=True)] = Field(
-        title='Link to S3 object',
-        description='Constrained to project specific S3 bucket'
-    )
-
 class EnvTypeEnum(str, Enum):
     temperature = 'temperature'
     humidity = 'humidity'
