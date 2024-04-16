@@ -110,12 +110,25 @@ async def get_download(object_name: str):
         if e.code == 'NoSuchKey':
             raise HTTPException(status_code=404, detail='File not found')
 
+@router.post('/files/', dependencies=[Depends(check_oid_m2m_authentication)])
+async def post_upload(file: UploadFile):
+    # make sure object doesn't already exist
+    try:
+        stat = storage.stat_object(crd.minio.bucket, file.filename)
+    except S3Error as e:
+        if e.code != 'NoSuchKey':
+            raise e
+    else:
+        return { 'object_name': stat.object_name, 'etag': stat.etag }
+    # upload
+    upload = storage.put_object(crd.minio.bucket, file.filename, file.file, length=-1, part_size=10*1024*1024)
+
 @router.post('/files/discover', dependencies=[Depends(AuthenticationChecker(['internal']))])
 async def post_discover_upload(file: UploadFile):
     '''
     ## Media resources
 
-    File upload for discover app.
+    Upload file to minio if request is authenticated and role is authorized for upload.
     '''
     # compose object name
     uuid = uuid4()
@@ -152,18 +165,7 @@ async def post_discover_upload(file: UploadFile):
 
     return { 'object_name': upload.object_name, 'etag': upload.etag }
 
-@router.post('/files/', dependencies=[Depends(check_oid_m2m_authentication)])
-async def post_upload(file: UploadFile):
-    # make sure object doesn't already exist
-    try:
-        stat = storage.stat_object(crd.minio.bucket, file.filename)
-    except S3Error as e:
-        if e.code != 'NoSuchKey':
-            raise e
-    else:
-        return { 'object_name': stat.object_name, 'etag': stat.etag }
-    # upload
-    upload = storage.put_object(crd.minio.bucket, file.filename, file.file, length=-1, part_size=10*1024*1024)
+
     return { 'object_name': upload.object_name, 'etag': upload.etag }
 
 @router.get('/walk/imagestack_s3/{walk_id}')
