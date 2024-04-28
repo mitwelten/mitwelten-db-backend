@@ -79,6 +79,14 @@ async def get_walk_download(request: Request, object_name: str):
             if e.code == 'NoSuchKey':
                 raise HTTPException(status_code=404, detail='File not found')
 
+@router.get('/tv/file/{object_name:path}', summary='Media resources for TV App from S3 storage')
+async def get_tv_download(request: Request, object_name: str):
+    try:
+        response = storage.get_object(crd.minio.bucket, object_name)
+        return StreamingResponse(stream_minio_response(response), headers=response.headers)
+    except S3Error as e:
+        if e.code == 'NoSuchKey':
+            raise HTTPException(status_code=404, detail='File not found')
 
 @router.get('/files/discover/{object_name:path}', summary='Media resources from S3 storage')
 async def get_discover_file(object_name: str):
