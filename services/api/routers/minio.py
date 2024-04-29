@@ -1,4 +1,5 @@
 from os import path
+from typing import Annotated
 
 from api.config import crd, supported_image_formats, thumbnail_size
 from api.database import database
@@ -8,10 +9,10 @@ from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile
 from fastapi.responses import StreamingResponse
 
 from minio import Minio
-from minio.datatypes import Object
 from minio.error import S3Error
 
 from sqlalchemy.sql import text
+from uuid import uuid4
 import json
 
 from PIL import Image
@@ -43,6 +44,15 @@ def stream_minio_response(response):
         response.close()
         response.release_conn()
 
+def get_thumbnail_name(object_name: str, image_format: str):
+    """
+    :param object_name: the name of the file including path and extension
+    :param image_format: the mime-type of the image
+    :return: standardized thumbnail file name
+    """
+    name = object_name.rsplit('.', 1)[0]
+    return f'{name}_{thumbnail_size[0]}x{thumbnail_size[1]}.{image_format}'
+
 @router.get('/files/walk/{object_name:path}', summary='Whitelisted media resources from S3 storage for Walk App')
 async def get_walk_download(request: Request, object_name: str):
     '''
@@ -69,22 +79,25 @@ async def get_walk_download(request: Request, object_name: str):
             if e.code == 'NoSuchKey':
                 raise HTTPException(status_code=404, detail='File not found')
 
-@router.get('/files/discover/{object_name:path}', dependencies=[Depends(AuthenticationChecker())], summary='Media resources for discover app from S3 storage')
-async def get_discover_download(request: Request, object_name: str):
-    '''
-    ## Media resources for discover app
 
-    Requested media will be returned if request is authenticated and role is authorized for access.
+@router.get('/files/discover/{object_name:path}', summary='Media resources from S3 storage')
+async def get_discover_file(object_name: str):
     '''
+    ## Media resources
+
+    Requested media will be returned if it exists.
+    '''
+    object_name = f'discover/{object_name}'
     try:
-        response = storage.get_object(crd.minio.bucket, f'discover/{object_name}')
+        response = storage.get_object(crd.minio.bucket, object_name)
         return StreamingResponse(stream_minio_response(response), headers=response.headers)
     except S3Error as e:
         if e.code == 'NoSuchKey':
             raise HTTPException(status_code=404, detail='File not found')
 
+
 @router.get('/files/{object_name:path}', dependencies=[Depends(check_oid_authentication)], summary='Media resources from S3 storage')
-async def get_download(request: Request, object_name: str):
+async def get_download(object_name: str):
     '''
     ## Media resources
 
@@ -109,12 +122,17 @@ async def post_upload(file: UploadFile):
         return { 'object_name': stat.object_name, 'etag': stat.etag }
     # upload
     upload = storage.put_object(crd.minio.bucket, file.filename, file.file, length=-1, part_size=10*1024*1024)
-    return { 'object_name': upload.object_name, 'etag': upload.etag }
 
 @router.post('/files/discover', dependencies=[Depends(AuthenticationChecker(['internal']))])
 async def post_discover_upload(file: UploadFile):
+    '''
+    ## Media resources
+
+    Upload file to minio if request is authenticated and role is authorized for upload.
+    '''
     # compose object name
-    object_name = f'discover/{file.filename}'
+    uuid = uuid4()
+    object_name = f'discover/{uuid}/{file.filename}'
     # make sure object doesn't already exist
     try:
         stat = storage.stat_object(crd.minio.bucket, object_name)
@@ -128,10 +146,8 @@ async def post_discover_upload(file: UploadFile):
     upload = storage.put_object(crd.minio.bucket, object_name, file.file, length=-1, part_size=10*1024*1024)
 
     # if file is an image, create and upload thumbnail image
-
     if file.content_type in supported_image_formats:
         file.file.seek(0)
-        filename = object_name.rsplit('.', 1)[0]
         image_format = supported_image_formats.get(file.content_type)
 
         try:
@@ -141,11 +157,14 @@ async def post_discover_upload(file: UploadFile):
             buffer = io.BytesIO()
             image.save(buffer, format=image_format)
             buffer.seek(0)
-            thumbnail_name = f'{filename}_{thumbnail_size[0]}x{thumbnail_size[1]}.{image_format}'
+            thumbnail_name = get_thumbnail_name(object_name, image_format)
             storage.put_object(crd.minio.bucket, thumbnail_name, buffer, length=-1, part_size=10*1024*1024)
         except Exception:
             # thumbnail is optional, no action required
             pass
+
+    return { 'object_name': upload.object_name, 'etag': upload.etag }
+
 
     return { 'object_name': upload.object_name, 'etag': upload.etag }
 

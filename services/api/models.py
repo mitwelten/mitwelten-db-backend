@@ -525,6 +525,11 @@ class PaxDataPoint(BaseModel):
     pax_min: float
     pax_max: float
 
+class BirdsDataPoint(BaseModel):
+    species: str = Field(..., alias='class')
+    month: int
+    count: int
+
 class PollinatorDataPoint(BaseModel):
     class_: str = Field(..., alias='class')
     month: int
@@ -536,6 +541,11 @@ class ChartSummaryOption(BaseModel):
 
 class HotspotDataPaxResponse(BaseModel):
     datapoints: List[PaxDataPoint]
+    summaryOptions: List[ChartSummaryOption]
+    chart: str
+
+class HotspotDataBirdsResponse(BaseModel):
+    datapoints: List[BirdsDataPoint]
     summaryOptions: List[ChartSummaryOption]
     chart: str
 
