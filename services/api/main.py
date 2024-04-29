@@ -1,7 +1,7 @@
 from api.database import database, database_cache
 from api.dependencies import crd
 from api.routers import (
-    birdnet, data, deployments, geo, notes, ingest, minio, nodes, queue, tags,
+    birdnet, data, deployments, discover, geo, notes, ingest, minio, nodes, queue, tags,
     taxonomy, validators, walk, meteodata, pollinators, explore, gbif,
     environment, statistics, auth
 )
@@ -118,6 +118,7 @@ app.include_router(auth.router)
 app.include_router(birdnet.router)
 app.include_router(data.router)
 app.include_router(deployments.router)
+app.include_router(discover.router)
 app.include_router(notes.router)
 app.include_router(geo.router)
 app.include_router(ingest.router)
