@@ -50,7 +50,7 @@ async def get_stacked_bar(
     time_from: Optional[datetime] = Query(None, alias='from', example='2020-06-22T18:00:00.000Z'),
     time_to: Optional[datetime] = Query(None, alias='to', example='2024-04-22T20:00:00.000Z'),
     bucket_width: str = "1d",
-    convidence: float = 0.9,
+    confidence: float = 0.9,
     limit_per_day: int = 3) -> list[BirdSpeciesCount]:
 
     time_from_condition = "AND time >= :time_from" if time_from else ""
@@ -67,7 +67,7 @@ async def get_stacked_bar(
             {crd.db.schema}.files_audio AS audio
             LEFT OUTER JOIN {crd.db.schema}.birdnet_results AS br ON audio.file_id = br.file_id
         WHERE
-            audio.deployment_id = :deployment_id AND br.confidence > :convidence
+            audio.deployment_id = :deployment_id AND br.confidence > :confidence
             {time_from_condition}
             {time_to_condition}
         GROUP BY br.species, bucket
@@ -79,7 +79,7 @@ async def get_stacked_bar(
     """).bindparams(
             bucket_width = to_timedelta(bucket_width).to_pytimedelta(),
             deployment_id = deployment_id,
-            convidence = convidence,
+            confidence = confidence,
             limit_per_day = limit_per_day)
 
     if time_from:
