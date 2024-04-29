@@ -601,5 +601,3 @@ class EnvironmentEntry(EnvironmentRawEntry):
     created_at: Optional[datetime]
     updated_at: Optional[datetime]
     distance: Optional[float]
-
-
