@@ -451,6 +451,11 @@ class DetectionsByLocation(BaseModel):
 class DetectionLocationResult(DetectionsByLocation):
     deployment_id: int
 
+class BirdSpeciesCount(BaseModel):
+    bucket: datetime
+    species: str = Field(..., example='Parus major')
+    count: int = Field(..., example=42)
+
 # Walks
 
 class Walk(BaseModel):
@@ -587,6 +592,4 @@ class EnvironmentEntry(EnvironmentRawEntry):
     updated_at: Optional[datetime]
     distance: Optional[float]
 
-class BirdSpeciesCount(BaseModel):
-    species: str = Field(..., example='Parus major')
-    count: int = Field(..., example=42)
+
