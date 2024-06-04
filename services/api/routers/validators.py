@@ -16,13 +16,14 @@ router = APIRouter(tags=['validators'])
 
 @router.put('/validate/deployment', dependencies=[Depends(check_oid_authentication)], response_model=ValidationResult, tags=['deployments'])
 async def validate_deployment(body: DeploymentRequest) -> None:
+
     transaction = await database.transaction()
     try:
 
         values = {
             deployments.c.node_id: body.node_id,
             deployments.c.location: text('point(:lat,:lon)').bindparams(lat=body.location.lat,lon=body.location.lon),
-            deployments.c.period: to_inclusive_range(body.period),
+            deployments.c.period: to_inclusive_range(body.period) if body.period != None else None,
         }
         if hasattr(body, 'description') and body.description != None:
             values[deployments.c.description] = body.description
