@@ -4,7 +4,7 @@ from api.models import EnvMeasurement, ImageRequest, AudioRequest, PaxMeasuremen
 from api.tables import files_image, files_audio, data_pax, data_env, deployments, nodes
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.sql import insert, select, and_, text
+from sqlalchemy.sql import insert, select, and_, or_, text
 
 router = APIRouter(tags=['ingest'])
 
@@ -75,7 +75,7 @@ async def ingest_pax(body: PaxMeasurement):
         deployment_id_subquery = select(deployments.c.deployment_id).filter(
             and_(
                 deployments.c.node_id == node_id_subquery,
-                text("upper(period) is NULL")
+                or_(text("upper(period) is NULL"), text("upper(period) >= now()"))
             )
         ).scalar_subquery()
         insert_stmt = insert(data_pax).values(
@@ -108,7 +108,7 @@ async def ingest_env(body: EnvMeasurement):
         deployment_id_subquery = select(deployments.c.deployment_id).filter(
             and_(
                 deployments.c.node_id == node_id_subquery,
-                text("upper(period) is NULL")
+                or_(text("upper(period) is NULL"), text("upper(period) >= now()"))
             )
         ).scalar_subquery()
         insert_stmt = insert(data_env).values(
