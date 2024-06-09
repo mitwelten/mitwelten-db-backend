@@ -1,0 +1,5 @@
+Jinja2==3.1.4
+minio==7.2.7
+pillow==10.3.0
+psycopg2-binary==2.9.9
+tqdm==4.66.4

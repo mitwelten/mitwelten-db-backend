@@ -423,6 +423,7 @@ CREATE TABLE IF NOT EXISTS prod.storage_backend
     url_prefix text NOT NULL,
     type character varying(8),
     priority integer NOT NULL DEFAULT 0,
+    notes text,
     created_at timestamp with time zone NOT NULL DEFAULT current_timestamp,
     updated_at timestamp with time zone NOT NULL DEFAULT current_timestamp,
     PRIMARY KEY (storage_id),
