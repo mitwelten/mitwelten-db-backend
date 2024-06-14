@@ -37,8 +37,8 @@ end timestamp"):
 The pydantic model / type definition also converts this `tstzrange` back into
 the aforementioned format when retrieving (using as a response model).
 '''
-    start: datetime = Field(..., example='2021-09-11T22:00:00+00:00', title='Beginning of period (inclusive)')
-    end: datetime = Field(..., example='2021-10-14T22:00:00Z', title='End of period (non inclusive)')
+    start: Optional[datetime] = Field(None, example='2021-09-11T22:00:00+00:00', title='Beginning of period (inclusive)')
+    end: Optional[datetime] = Field(None, example='2021-10-14T22:00:00Z', title='End of period (non inclusive)')
 
     def __init__(self, start: datetime, end: datetime):
         self.start = start
