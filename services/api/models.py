@@ -53,17 +53,16 @@ the aforementioned format when retrieving (using as a response model).
         yield cls.validate_type
 
     @classmethod
-    def validate_type(cls, val: Range):
+    def validate_type(cls, val):
         if isinstance(val, Range):
             return {'start': val.lower, 'end': val.upper}
-        elif 'start' in val and 'end' in val:
-            lower = None
-            upper = None
-            if val['start'] != '' and val['start'] != None:
-                lower = datetime.fromisoformat(cls.stripz(val['start']))
-            if val['end'] != '' and val['end'] != None:
-                upper = datetime.fromisoformat(cls.stripz(val['end']))
-            return Range(lower=lower, upper=upper)
+        lower = None
+        upper = None
+        if val.get('start'):
+            lower = datetime.fromisoformat(cls.stripz(val['start']))
+        if val.get('end'):
+            upper = datetime.fromisoformat(cls.stripz(val['end']))
+        return Range(lower=lower, upper=upper)
 
     def __repr__(self):
         return f'TimeStampRange({super().__repr__()})'
