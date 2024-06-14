@@ -37,8 +37,8 @@ end timestamp"):
 The pydantic model / type definition also converts this `tstzrange` back into
 the aforementioned format when retrieving (using as a response model).
 '''
-    start: datetime = Field(..., example='2021-09-11T22:00:00+00:00', title='Beginning of period (inclusive)')
-    end: datetime = Field(..., example='2021-10-14T22:00:00Z', title='End of period (non inclusive)')
+    start: Optional[datetime] = Field(None, example='2021-09-11T22:00:00+00:00', title='Beginning of period (inclusive)')
+    end: Optional[datetime] = Field(None, example='2021-10-14T22:00:00Z', title='End of period (non inclusive)')
 
     def __init__(self, start: datetime, end: datetime):
         self.start = start
@@ -53,17 +53,16 @@ the aforementioned format when retrieving (using as a response model).
         yield cls.validate_type
 
     @classmethod
-    def validate_type(cls, val: Range):
+    def validate_type(cls, val):
         if isinstance(val, Range):
             return {'start': val.lower, 'end': val.upper}
-        elif 'start' in val and 'end' in val:
-            lower = None
-            upper = None
-            if val['start'] != '' and val['start'] != None:
-                lower = datetime.fromisoformat(cls.stripz(val['start']))
-            if val['end'] != '' and val['end'] != None:
-                upper = datetime.fromisoformat(cls.stripz(val['end']))
-            return Range(lower=lower, upper=upper)
+        lower = None
+        upper = None
+        if val.get('start'):
+            lower = datetime.fromisoformat(cls.stripz(val['start']))
+        if val.get('end'):
+            upper = datetime.fromisoformat(cls.stripz(val['end']))
+        return Range(lower=lower, upper=upper)
 
     def __repr__(self):
         return f'TimeStampRange({super().__repr__()})'
