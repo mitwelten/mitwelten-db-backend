@@ -1,5 +1,17 @@
 # Mitwelten Storage Layer
 
+## Usage
+
+Copy batch selection `0` from storage `1` to storage `28`:
+
+```bash
+python mitwelten_storage.py copy -s 1 -t 28 0
+```
+
+- `-s` source storage: `1` is S3 active storage
+- `-t` target storage: `28` is local archive storage
+- `0` is the batch number to process ([`batches.py`](batches.py))
+
 ## Concept
 
 - File storage is setup as multi-tier storage system
