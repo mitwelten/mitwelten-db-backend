@@ -138,6 +138,7 @@ def main():
     copy_parser.add_argument('-o', '--object', required=False, type=str, help='object name')
     copy_parser.add_argument('-s', '--source', required=True, type=int, help='storage source')
     copy_parser.add_argument('-t', '--target', required=True, type=int, help='storage target')
+    copy_parser.add_argument('--skip-existing', dest='skip_existing', action='store_true', help='skip (only) download if file exists in target storage')
     copy_parser.add_argument('batch_id', type=int, help='batch selection ID')
 
     info_parser = subparsers.add_parser('info', help='Info mode help')
@@ -257,9 +258,12 @@ def main():
                 abs_object_name = os.path.join(abs_storage_dir, *object_name.split('/'))
                 tqdm.write(abs_object_name)
                 os.makedirs(os.path.dirname(abs_object_name), exist_ok=True)
-                response = source_storage.get_object(source_minio_bucket, object_name)
-                with open(abs_object_name, 'wb') as f:
-                    f.write(response.read())
+                if args.skip_existing and os.path.exists(abs_object_name):
+                    tqdm.write(f'File {abs_object_name} already exists.')
+                else:
+                    response = source_storage.get_object(source_minio_bucket, object_name)
+                    with open(abs_object_name, 'wb') as f:
+                        f.write(response.read())
 
                 # If the object is successfully written to the target storage, update the database
                 with connection.cursor() as cursor:
