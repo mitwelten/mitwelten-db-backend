@@ -28,6 +28,7 @@ Local USB drive
 '''
 
 # standard library
+from datetime import datetime, timedelta
 import os
 import sys
 import argparse
@@ -237,6 +238,8 @@ def main():
     signal.signal(signal.SIGINT, signal_handler)  # Handle Ctrl+C
     signal.signal(signal.SIGTERM, signal_handler)  # Handle SIGTERM
 
+    timer = datetime.now()
+
     # Loop through object files
     with pg.connect(host=crd.db.host, port=crd.db.port, database=crd.db.database, user=crd.db.user, password=crd.db.password) as connection:
         for object_file in tqdm(object_files):
@@ -263,6 +266,10 @@ def main():
                     cursor.execute('''
                         insert into prod.mm_files_image_storage (file_id, storage_id) values (%s, %s)
                     ''', (object_file[0], args.target))
+                # commit every 15 minutes
+                if timer + timedelta(seconds=900) < datetime.now():
+                    timer = datetime.now()
+                    connection.commit()
 
     return
 
