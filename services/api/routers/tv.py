@@ -32,7 +32,7 @@ async def post_imagestack(body: TVStackSelectionRequest):
         order by time
         ''').bindparams(
             deployment_id=body.deployment_id,
-            period=body.period
+            period=to_inclusive_range(body.period)
         )
     else:
         query = text(f'''
