@@ -3,7 +3,7 @@ from api.dependencies import crd
 from api.routers import (
     birdnet, data, deployments, discover, geo, notes, ingest, minio, nodes, queue, tags,
     taxonomy, validators, walk, meteodata, pollinators, explore, gbif,
-    environment, statistics, auth
+    environment, statistics, auth, tv
 )
 
 from fastapi import Depends, FastAPI, Request, status
@@ -129,6 +129,7 @@ app.include_router(tags.router)
 app.include_router(taxonomy.router)
 app.include_router(validators.router)
 app.include_router(walk.router)
+app.include_router(tv.router)
 app.include_router(meteodata.router)
 app.include_router(pollinators.router)
 app.include_router(explore.router)

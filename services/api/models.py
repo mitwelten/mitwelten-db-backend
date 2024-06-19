@@ -274,6 +274,11 @@ class DeploymentRequest(BaseModel):
     period: TimeStampRange
     tags: Optional[List[str]] = None
 
+class TVStackSelectionRequest(BaseModel):
+    deployment_id: int
+    period: TimeStampRange
+    interval: Optional[int]
+
 class QueueInputDefinition(BaseModel):
     node_label: str # for now keep this required. TODO: implement update for all dask when node_label not present
 
