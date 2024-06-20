@@ -1,4 +1,5 @@
 anyio==3.6.2
+astral==3.2
 asyncpg==0.27.0
 cached-property==1.5.2
 certifi==2022.12.7
