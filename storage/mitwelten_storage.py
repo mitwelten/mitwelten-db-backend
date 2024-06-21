@@ -34,6 +34,7 @@ import sys
 import argparse
 import signal
 from urllib.parse import urlparse
+import logging
 
 # external
 from minio import Minio
@@ -146,6 +147,9 @@ def main():
 
     args = argparser.parse_args()
 
+    fileprefix=f'{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}'
+    logging.basicConfig(level=logging.INFO, filename=f'{fileprefix}_storage-layer.log', format='%(asctime)s %(levelname)s: %(message)s')
+
     if args.mode == 'info':
         if args.backends:
             list_storage_backends()
@@ -161,6 +165,11 @@ def main():
         print(f'Bucket {crd.minio.bucket} does not exist.')
         return
 
+    logging.info(f'mode: {args.mode}')
+    logging.info(f'source: {args.source} ({str(source[2]).lower()}, {source[1]})')
+    logging.info(f'target: {args.target} ({str(target[2]).lower()}, {target[1]})')
+    logging.info(f'batch: {args.batch_id}')
+
     batch_query = batches[args.batch_id]
 
     # connect to database
@@ -173,6 +182,7 @@ def main():
             cursor.execute(batch_query, (args.source, args.target))
             object_files = cursor.fetchall()
 
+    logging.info(f'object files remaining in batch: {len(object_files)}')
     # test if the source is accessible
     if str(source[2]).lower() == 's3':
         url_prefix = source[1]
@@ -254,24 +264,28 @@ def main():
 
             if str(target[2]).lower() == 'local':
 
-                # Copy object to target storage
-                abs_object_name = os.path.join(abs_storage_dir, *object_name.split('/'))
-                tqdm.write(abs_object_name)
-                os.makedirs(os.path.dirname(abs_object_name), exist_ok=True)
-                if args.skip_existing and os.path.exists(abs_object_name):
-                    tqdm.write(f'File {abs_object_name} already exists.')
+                try:
+                    # Copy object to target storage
+                    abs_object_name = os.path.join(abs_storage_dir, *object_name.split('/'))
+                    tqdm.write(abs_object_name)
+                    os.makedirs(os.path.dirname(abs_object_name), exist_ok=True)
+                    if args.skip_existing and os.path.exists(abs_object_name):
+                        tqdm.write(f'File {abs_object_name} already exists.')
+                    else:
+                        response = source_storage.get_object(source_minio_bucket, object_name)
+                        with open(abs_object_name, 'wb') as f:
+                            f.write(response.read())
+                except Exception as e:
+                    logging.error(f'Error copying object {object_name} to target storage: {e}')
                 else:
-                    response = source_storage.get_object(source_minio_bucket, object_name)
-                    with open(abs_object_name, 'wb') as f:
-                        f.write(response.read())
-
-                # If the object is successfully written to the target storage, update the database
-                with connection.cursor() as cursor:
-                    cursor.execute('''
-                        insert into prod.mm_files_image_storage (file_id, storage_id) values (%s, %s)
-                    ''', (object_file[0], args.target))
+                    # If the object is successfully written to the target storage, update the database
+                    with connection.cursor() as cursor:
+                        cursor.execute('''
+                            insert into prod.mm_files_image_storage (file_id, storage_id) values (%s, %s)
+                        ''', (object_file[0], args.target))
                 # commit every 15 minutes
                 if timer + timedelta(seconds=900) < datetime.now():
+                    logging.info('Committing changes...')
                     timer = datetime.now()
                     connection.commit()
 
