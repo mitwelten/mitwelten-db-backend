@@ -166,9 +166,6 @@ def main():
         return
 
     logging.info(f'mode: {args.mode}')
-    logging.info(f'source: {args.source} ({str(source[2]).lower()}, {source[1]})')
-    logging.info(f'target: {args.target} ({str(target[2]).lower()}, {target[1]})')
-    logging.info(f'batch: {args.batch_id}')
 
     batch_query = batches[args.batch_id]
 
@@ -182,7 +179,11 @@ def main():
             cursor.execute(batch_query, (args.source, args.target))
             object_files = cursor.fetchall()
 
+    logging.info(f'source: {args.source} ({str(source[2]).lower()}, {source[1]})')
+    logging.info(f'target: {args.target} ({str(target[2]).lower()}, {target[1]})')
+    logging.info(f'batch: {args.batch_id}')
     logging.info(f'object files remaining in batch: {len(object_files)}')
+
     # test if the source is accessible
     if str(source[2]).lower() == 's3':
         url_prefix = source[1]
