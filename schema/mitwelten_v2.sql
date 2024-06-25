@@ -677,6 +677,21 @@ CREATE INDEX IF NOT EXISTS storage_whitelist_object_name_idx
     ON storage_whitelist USING btree
     (object_name ASC NULLS LAST);
 
+CREATE INDEX IF NOT EXISTS mm_files_audio_storage_type_idx
+    ON prod.mm_files_audio_storage USING btree
+    (type ASC NULLS LAST)
+    WITH (deduplicate_items=True);
+
+CREATE INDEX IF NOT EXISTS mm_files_image_storage_type_idx
+    ON prod.mm_files_image_storage USING btree
+    (type ASC NULLS LAST)
+    WITH (deduplicate_items=True);
+
+CREATE INDEX IF NOT EXISTS mm_files_note_storage_type_idx
+    ON prod.mm_files_note_storage USING btree
+    (type ASC NULLS LAST)
+    WITH (deduplicate_items=True);
+
 CREATE OR REPLACE VIEW birdnet_input
     AS
     SELECT f.file_id,
