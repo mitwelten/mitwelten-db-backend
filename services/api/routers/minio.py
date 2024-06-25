@@ -82,8 +82,8 @@ async def get_walk_download(request: Request, object_name: str):
 @router.get('/tv/file/{object_name:path}', summary='Media resources for TV App from S3 storage')
 async def get_tv_download(request: Request, object_name: str):
     try:
-        whitelisted = await database.fetch_one(text('select count(object_name) from prod.storage_whitelist where object_name = :object_name').\
-            bindparams(object_name=object_name))
+        whitelisted = await database.fetch_one(text('select count(object_name) from prod.storage_whitelist where object_name like :object_name').\
+            bindparams(object_name=path.splitext(object_name)[0] + '%'))
         if not whitelisted['count']:
             raise HTTPException(status_code=401, detail='Access denied')
         response = storage.get_object(crd.minio.bucket, object_name)
