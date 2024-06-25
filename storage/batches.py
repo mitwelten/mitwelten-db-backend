@@ -1,4 +1,7 @@
 
+# Lost files (during migration from minio to minio3, in December 2023)
+# [begin] 0527-0574/2023-10-08/09/0527-0574_2023-10-08T09-56-47Z.jpg
+# [end]   0527-0574/2023-10-13/08/0527-0574_2023-10-13T08-06-42Z.jpg
 
 batches = [
     '''
