@@ -434,6 +434,7 @@ CREATE TABLE IF NOT EXISTS prod.mm_files_audio_storage
 (
     file_id integer NOT NULL,
     storage_id integer NOT NULL,
+    type smallint NOT NULL DEFAULT 0,
     created_at timestamp with time zone,
     updated_at timestamp with time zone DEFAULT current_timestamp,
     PRIMARY KEY (file_id, storage_id)
@@ -443,6 +444,7 @@ CREATE TABLE IF NOT EXISTS prod.mm_files_image_storage
 (
     file_id integer NOT NULL,
     storage_id integer NOT NULL,
+    type smallint NOT NULL DEFAULT 0,
     created_at timestamp with time zone,
     updated_at timestamp with time zone DEFAULT current_timestamp,
     PRIMARY KEY (file_id, storage_id)
@@ -452,6 +454,7 @@ CREATE TABLE IF NOT EXISTS prod.mm_files_note_storage
 (
     file_id integer NOT NULL,
     storage_id integer NOT NULL,
+    type smallint NOT NULL DEFAULT 0,
     created_at timestamp with time zone,
     updated_at timestamp with time zone DEFAULT current_timestamp,
     PRIMARY KEY (file_id, storage_id)

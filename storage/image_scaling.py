@@ -4,7 +4,7 @@
     - download image from s3 into memory
     - scale image
     - upload scaled data as image to s3
-    - update mm_files_image_storage.type to 2
+    - update mm_files_image_storage.type to 1
     - remove original image from s3
 '''
 
@@ -41,7 +41,7 @@ def main():
             left join prod.files_image f on f.file_id = mfs.file_id
             left join prod.storage_backend sb on mfs.storage_id = sb.storage_id
             where sb.priority = 1 -- assuming priority 2 is complete for 820
-            and mfs.type = 1 -- 1=original, 2=compressed
+            and mfs.type = 0 -- 0=original, 1=compressed
             and f.deployment_id = 820
             order by f.time;
             '''
@@ -89,11 +89,11 @@ def main():
         print('Updating records...')
         with pg.connect(host=crd.db.host, port=crd.db.port, database=crd.db.database, user=crd.db.user, password=crd.db.password) as connection:
             with connection.cursor() as cursor:
-                # set mm_files_image_storage.type = 1 # 1=original, 2=compressed
+                # set mm_files_image_storage.type = 1 # 0=original, 1=compressed
                 for record in processed_records:
                     file_id, object_name, source_storage_id, target_object_name = record
                     cursor.execute('''
-                    update prod.mm_files_image_storage set type = 2, updated_at = current_timestamp
+                    update prod.mm_files_image_storage set type = 1, updated_at = current_timestamp
                     where storage_id = %s and file_id = %s;
                     ''', (source_storage_id, file_id))
     except Exception as e:

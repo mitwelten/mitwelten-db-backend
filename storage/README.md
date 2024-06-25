@@ -103,6 +103,7 @@ erDiagram
     mm_files_image_storage {
         int file_id FK
         int storage_id FK
+        int type "0 for original, 1 for webp compressed"
         date created_at
         date updated_at
     }
@@ -120,3 +121,20 @@ erDiagram
     mm_files_image_storage ||--o{ storage_backend : "is archived in"
     mm_files_image_storage ||--o{ files_image : "has"
 ```
+
+### File types
+
+#### mm_files_image_storage
+
+| Type | Definition      |
+| ---- | --------------- |
+| 0    | original        |
+| 1    | webp, 1920x1440 |
+
+#### mm_files_audio_storage
+
+| Type | Definition |
+| ---- | ---------- |
+| 0    | original   |
+| 1    | gzip -9    |
+| 2    | FLAC       |

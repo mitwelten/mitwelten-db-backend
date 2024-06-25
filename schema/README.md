@@ -84,6 +84,26 @@ themselves don't need to have a location.
 
 Records of `note` and `deployment` can be tagged with multiple tags, using the tables `mm_tags_notes` and `mm_tags_deployments`.
 
+#### storage_backend
+
+At a later stage of the project, a storage layer has been added that allows to store files in different locations.
+The table `storage_backend` holds the information about the storage backend, while the tables `mm_files_*_storage`
+(`*` = `audio`, `image` and `note`) track the assignment of files to storage locations as well as the file _type_.
+
+The _file type_ is used to distinguish between original files and scaled versions, or to store additional metadata.
+This enables the folling scenario:
+
+- The original file (type 0) is stored offline in an archive storage
+- a scaled and compressed version (type 1) is stored in the online S3 storage
+- another scaled version (type 2) is stored in a different location
+
+The metadata stored in `files_audio` etc. corresponds to the type 0, i.e. original file.
+The other types don't have their own metadata, but arbitrary types can be defined.
+As of now, `type 1` is defined as __scaled to 1920x1440 pixels (preserving aspect ratio) and 'webp' compressed__.
+This change requires adjustments to the API endpoints, rewriting object names depending on the file type.
+
+More details on the storage layer can be found in the [storage README](../storage/README.md).
+
 #### BirdNET pipeline
 
 - __tasks__: queue table, mapping files to inference configurations, tracking the state of tasks
