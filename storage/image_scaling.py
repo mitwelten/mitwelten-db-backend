@@ -8,33 +8,39 @@
     - remove original image from s3
 '''
 
-from io import BytesIO
 import os
+import traceback
+from io import BytesIO
+import argparse
+
 import psycopg2 as pg
 from PIL import Image
-from config import crd
-from minio import Minio
-import traceback
 from tqdm import tqdm
 from tqdm.contrib.concurrent import thread_map
 
+from config import crd
+from type_definitions import image_types
+from storage_backend import get_storage_backend
+
 def main():
-    target_format = 'webp'
-    target_size = (1920, 1440)
-    source_minio_host = 'minio3.campusderkuenste.ch'
-    source_minio_bucket = 'ixdm-mitwelten'
-    source_storage = Minio(
-        source_minio_host,
-        access_key=crd.minio.access_key,
-        secret_key=crd.minio.secret_key,
-    )
-    if not source_storage.bucket_exists(source_minio_bucket):
-        print(f'Bucket {source_minio_bucket} does not exist.')
+    argparser = argparse.ArgumentParser()
+    argparser.add_argument('--target_type', type=int, default=1)
+    args = argparser.parse_args()
+    target_type = [t for t in image_types if t.identifier == args.target_type][0]
+    if not target_type:
+        print('Invalid target type.')
         return
-    else: print(f'Bucket {source_minio_bucket} exists.')
+    print(f'Target format: {target_type.format_name}, target size: {target_type.dimensions}')
+
+    storage_backend = get_storage_backend(crd.storage_backend)
+    if storage_backend.type != 's3':
+        print('Processing images only supported for S3 storage backends, in place.')
+        return
+    s3 = storage_backend.storage
 
     with pg.connect(host=crd.db.host, port=crd.db.port, database=crd.db.database, user=crd.db.user, password=crd.db.password) as connection:
         with connection.cursor() as cursor:
+            # TODO: make sure an original version of each image exists
             query = '''
             select f.file_id, object_name, sb.storage_id
             from prod.mm_files_image_storage mfs
@@ -54,21 +60,21 @@ def main():
     def process_record(record):
         file_id, object_name, source_storage_id = record
         try:
-            response = source_storage.get_object(source_minio_bucket, object_name)
+            response = s3.get_object(storage_backend.bucket, object_name)
 
             image = Image.open(response)
-            image.thumbnail(target_size, Image.Resampling.LANCZOS)
+            image.thumbnail(target_type.dimensions, Image.Resampling.LANCZOS)
 
             object_name_parts = os.path.splitext(object_name)
-            target_object_name = object_name_parts[0] + '.' + target_format
+            target_object_name = object_name_parts[0] + '.' + target_type.extension
 
             file = BytesIO()
             file.name = target_object_name
-            image.save(file, target_format)
+            image.save(file, target_type.format_name)
             file.seek(0)
 
-            source_storage.put_object(source_minio_bucket, target_object_name, file, file.getbuffer().nbytes)
-            source_storage.set_object_tags(crd.minio.bucket, target_object_name, source_storage.get_object_tags(crd.minio.bucket, object_name))
+            s3.put_object(storage_backend.bucket, target_object_name, file, file.getbuffer().nbytes)
+            s3.set_object_tags(crd.minio.bucket, target_object_name, s3.get_object_tags(crd.minio.bucket, object_name))
 
         except Exception as e:
             tqdm.write(traceback.format_exc())
@@ -78,7 +84,7 @@ def main():
 
     def remove_original_objects(record):
         file_id, object_name, source_storage_id, target_object_name = record
-        source_storage.remove_object(source_minio_bucket, object_name)
+        s3.remove_object(storage_backend.bucket, object_name)
 
     num_threads = 8
     processed_records = thread_map(process_record, records, max_workers=num_threads)
