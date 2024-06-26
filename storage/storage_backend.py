@@ -12,18 +12,18 @@ from config import LocalStorageDefaults, crd
 
 @dataclass
 class S3Storage:
-    type: str = 's3'
     storage: Minio
     host: str
     bucket: str
+    type: str = 's3'
 
     def __repr__(self):
         return f"S3Storage(type={self.type}, host={self.host}, bucket={self.bucket})"
 
 @dataclass
 class LocalStorage:
-    type: str = 'local'
     path: str
+    type: str = 'local'
 
     def __repr__(self):
         return f"LocalStorage(type={self.type}, path={self.path})"
