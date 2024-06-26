@@ -99,4 +99,14 @@ batches = [
     group by f.file_id
     having count(distinct mfs.storage_id) = 1;
     ''',
+    '''
+    -- batch 5
+    -- testing batch
+    select f.file_id, object_name from prod.files_image f
+    join prod.mm_files_image_storage mfs on f.file_id = mfs.file_id
+    where mfs.storage_id in (%s, %s) and f.deployment_id = 829
+    group by f.file_id
+    having count(distinct mfs.storage_id) = 1
+    limit 42;
+    ''',
 ]
