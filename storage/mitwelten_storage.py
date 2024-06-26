@@ -20,7 +20,6 @@ def main():
     subparsers.required = True
 
     copy_parser = subparsers.add_parser('copy', help='Copy object from source to target storage')
-    copy_parser.add_argument('-o', '--object', required=False, type=str, help='object name')
     copy_parser.add_argument('-s', '--source', required=True, type=int, help='storage source')
     copy_parser.add_argument('-t', '--target', required=True, type=int, help='storage target')
     copy_parser.add_argument('--skip-existing', dest='skip_existing', action='store_true', help='skip (only) download if file exists in target storage')
