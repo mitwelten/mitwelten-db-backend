@@ -14,13 +14,13 @@ pip install -r requirements.txt
 Add a storage backend:
 
 ```bash
-python create_storage_backend.py -t local -p 2 -n 'mw-archiv-1' /Volumes/mw-archiv-1
+python mitwelten_storage.py create -t local -p 2 -n 'mw-archiv-1' /Volumes/mw-archiv-1
 ```
 
 List storage backends:
 
 ```bash
-python mitwelten_storage.py info -b
+python mitwelten_storage.py info
 ```
 
 Copy batch selection `0` from storage `1` to storage `28`:

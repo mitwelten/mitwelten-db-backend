@@ -27,7 +27,7 @@ def main():
     copy_parser.add_argument('batch_id', type=int, help='batch selection ID')
 
     info_parser = subparsers.add_parser('info', help='Info mode help')
-    info_parser.add_argument('-b', '--backends', action='store_true', help='List storage backends')
+    info_parser.add_argument('-b', '--backends', action='store_true', default=True, help='List storage backends')
 
     create_parser = subparsers.add_parser('create', help='Create storage backend')
     create_parser.add_argument('-t', '--type', required=True, help='storage type')

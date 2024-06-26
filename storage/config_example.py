@@ -4,6 +4,11 @@ sys.path.append('../')
 import credentials as crd
 
 class LocalStorageDefaults(object):
+    '''
+    Default values specific to this instance/machine for local storage backend.
+
+    Use this to define how and where local storage backends should be created.
+    '''
 
     title = None
     created_at = None
