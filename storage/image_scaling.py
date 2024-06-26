@@ -46,7 +46,7 @@ def main():
             from prod.mm_files_image_storage mfs
             left join prod.files_image f on f.file_id = mfs.file_id
             left join prod.storage_backend sb on mfs.storage_id = sb.storage_id
-            where sb.priority = 1 -- assuming priority 2 is complete for 820
+            where sb.priority = 0 -- assuming priority 2 is complete for 820
             and mfs.type = 0 -- 0=original, 1=compressed
             and f.deployment_id = 820
             order by f.time;

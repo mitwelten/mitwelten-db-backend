@@ -23,7 +23,7 @@ class LocalStorageDefaults(object):
         self.title = 'Mitwelten Storage Backend'
         self.created_at = None
         self.original_path = None
-        self.priority = None
+        self.priority = 2
         self.storage_id = None
         self.dot_file_name  = '.mitwelten-storage-id'
         self.storage_dir = 'archive'

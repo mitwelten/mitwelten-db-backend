@@ -55,6 +55,14 @@ A local storage backend consists of the following components:
 With the exception of the `README.md` file, all files and directories are managed by the storage backend
 and should not be altered manually.
 
+### Prorities
+
+`0` for active, larger for less accessible:
+
+- `0` online, through Rest API publicly accessible S3 storage
+- `1` online, not publicly accessible S3 storage
+- `2` offline, local archive storage
+
 ## Tasks
 
 - identify batches of files to process
