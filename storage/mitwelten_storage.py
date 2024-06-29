@@ -123,7 +123,8 @@ def main():
                     tqdm.write(abs_object_name)
                     os.makedirs(os.path.dirname(abs_object_name), exist_ok=True)
                     if args.skip_existing and os.path.exists(abs_object_name):
-                        tqdm.write(f'File {abs_object_name} already exists.')
+                        # tqdm.write(f'File {abs_object_name} already exists.')
+                        ...
                     else:
                         response = source_storage.get_object(source_storage_backend.bucket, object_name)
                         with open(abs_object_name, 'wb') as f:
