@@ -159,7 +159,7 @@ def create_local_storage_backend(path, priority, notes):
                 VALUES (%s, %s, %s, %s)
                 RETURNING storage_id, created_at
                 ;
-            ''', (lsd.original_path, type, lsd.priority, lsd.device_label))
+            ''', (lsd.original_path, 'local', lsd.priority, lsd.device_label))
             insert_data = cursor.fetchone()
             lsd.storage_id = insert_data[0] # integer
             lsd.created_at = insert_data[1] # datetime object
