@@ -24,41 +24,69 @@ from storage_backend import S3Storage, get_storage_backend
 
 def main():
     argparser = argparse.ArgumentParser()
+    argparser.add_argument('-s', '--source', required=False, type=int, help='storage source')
+    argparser.add_argument('-t', '--target', required=True, type=int, help='storage target')
     argparser.add_argument('--target_type', type=int, default=1)
     args = argparser.parse_args()
     target_type = [t for t in image_types if t.identifier == args.target_type][0]
-    if not target_type:
+    if not target_type or target_type.format_name != 'WEBP':
         print('Invalid target type.')
         return
     print(f'Target format: {target_type.format_name}, target size: {target_type.dimensions}')
 
-    storage_backend = get_storage_backend(crd.storage_backend)
+    in_place = True
+    if not args.source or args.source == args.target:
+        print(f'In-place processing on backend {args.target}.')
+    else:
+        print(f'Processing from backend {args.source} to backend {args.target}.')
+        storage_backend_source = get_storage_backend(args.source)
+        if storage_backend_source.type != 's3':
+            print('Processing images only supported for S3 storage backends')
+            return
+        in_place = False
+
+    storage_backend = get_storage_backend(args.target)
     if storage_backend.type != 's3':
-        print('Processing images only supported for S3 storage backends, in place.')
+        print('Processing images only supported for S3 storage backends')
         return
-    s3 = storage_backend.storage
 
     with pg.connect(host=crd.db.host, port=crd.db.port, database=crd.db.database, user=crd.db.user, password=crd.db.password) as connection:
         with connection.cursor() as cursor:
             # TODO: make sure an original version of each image exists
             query = '''
-            select f.file_id, object_name, sb.storage_id
+            select f.file_id, object_name --, sb.storage_id
             from prod.mm_files_image_storage mfs
             left join prod.files_image f on f.file_id = mfs.file_id
             left join prod.storage_backend sb on mfs.storage_id = sb.storage_id
             where sb.priority = 0 -- assuming priority 2 is complete for 820
+            and sb.storage_id = %s
             and mfs.type = 0 -- 0=original, 1=compressed
-            and f.deployment_id = 820
-            order by f.time;
+            and f.deployment_id = 883
+            order by f.time
+            limit 42;
             '''
-            cursor.execute(query)
+            cursor.execute(query, (args.source,))
             records = cursor.fetchall()
     if not records:
         print('No records found.')
         return
 
+    print('Records found:', len(records))
+
+    if in_place:
+        print('In-place processing...')
+        print('DEBUG: not runnning in-place processing.')
+        # in_place_processing(records, target_type, storage_backend)
+    else:
+        print('Processing from source to target...')
+        source_target_processing(records, target_type, storage_backend_source, storage_backend)
+
+def in_place_processing(records, target_type, storage_backend: S3Storage):
+    s3 = storage_backend.storage
+
     def process_record(record):
-        file_id, object_name, source_storage_id = record
+        file_id, object_name = record
+        # file_id, object_name, source_storage_id = record # when in place, the query should not filter by source storage, but any storage matching priority = 0
         try:
             response = s3.get_object(storage_backend.bucket, object_name)
 
@@ -80,33 +108,92 @@ def main():
             tqdm.write(traceback.format_exc())
 
         else:
-            return file_id, object_name, source_storage_id, target_object_name
+            return file_id, object_name, target_object_name
 
     def remove_original_objects(record):
-        file_id, object_name, source_storage_id, target_object_name = record
+        file_id, object_name, target_object_name = record
         s3.remove_object(storage_backend.bucket, object_name)
 
     num_threads = 8
     processed_records = thread_map(process_record, records, max_workers=num_threads)
     processed_records = [record for record in processed_records if record]
     print('Processed records:', len(processed_records))
-
+    if not processed_records:
+        return
     try:
         print('Updating records...')
         with pg.connect(host=crd.db.host, port=crd.db.port, database=crd.db.database, user=crd.db.user, password=crd.db.password) as connection:
             with connection.cursor() as cursor:
                 # set mm_files_image_storage.type = 1 # 0=original, 1=compressed
                 for record in processed_records:
-                    file_id, object_name, source_storage_id, target_object_name = record
+                    file_id, object_name, target_object_name = record
                     cursor.execute('''
                     update prod.mm_files_image_storage set type = 1, updated_at = current_timestamp
                     where storage_id = %s and file_id = %s;
-                    ''', (source_storage_id, file_id))
+                    ''', (storage_backend.storage_id, file_id))
     except Exception as e:
         print(traceback.format_exc())
     else:
         print('Removing original objects...')
         thread_map(remove_original_objects, processed_records, max_workers=num_threads)
+
+def source_target_processing(records, target_type, source_backend: S3Storage, target_backend: S3Storage):
+    s3_source = source_backend.storage
+    s3_target = target_backend.storage
+
+    def process_record(record):
+        file_id, object_name = record
+        try:
+            response = s3_source.get_object(source_backend.bucket, object_name)
+
+            image = Image.open(response)
+            image.thumbnail(target_type.dimensions, Image.Resampling.LANCZOS)
+
+            object_name_parts = os.path.splitext(object_name)
+            target_object_name = object_name_parts[0] + '.' + target_type.extension
+
+            file = BytesIO()
+            file.name = target_object_name
+            image.save(file, target_type.format_name)
+            file.seek(0)
+
+            s3_target.put_object(target_backend.bucket, target_object_name, file, file.getbuffer().nbytes)
+            s3_target.set_object_tags(target_backend.bucket, target_object_name, s3_source.get_object_tags(source_backend.bucket, object_name))
+
+        except Exception as e:
+            tqdm.write(traceback.format_exc())
+            return
+
+        else:
+            return file_id, object_name, target_object_name
+
+    # def remove_original_objects(record):
+    #     file_id, object_name, source_storage_id, target_object_name = record
+    #     s3_source.remove_object(crd.minio.bucket, object_name)
+
+    num_threads = 8
+    processed_records = thread_map(process_record, records, max_workers=num_threads)
+    processed_records = [record for record in processed_records if record]
+    print('Processed records:', len(processed_records))
+
+    if not processed_records:
+        return
+    try:
+        print('Updating records...')
+        with pg.connect(host=crd.db.host, port=crd.db.port, database=crd.db.database, user=crd.db.user, password=crd.db.password) as connection:
+            with connection.cursor() as cursor:
+                # set mm_files_image_storage.type = 1 # 0=original, 1=compressed
+                for record in processed_records:
+                    file_id, object_name, target_object_name = record
+                    cursor.execute('''
+                    insert into prod.mm_files_image_storage(file_id, storage_id, type)
+                    values (%s, %s, 1);
+                    ''', (target_backend.storage_id, file_id))
+    except Exception as e:
+        print(traceback.format_exc())
+    # else:
+    #     print('Removing original objects...')
+    #     thread_map(remove_original_objects, processed_records, max_workers=num_threads)
 
 if __name__ == '__main__':
     main()
