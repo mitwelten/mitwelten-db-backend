@@ -1,39 +1,33 @@
 
+from dataclasses import dataclass
+
+@dataclass
 class FileType(object):
 
-    group = None
-    'image, audio or note'
-
-    identifier = None
+    identifier: int
     '0 = original, 1 = compressed, etc.'
 
-    extension = None
+    extension: str
     'file extension, e.g. jpg, mp3, txt'
 
-    format_name = None
+    format_name: str
     'WEBP, FLAC, TXT, etc.'
 
-    mime_type = None
+    mime_type: str
     'image/webp, audio/flac, text/plain, etc.'
 
-    description = None
+    description: str
 
-    def __init__(self):
-        self.group = None
-        self.identifier = None
-        self.extension = None
-        self.format_name = None
-        self.mime_type = None
-        self.description = None
+    group: str
+    'image, audio or note'
 
+@dataclass
 class ImageFileType(FileType):
 
-    dimensions = None
+    dimensions: tuple = None
     'pixel dimensions, width x height'
 
-    def __init__(self):
-        self.group = 'image'
-        self.dimensions = None
+    group: str = 'image'
 
 image_types = [
     ImageFileType(identifier=0, extension='jpg', format_name='JPEG', mime_type='image/jpeg', description='Original uncompressed image'),
