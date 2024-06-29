@@ -66,14 +66,13 @@ def check_local_storage(backend) -> LocalStorage:
             # ask the user to input the path to the storage device or directory
             url_prefix = input("Enter the path to the storage device or directory: ")
             if len(url_prefix) == 0:
-                print('exiting')
-                return
+                raise ValueError('No url_prefix provided. Exiting.')
+
         else: break
 
     # test if the backend is writable
     if not os.access(url_prefix, os.W_OK):
-        print(f"URL prefix {url_prefix} is not writable.")
-        return
+        raise ValueError(f"URL prefix {url_prefix} is not writable.")
 
     # read the dot-file to identify the storage device
     lsd = LocalStorageDefaults()
@@ -81,19 +80,15 @@ def check_local_storage(backend) -> LocalStorage:
 
     # test if backend_properties match the backend storage record
     if backend_properties['storage_id'] != str(backend[0]):
-        print(f"Storage ID in dot-file does not match backend storage record.")
-        return
+        raise ValueError(f"Storage ID in dot-file does not match backend storage record.")
     if backend_properties['device_label'] != str(backend[-1]):
-        print(f"Device label in dot-file does not match notes in backend storage record.")
-        return
+        raise ValueError(f"Device label in dot-file does not match notes in backend storage record.")
     if backend_properties['created_at'] != str(backend[4]):
-        print(f"Creation date in dot-file does not match creation date in backend storage record.")
-        return
+        raise ValueError(f"Creation date in dot-file does not match creation date in backend storage record.")
 
     abs_storage_dir = os.path.join(url_prefix, backend_properties['storage_dir'])
     if not os.access(abs_storage_dir, os.W_OK):
-        print(f"backend {abs_storage_dir} is not writable.")
-        return
+        raise ValueError(f"backend {abs_storage_dir} is not writable.")
 
     return LocalStorage(storage_id=backend_properties['storage_id'], path=abs_storage_dir)
 
