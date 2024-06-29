@@ -23,10 +23,11 @@ def main():
     copy_parser.add_argument('-s', '--source', required=True, type=int, help='storage source')
     copy_parser.add_argument('-t', '--target', required=True, type=int, help='storage target')
     copy_parser.add_argument('--skip-existing', dest='skip_existing', action='store_true', help='skip (only) download if file exists in target storage')
-    copy_parser.add_argument('batch_id', type=int, help='batch selection ID')
+    copy_parser.add_argument('batch_id', type=str, help='batch selection ID')
 
     info_parser = subparsers.add_parser('info', help='Info mode help')
-    info_parser.add_argument('-b', '--backends', action='store_true', default=True, help='List storage backends')
+    info_parser.add_argument('--backends', action='store_true', default=True, help='List storage backends')
+    info_parser.add_argument('--batches', action='store_true', help='List batches')
 
     create_parser = subparsers.add_parser('create', help='Create storage backend')
     create_parser.add_argument('-t', '--type', required=True, help='storage type')
@@ -40,7 +41,15 @@ def main():
     # List storage backends
     # -------------------------------------------------------------------------
     if args.mode == 'info':
+        if args.batches:
+            fstring = '{:<10} {:<8} {:<14} {}'
+            print('Batches:')
+            print(fstring.format('ID', 'Type', 'Target', 'Description'))
+            for batch in batches:
+                print(fstring.format(batch['id'], batch['type'], batch['target'], batch['description']))
+            print()
         if args.backends:
+            print('Storage backends:')
             list_storage_backends()
         return
 
@@ -61,12 +70,17 @@ def main():
     logging.basicConfig(level=logging.INFO, filename=f'{fileprefix}_storage-layer.log', format='%(asctime)s %(levelname)s: %(message)s')
     logging.info(f'mode: {args.mode}')
 
-    batch_query = batches[args.batch_id]
+    batch = next((batch for batch in batches if batch['id'] == args.batch_id), None)
+    if not batch:
+        msg = f'Batch "{args.batch_id}" not found'
+        logging.error(msg)
+        print(f'{msg}, exiting...')
+        return
 
     # List objects in batch
     with pg.connect(host=crd.db.host, port=crd.db.port, database=crd.db.database, user=crd.db.user, password=crd.db.password) as connection:
         with connection.cursor() as cursor:
-            cursor.execute(batch_query, (args.source, args.target))
+            cursor.execute(batch['query'], (args.source, args.target))
             object_files = cursor.fetchall()
 
     logging.info(f'batch: {args.batch_id}')
@@ -105,9 +119,23 @@ def main():
     signal.signal(signal.SIGTERM, signal_handler)  # Handle SIGTERM
 
     timer = datetime.now()
+    target_table = 'mm_files_image_storage' if batch['type'] == 'image' else 'mm_files_audio_storage'
 
     # Loop through object files
     with pg.connect(host=crd.db.host, port=crd.db.port, database=crd.db.database, user=crd.db.user, password=crd.db.password) as connection:
+
+        update_ids = []
+        def commit_changes():
+            if update_ids:
+                tqdm.write(f'Committing changes...')
+                with connection.cursor() as cursor:
+                    cursor.executemany(f'''
+                        insert into {crd.db.schema}.{target_table} (file_id, storage_id) values (%s, %s)
+                    ''', [(file_id, args.target) for file_id in update_ids])
+                connection.commit()
+                logging.info(f'Committed {len(update_ids)} changes')
+                update_ids.clear()
+
         for object_file in tqdm(object_files):
             if not keep_running:
                 tqdm.write('Interrupt received. Exiting...')
@@ -134,16 +162,12 @@ def main():
                 except Exception as e:
                     logging.error(f'Error copying object {object_name} to target storage: {e}')
                 else:
-                    # If the object is successfully written to the target storage, update the database
-                    with connection.cursor() as cursor:
-                        cursor.execute('''
-                            insert into prod.mm_files_image_storage (file_id, storage_id) values (%s, %s)
-                        ''', (object_file[0], args.target))
-                # Commit every 15 minutes
-                if timer + timedelta(seconds=900) < datetime.now():
-                    logging.info('Committing changes...')
-                    timer = datetime.now()
-                    connection.commit()
+                    update_ids.append(object_file[0])
+                    if len(update_ids) == 1000 or timer + timedelta(seconds=900) < datetime.now():
+                        commit_changes()
+                        timer = datetime.now()
+
+        commit_changes()
 
 if __name__ == '__main__':
     main()
