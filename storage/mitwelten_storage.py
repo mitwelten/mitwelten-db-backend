@@ -55,7 +55,9 @@ def main():
     # -------------------------------------------------------------------------
     # Copy objects from source to target storage
     # -------------------------------------------------------------------------
-    fileprefix=f'{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}'
+    fileprefix=f'logs/{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}'
+    if not os.path.exists('logs'):
+        os.makedirs('logs')
     logging.basicConfig(level=logging.INFO, filename=f'{fileprefix}_storage-layer.log', format='%(asctime)s %(levelname)s: %(message)s')
     logging.info(f'mode: {args.mode}')
 
