@@ -20,7 +20,7 @@ from tqdm.contrib.concurrent import thread_map
 
 from config import crd
 from type_definitions import image_types
-from storage_backend import get_storage_backend
+from storage_backend import S3Storage, get_storage_backend
 
 def main():
     argparser = argparse.ArgumentParser()

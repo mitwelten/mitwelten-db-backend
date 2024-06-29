@@ -13,20 +13,22 @@ from config import LocalStorageDefaults, crd
 @dataclass
 class S3Storage:
     storage: Minio
+    storage_id: int
     host: str
     bucket: str
     type: str = 's3'
 
     def __repr__(self):
-        return f"S3Storage(type={self.type}, host={self.host}, bucket={self.bucket})"
+        return f"S3Storage(type={self.type}, id={self.storage_id}, host={self.host}, bucket={self.bucket})"
 
 @dataclass
 class LocalStorage:
     path: str
+    storage_id: int
     type: str = 'local'
 
     def __repr__(self):
-        return f"LocalStorage(type={self.type}, path={self.path})"
+        return f"LocalStorage(type={self.type}, id={self.storage_id}, path={self.path})"
 
 def parse_kv_file(file_path):
     kv_dict = {}
@@ -52,7 +54,7 @@ def check_s3_storage(backend) -> S3Storage:
     else:
         print(f'Bucket {minio_bucket} on {minio_host} exists.')
 
-    return S3Storage(storage=storage, host=minio_host, bucket=minio_bucket)
+    return S3Storage(storage_id=backend[0], storage=storage, host=minio_host, bucket=minio_bucket)
 
 def check_local_storage(backend) -> LocalStorage:
 
@@ -93,7 +95,7 @@ def check_local_storage(backend) -> LocalStorage:
         print(f"backend {abs_storage_dir} is not writable.")
         return
 
-    return LocalStorage(path=abs_storage_dir)
+    return LocalStorage(storage_id=backend_properties['storage_id'], path=abs_storage_dir)
 
 def get_storage_backend(backend_id: int) -> Union[S3Storage, LocalStorage]:
     with pg.connect(host=crd.db.host, port=crd.db.port, database=crd.db.database, user=crd.db.user, password=crd.db.password) as connection:
