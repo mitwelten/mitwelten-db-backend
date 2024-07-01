@@ -12,6 +12,7 @@ import os
 import traceback
 from io import BytesIO
 import argparse
+from typing import List, Tuple
 
 import psycopg2 as pg
 from PIL import Image
@@ -66,7 +67,7 @@ def main():
             limit 42;
             '''
             cursor.execute(query, (args.source,))
-            records = cursor.fetchall()
+            records: List[Tuple[int, str]] = cursor.fetchall() # file_id, object_name
     if not records:
         print('No records found.')
         return
@@ -81,17 +82,18 @@ def main():
         print('Processing from source to target...')
         source_target_processing(records, target_type, storage_backend_source, storage_backend)
 
-def in_place_processing(records, target_type, storage_backend: S3Storage):
+def in_place_processing(records: List[Tuple[int, str]], target_type, storage_backend: S3Storage):
     s3 = storage_backend.storage
 
-    def process_record(record):
+    def process_record(record: Tuple[int, str]):
         file_id, object_name = record
         # file_id, object_name, source_storage_id = record # when in place, the query should not filter by source storage, but any storage matching priority = 0
         try:
             response = s3.get_object(storage_backend.bucket, object_name)
 
             image = Image.open(response)
-            image.thumbnail(target_type.dimensions, Image.Resampling.LANCZOS)
+            if image.size[0] > target_type.dimensions[0] or image.size[1] > target_type.dimensions[1]:
+                image.thumbnail(target_type.dimensions, Image.Resampling.LANCZOS)
 
             object_name_parts = os.path.splitext(object_name)
             target_object_name = object_name_parts[0] + '.' + target_type.extension
@@ -137,17 +139,18 @@ def in_place_processing(records, target_type, storage_backend: S3Storage):
         print('Removing original objects...')
         thread_map(remove_original_objects, processed_records, max_workers=num_threads)
 
-def source_target_processing(records, target_type, source_backend: S3Storage, target_backend: S3Storage):
+def source_target_processing(records: List[Tuple[int, str]], target_type, source_backend: S3Storage, target_backend: S3Storage):
     s3_source = source_backend.storage
     s3_target = target_backend.storage
 
-    def process_record(record):
+    def process_record(record: Tuple[int, str]):
         file_id, object_name = record
         try:
             response = s3_source.get_object(source_backend.bucket, object_name)
 
             image = Image.open(response)
-            image.thumbnail(target_type.dimensions, Image.Resampling.LANCZOS)
+            if image.size[0] > target_type.dimensions[0] or image.size[1] > target_type.dimensions[1]:
+                image.thumbnail(target_type.dimensions, Image.Resampling.LANCZOS)
 
             object_name_parts = os.path.splitext(object_name)
             target_object_name = object_name_parts[0] + '.' + target_type.extension
