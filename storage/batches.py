@@ -163,4 +163,25 @@ batches = [
         order by f.deployment_id, f.time;
         '''
     },
+    {
+        'id': 'batch_7',
+        'type': 'image',
+        'target': 'mw-archiv-1',
+        'description': 'All image files of wild cams and phaeno cams',
+        'query': '''
+        -- count 35487, total size 69.71 GiB
+        with selected_deployments as (
+            select d.deployment_id as deployment_id
+            from prod.deployments d
+            left join prod.nodes n on d.node_id = n.node_id
+            where n.type in ('Wild Cam', 'Phaeno Cam')
+        )
+        select f.file_id, object_name from prod.files_image f
+        join prod.mm_files_image_storage mfs on f.file_id = mfs.file_id
+        where mfs.storage_id in (%s, %s) and f.deployment_id in (select deployment_id from selected_deployments)
+        group by f.file_id
+        having count(distinct mfs.storage_id) = 1
+        order by f.deployment_id, f.time;
+        '''
+    },
 ]
