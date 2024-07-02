@@ -1,0 +1,44 @@
+---
+{{frontmatter}}
+---
+
+# {{title}}
+
+This device is used as **local** storage backend for the [Mitwelten project](https://mitwelten.org).
+It is used to store original research data consiting of files like images, audio, pdfs, etc.
+
+This storage backend was created on {{created_at}},
+on a device labelled `{{device_label}}`,
+at the original path of `{{original_path}}`,
+with a priority of {{priority}}
+and a storage ID of {{storage_id}}.
+
+(this information is also contained in machine readable form in
+`{{dot_file_name}}` and the frontmatter of this file)
+
+## Concept
+
+The mitwelten data storage is setup as a multi-tier storage system.
+The database is a postgresql database that handles metadata for the files in storage.
+The storage backend tiers are:
+
+- **active**: online S3 storage, for data that is currently used by publicly accessible services
+- **online archive**: S3, not publicly accessible, backup of original research data when online storage is replaced with downscaled content
+- **offline archive**: offline, backup of original research data when online storage is replaced with downscaled content
+
+## Structure of a local storage backend
+
+A local storage backend consists of the following components:
+
+| Component               | Description                                                               |
+| ----------------------- | ------------------------------------------------------------------------- |
+| `{{dot_file_name}}` | dot-file idenitfying the storage backend                                  |
+| `README.md`             | auto-generated info about the SB                                          |
+| `{{storage_dir}}`               | root of data to be stored (to contain path equivalent of S3 object names) |
+
+With the exception of the `README.md` file, all files and directories are managed by the storage backend
+and should not be altered manually.
+
+## Example uses of the CLI
+
+TBD

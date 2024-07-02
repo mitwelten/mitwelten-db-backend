@@ -12,6 +12,8 @@ from fastapi_cache.backends.redis import RedisBackend
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
+from redis import asyncio as aioredis
+
 tags_metadata = [
     {
         'name': 'authentication',
@@ -149,7 +151,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 async def startup():
     await database.connect()
     await database_cache.connect()
-    redis = RedisBackend('redis://redis_cache')
+    redis = RedisBackend(aioredis.from_url('redis://redis_cache'))
     FastAPICache.init(backend=redis, prefix='fastapi-cache')
 
 @app.on_event('shutdown')

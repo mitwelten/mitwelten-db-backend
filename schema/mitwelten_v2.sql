@@ -417,6 +417,91 @@ CREATE TABLE IF NOT EXISTS storage_whitelist
     PRIMARY KEY (object_name)
 );
 
+CREATE TABLE IF NOT EXISTS prod.storage_backend
+(
+    storage_id serial NOT NULL,
+    url_prefix text NOT NULL,
+    type character varying(8),
+    priority integer NOT NULL DEFAULT 0,
+    notes text,
+    created_at timestamp with time zone NOT NULL DEFAULT current_timestamp,
+    updated_at timestamp with time zone NOT NULL DEFAULT current_timestamp,
+    PRIMARY KEY (storage_id),
+    UNIQUE (url_prefix)
+);
+
+CREATE TABLE IF NOT EXISTS prod.mm_files_audio_storage
+(
+    file_id integer NOT NULL,
+    storage_id integer NOT NULL,
+    type smallint NOT NULL DEFAULT 0,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone DEFAULT current_timestamp,
+    PRIMARY KEY (file_id, storage_id)
+);
+
+CREATE TABLE IF NOT EXISTS prod.mm_files_image_storage
+(
+    file_id integer NOT NULL,
+    storage_id integer NOT NULL,
+    type smallint NOT NULL DEFAULT 0,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone DEFAULT current_timestamp,
+    PRIMARY KEY (file_id, storage_id)
+);
+
+CREATE TABLE IF NOT EXISTS prod.mm_files_note_storage
+(
+    file_id integer NOT NULL,
+    storage_id integer NOT NULL,
+    type smallint NOT NULL DEFAULT 0,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone DEFAULT current_timestamp,
+    PRIMARY KEY (file_id, storage_id)
+);
+
+ALTER TABLE IF EXISTS prod.mm_files_audio_storage
+    ADD FOREIGN KEY (file_id)
+    REFERENCES prod.files_audio (file_id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE NO ACTION
+    NOT VALID;
+
+ALTER TABLE IF EXISTS prod.mm_files_audio_storage
+    ADD FOREIGN KEY (storage_id)
+    REFERENCES prod.storage_backend (storage_id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE NO ACTION
+    NOT VALID;
+
+ALTER TABLE IF EXISTS prod.mm_files_image_storage
+    ADD FOREIGN KEY (file_id)
+    REFERENCES prod.files_image (file_id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE NO ACTION
+    NOT VALID;
+
+ALTER TABLE IF EXISTS prod.mm_files_image_storage
+    ADD FOREIGN KEY (storage_id)
+    REFERENCES prod.storage_backend (storage_id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE NO ACTION
+    NOT VALID;
+
+ALTER TABLE IF EXISTS prod.mm_files_note_storage
+    ADD FOREIGN KEY (file_id)
+    REFERENCES prod.files_note (file_id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE NO ACTION
+    NOT VALID;
+
+ALTER TABLE IF EXISTS prod.mm_files_note_storage
+    ADD FOREIGN KEY (storage_id)
+    REFERENCES prod.storage_backend (storage_id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE NO ACTION
+    NOT VALID;
+
 ALTER TABLE IF EXISTS files_audio
     ADD FOREIGN KEY (deployment_id)
     REFERENCES deployments (deployment_id) MATCH SIMPLE
@@ -591,6 +676,21 @@ CREATE INDEX IF NOT EXISTS taxonomy_data_label_sci_idx
 CREATE INDEX IF NOT EXISTS storage_whitelist_object_name_idx
     ON storage_whitelist USING btree
     (object_name ASC NULLS LAST);
+
+CREATE INDEX IF NOT EXISTS mm_files_audio_storage_type_idx
+    ON prod.mm_files_audio_storage USING btree
+    (type ASC NULLS LAST)
+    WITH (deduplicate_items=True);
+
+CREATE INDEX IF NOT EXISTS mm_files_image_storage_type_idx
+    ON prod.mm_files_image_storage USING btree
+    (type ASC NULLS LAST)
+    WITH (deduplicate_items=True);
+
+CREATE INDEX IF NOT EXISTS mm_files_note_storage_type_idx
+    ON prod.mm_files_note_storage USING btree
+    (type ASC NULLS LAST)
+    WITH (deduplicate_items=True);
 
 CREATE OR REPLACE VIEW birdnet_input
     AS

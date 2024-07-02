@@ -31,13 +31,13 @@ Device (hardware), mostly used to collect data.
 - _description_
 - timestamps for change tracking (_created\_at_, _updated\_at_)
 
-[^node_labels_sn]: Previously, some of the _node labels_ were used with multiple devices: The _node labels_ for Audiomoths are printed on SD-cards, a few of the were used in multiple devices. The _serial numbers_ of those devices identify the node in that case and are stored in the `files_audio` records, not in the `node` records.
+[^node_labels_sn]: Previously, some of the _node labels_ were used with multiple devices: The _node labels_ for Audiomoths are printed on SD-cards, a few of the were used in multiple devices. The _serial numbers_ of those devices identify the node in that case and are stored in the [`files_audio`](#files) records, not in the `node` records.
 
 #### deployment
 
-The _time period_ in which a _node_ has been or is installed at a specific _location_.
+The _time period_ in which a [_node_](#node) has been or is installed at a specific _location_.
 
-- Has foreign keys to _nodes_
+- Has foreign keys to [_nodes_](#node)
 - Has a _location_ in the format WGS84: ° (latitude, longitude), currently implemented as `point(latitude, longitude)`[^postgis_ext]
 - Can have a location _description_
 - Has a time _period_
@@ -48,23 +48,23 @@ The combination of node and period is constrained to be unique and non-overlappi
 
 #### sensordata
 
-Several types of sensordata, currently _environmental_ and _pax_. Records are assigned to `deployment` and must have a _timestamp_.
+Several types of sensordata, currently _environmental_ and _pax_. Records are assigned to [`deployment`](#deployment) and must have a _timestamp_.
 
 #### files
 
-Several types of files, currently audio and images.
+Several types of files, currently _audio_, _images_ and [_notes_](#note).
 
-- are assigned to `deployment`
+- _audio_ and _image_ files are assigned to [`deployment`](#deployment)
 - must have a _timestamp_
 - must have a unique _object name_ by which the file is identified in S3 storage
 - must have unique content, identifyed by `sha256`
 
-There is a separate relation for files uploaded by the _discover-app_,
-that does not have an attribute for `deployment`.
+There is a separate relation for files uploaded by the [_discover-app_](https://github.com/mitwelten/mitwelten-discover-app),
+that does not have an attribute for [`deployment`](#deployment).
 
 #### note
 
-Notes can be added by authenticated users of the discover-app.
+Notes can be added by authenticated users of the [_discover-app_](https://github.com/mitwelten/mitwelten-discover-app).
 It is planned to add this functionality to deployments, where the notes
 themselves don't need to have a location.
 
@@ -73,7 +73,7 @@ themselves don't need to have a location.
 - Can have a _title_
 - Can have a _description_
 - Can have a _type_ (descriptive string)
-- Can have a _location_ (same format as `deployment`)
+- Can have a _location_ (same format as [`deployment`](#deployment))
 - Can have multiple _tags_
 - Can have multiple _files_
 - Has timestamps for change tracking (_created\_at_, _updated\_at_)
@@ -82,7 +82,27 @@ themselves don't need to have a location.
 
 - Has a unique _name_
 
-Records of `note` and `deployment` can be tagged with multiple tags, using the tables `mm_tags_notes` and `mm_tags_deployments`.
+Records of [`note`](#note) and [`deployment`](#deployment) can be tagged with multiple tags, using the tables `mm_tags_notes` and `mm_tags_deployments`.
+
+#### storage_backend
+
+At a later stage of the project, a storage layer has been added that allows to store files in different locations.
+The table `storage_backend` holds the information about the storage backend, while the tables `mm_files_*_storage`
+(`*` = `audio`, `image` and `note`) track the assignment of files to storage locations as well as the file _type_.
+
+The _file type_ is used to distinguish between original files and scaled versions, or to store additional metadata.
+This enables the folling scenario:
+
+- The original file (type 0) is stored offline in an archive storage
+- a scaled and compressed version (type 1) is stored in the online S3 storage
+- another scaled version (type 2) is stored in a different location
+
+The metadata stored in `files_audio` etc. corresponds to the type 0, i.e. original file.
+The other types don't have their own metadata, but arbitrary types can be defined.
+As of now, `type 1` is defined as __scaled to 1920x1440 pixels (preserving aspect ratio) and 'webp' compressed__.
+This change requires adjustments to the API endpoints, rewriting object names depending on the file type.
+
+More details on the storage layer can be found in the [storage README](../storage/README.md).
 
 #### BirdNET pipeline
 
