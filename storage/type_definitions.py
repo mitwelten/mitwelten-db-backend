@@ -32,13 +32,14 @@ class ImageFileType(FileType):
 image_types = [
     ImageFileType(identifier=0, extension='jpg', format_name='JPEG', mime_type='image/jpeg', description='Original uncompressed image'),
     ImageFileType(identifier=1, dimensions=(1920, 1440), extension='webp', format_name='WEBP', mime_type='image/webp', description='Scaled and compressed image - lossy'),
-    ImageFileType(identifier=2, extension='gz', format_name='GZIP', mime_type='application/gzip', description='Compressed image - lossless'),
+    ImageFileType(identifier=2, dimensions=(640, 480), extension='webp', format_name='WEBP', mime_type='image/webp', description='Scaled and compressed image - lossy and tiny'),
+    ImageFileType(identifier=10, extension='gz', format_name='GZIP', mime_type='application/gzip', description='Compressed image - lossless'),
 ]
 
 audio_types = [
     FileType(group='audio', identifier=0, extension='wav', format_name='Linear PCM', mime_type='audio/wav', description='Original uncompressed audio'),
     FileType(group='audio', identifier=1, extension='flac', format_name='FLAC', mime_type='audio/flac', description='Compressed audio - lossy'),
-    FileType(group='audio', identifier=2, extension='gz', format_name='GZIP', mime_type='application/gzip', description='Compressed audio - lossless'),
+    FileType(group='audio', identifier=10, extension='gz', format_name='GZIP', mime_type='application/gzip', description='Compressed audio - lossless'),
 ]
 
 note_types = [

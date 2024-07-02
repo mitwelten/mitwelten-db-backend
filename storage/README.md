@@ -71,14 +71,16 @@ and should not be altered manually.
 | ---- | --------------- |
 | 0    | original        |
 | 1    | webp, 1920x1440 |
+| 2    | webp,  640x480  |
+| 10   | gzip -9         |
 
 #### mm_files_audio_storage
 
 | Type | Definition |
 | ---- | ---------- |
 | 0    | original   |
-| 1    | gzip -9    |
-| 2    | FLAC       |
+| 1    | FLAC       |
+| 10   | gzip -9    |
 
 ## Tasks
 
