@@ -32,7 +32,7 @@ def main():
     argparser.add_argument('-t', '--target', required=True, type=int, help='storage target')
     argparser.add_argument('--remove', action='store_false', default=True, help='remove original images after processing')
     argparser.add_argument('--target_type', type=int, default=1)
-    argparser.add_argument('deployment_id', required=True, type=int, help='deployment selection (ID)')
+    argparser.add_argument('deployment_id', type=int, help='deployment selection (ID)')
     args = argparser.parse_args()
 
     fileprefix=f'{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}'
