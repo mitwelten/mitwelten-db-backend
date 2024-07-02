@@ -39,15 +39,15 @@ def request_key_builder(
     return cache_key
 
 
-@router.get('/tv/debug-cache/')
-async def get_debug_cache(key: str):
-    b = FastAPICache.get_backend()
-    return await b.get(key)
+# @router.get('/tv/debug-cache/')
+# async def get_debug_cache(key: str):
+#     b = FastAPICache.get_backend()
+#     return await b.get(key)
 
-@router.post('/tv/debug-cache/')
-async def post_debug_cache(body: dict):
-    b = FastAPICache.get_backend()
-    await b.set(body['key'], body['value'])
+# @router.post('/tv/debug-cache/')
+# async def post_debug_cache(body: dict):
+#     b = FastAPICache.get_backend()
+#     await b.set(body['key'], body['value'])
 
 @router.get('/tv/stack-selection/')
 @cache(expire=24*3600, key_builder=request_key_builder, namespace='wildcam-tv')
