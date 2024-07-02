@@ -13,6 +13,7 @@ import traceback
 from io import BytesIO
 import argparse
 from typing import List, Tuple
+from datetime import datetime
 
 import psycopg2 as pg
 from PIL import Image
@@ -23,12 +24,21 @@ from config import crd
 from type_definitions import image_types
 from storage_backend import S3Storage, get_storage_backend
 
+NUM_THREADS = 10
+
 def main():
     argparser = argparse.ArgumentParser()
     argparser.add_argument('-s', '--source', required=False, type=int, help='storage source')
     argparser.add_argument('-t', '--target', required=True, type=int, help='storage target')
+    argparser.add_argument('--remove', action='store_false', default=True, help='remove original images after processing')
     argparser.add_argument('--target_type', type=int, default=1)
+    argparser.add_argument('deployment_id', required=True, type=int, help='deployment selection (ID)')
     args = argparser.parse_args()
+
+    fileprefix=f'logs/{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}'
+    if not os.path.exists('logs'):
+        os.makedirs('logs')
+
     target_type = [t for t in image_types if t.identifier == args.target_type][0]
     if not target_type or target_type.format_name != 'WEBP':
         print('Invalid target type.')
@@ -38,6 +48,7 @@ def main():
     in_place = True
     if not args.source or args.source == args.target:
         print(f'In-place processing on backend {args.target}.')
+        args.source = args.target
     else:
         print(f'Processing from backend {args.source} to backend {args.target}.')
         storage_backend_source = get_storage_backend(args.source)
@@ -53,6 +64,17 @@ def main():
 
     with pg.connect(host=crd.db.host, port=crd.db.port, database=crd.db.database, user=crd.db.user, password=crd.db.password) as connection:
         with connection.cursor() as cursor:
+            cursor.execute('''
+            select node_label, d.description
+            from prod.deployments d
+            left join prod.nodes n on d.node_id = n.node_id
+            where deployment_id = %s;
+            ''', (args.deployment_id,))
+            deployment = cursor.fetchone()
+            if not deployment:
+                print('Deployment not found.')
+                return
+
             # TODO: make sure an original version of each image exists
             query = '''
             select f.file_id, object_name --, sb.storage_id
@@ -62,25 +84,48 @@ def main():
             where sb.priority = 0 -- assuming priority 2 is complete for 820
             and sb.storage_id = %s
             and mfs.type = 0 -- 0=original, 1=compressed
-            and f.deployment_id = 883
-            order by f.time
-            limit 42;
+            and f.deployment_id = %s
+            order by f.deployment_id, f.time;
             '''
-            cursor.execute(query, (args.source,))
+            cursor.execute(query, (args.source, args.deployment_id))
             records: List[Tuple[int, str]] = cursor.fetchall() # file_id, object_name
     if not records:
         print('No records found.')
         return
 
-    print('Records found:', len(records))
-
+    print(f'{len(records)} found for deployment {args.deployment_id} ({deployment[0]}, {deployment[1]})')
     if in_place:
-        print('In-place processing...')
-        print('DEBUG: not runnning in-place processing.')
-        # in_place_processing(records, target_type, storage_backend)
+        print('in-place processing on backend', args.target)
+        if input('proceed? [Y|n]: ').lower() == 'n':
+            return
+        processed_records = in_place_processing(records, target_type, storage_backend)
     else:
-        print('Processing from source to target...')
-        source_target_processing(records, target_type, storage_backend_source, storage_backend)
+        print(f'processing from source {args.source} to target {args.target}')
+        if input('proceed? [Y|n]: ').lower() == 'n':
+            return
+        processed_records = source_target_processing(records, target_type, storage_backend_source, storage_backend)
+
+    if args.remove and processed_records:
+        print('removing original objects...')
+        s3 = storage_backend.storage if in_place else storage_backend_source.storage
+        def remove_original_objects(record):
+            file_id, object_name, target_object_name = record
+            try:
+                s3.remove_object(storage_backend.bucket, object_name)
+            except:
+                tqdm.write(traceback.format_exc())
+                return None
+            else:
+                return object_name
+        removed = thread_map(remove_original_objects, processed_records, max_workers=NUM_THREADS)
+        removed = [r for r in removed if r]
+        # write removed objects to file for removal of delete markers
+        removed_file = f'{fileprefix}_{args.deployment_id}_removed.txt'
+        with open(removed_file, 'w') as f:
+            f.write('\n'.join(removed))
+        print('next: parallel -j10 mc rm --versions --force server_id/bucket/{} <', removed_file)
+    else:
+        print('not removing original objects')
 
 def in_place_processing(records: List[Tuple[int, str]], target_type, storage_backend: S3Storage):
     s3 = storage_backend.storage
@@ -112,12 +157,7 @@ def in_place_processing(records: List[Tuple[int, str]], target_type, storage_bac
         else:
             return file_id, object_name, target_object_name
 
-    def remove_original_objects(record):
-        file_id, object_name, target_object_name = record
-        s3.remove_object(storage_backend.bucket, object_name)
-
-    num_threads = 8
-    processed_records = thread_map(process_record, records, max_workers=num_threads)
+    processed_records = thread_map(process_record, records, max_workers=NUM_THREADS)
     processed_records = [record for record in processed_records if record]
     print('Processed records:', len(processed_records))
     if not processed_records:
@@ -136,8 +176,7 @@ def in_place_processing(records: List[Tuple[int, str]], target_type, storage_bac
     except Exception as e:
         print(traceback.format_exc())
     else:
-        print('Removing original objects...')
-        thread_map(remove_original_objects, processed_records, max_workers=num_threads)
+        return processed_records
 
 def source_target_processing(records: List[Tuple[int, str]], target_type, source_backend: S3Storage, target_backend: S3Storage):
     s3_source = source_backend.storage
@@ -170,12 +209,7 @@ def source_target_processing(records: List[Tuple[int, str]], target_type, source
         else:
             return file_id, object_name, target_object_name
 
-    # def remove_original_objects(record):
-    #     file_id, object_name, source_storage_id, target_object_name = record
-    #     s3_source.remove_object(crd.minio.bucket, object_name)
-
-    num_threads = 8
-    processed_records = thread_map(process_record, records, max_workers=num_threads)
+    processed_records = thread_map(process_record, records, max_workers=NUM_THREADS)
     processed_records = [record for record in processed_records if record]
     print('Processed records:', len(processed_records))
 
@@ -194,9 +228,8 @@ def source_target_processing(records: List[Tuple[int, str]], target_type, source
                     ''', (target_backend.storage_id, file_id))
     except Exception as e:
         print(traceback.format_exc())
-    # else:
-    #     print('Removing original objects...')
-    #     thread_map(remove_original_objects, processed_records, max_workers=num_threads)
+    else:
+        return processed_records
 
 if __name__ == '__main__':
     main()
