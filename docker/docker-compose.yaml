@@ -208,6 +208,10 @@ services:
       # strip prefix /api/v3
       - traefik.http.middlewares.data_api_v3_stripprefix.stripprefix.prefixes=/api/v3
 
+      # enable compression
+      - traefik.http.middlewares.data_api_v3_compress.compress=true
+      - traefik.http.middlewares.data_api_v3_compress.compress.includedcontenttypes=application/json,text/html,text/plain
+
       # CORS
       - traefik.http.middlewares.data_api_v3_cors.headers.accesscontrolallowmethods=GET,OPTIONS,PUT,POST,PATCH,DELETE
       - traefik.http.middlewares.data_api_v3_cors.headers.accessControlAllowOriginList=*
