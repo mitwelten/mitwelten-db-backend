@@ -35,9 +35,7 @@ def main():
     argparser.add_argument('deployment_id', required=True, type=int, help='deployment selection (ID)')
     args = argparser.parse_args()
 
-    fileprefix=f'logs/{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}'
-    if not os.path.exists('logs'):
-        os.makedirs('logs')
+    fileprefix=f'{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}'
 
     target_type = [t for t in image_types if t.identifier == args.target_type][0]
     if not target_type or target_type.format_name != 'WEBP':
