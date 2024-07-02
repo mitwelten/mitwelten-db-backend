@@ -52,7 +52,7 @@ async def get_stack_selection(
 
     query = text(f'''
     with file_ids as (
-        select mfs.file_id as file_id, sb.storage_id as storage_id, max(mfs.type) as type
+        select mfs.file_id as file_id, max(mfs.type) as type
         from {crd.db.schema}.mm_files_image_storage mfs
         left join {crd.db.schema}.storage_backend sb on mfs.storage_id = sb.storage_id
         left join {crd.db.schema}.files_image f on mfs.file_id = f.file_id
@@ -64,11 +64,9 @@ async def get_stack_selection(
     )
     select
         case when file_ids.type = 1 then replace(object_name, '.jpg', '.webp') else object_name end,
-        time,
-        url_prefix
+        time
     from file_ids
     left join {crd.db.schema}.files_image f on file_ids.file_id = f.file_id
-    left join {crd.db.schema}.storage_backend sb on file_ids.storage_id = sb.storage_id
     order by time
     ''').bindparams(
         deployment_id=deployment_id,
