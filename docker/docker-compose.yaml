@@ -210,7 +210,6 @@ services:
 
       # enable compression
       - traefik.http.middlewares.data_api_v3_compress.compress=true
-      - traefik.http.middlewares.data_api_v3_compress.compress.includedcontenttypes=application/json,text/html,text/plain
 
       # CORS
       - traefik.http.middlewares.data_api_v3_cors.headers.accesscontrolallowmethods=GET,OPTIONS,PUT,POST,PATCH,DELETE
