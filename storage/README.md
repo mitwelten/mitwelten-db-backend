@@ -23,15 +23,15 @@ List storage backends:
 python mitwelten_storage.py info
 ```
 
-Copy batch selection `0` from storage `1` to storage `28`:
+Copy batch selection `batch_1` from storage `1` to storage `28`:
 
 ```bash
-python mitwelten_storage.py copy -s 1 -t 28 0
+python mitwelten_storage.py copy -s 1 -t 28 batch_1
 ```
 
 - `-s` source storage: `1` is S3 active storage
 - `-t` target storage: `28` is local archive storage
-- `0` is the batch number to process ([`batches.py`](batches.py))
+- `batch_1` is the batch identifier to process ([`batches.py`](batches.py))
 
 ## Concept
 
@@ -62,6 +62,23 @@ and should not be altered manually.
 - `0` online, through Rest API publicly accessible S3 storage
 - `1` online, not publicly accessible S3 storage
 - `2` offline, local archive storage
+
+### File types
+
+#### mm_files_image_storage
+
+| Type | Definition      |
+| ---- | --------------- |
+| 0    | original        |
+| 1    | webp, 1920x1440 |
+
+#### mm_files_audio_storage
+
+| Type | Definition |
+| ---- | ---------- |
+| 0    | original   |
+| 1    | gzip -9    |
+| 2    | FLAC       |
 
 ## Tasks
 
@@ -129,20 +146,3 @@ erDiagram
     mm_files_image_storage ||--o{ storage_backend : "is archived in"
     mm_files_image_storage ||--o{ files_image : "has"
 ```
-
-### File types
-
-#### mm_files_image_storage
-
-| Type | Definition      |
-| ---- | --------------- |
-| 0    | original        |
-| 1    | webp, 1920x1440 |
-
-#### mm_files_audio_storage
-
-| Type | Definition |
-| ---- | ---------- |
-| 0    | original   |
-| 1    | gzip -9    |
-| 2    | FLAC       |
