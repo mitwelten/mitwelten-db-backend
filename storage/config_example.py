@@ -28,3 +28,10 @@ class LocalStorageDefaults(object):
         self.dot_file_name  = '.mitwelten-storage-id'
         self.storage_dir = 'archive'
         self.device_label = None
+
+mc_aliases = {
+    's3.server1.com': 's1',
+    's3.server2.com': 's2',
+    's3.server3.com': 's3',
+}
+'''hostname aliases for use with mc cli'''

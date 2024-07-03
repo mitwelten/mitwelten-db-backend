@@ -8,7 +8,7 @@ import psycopg2 as pg
 from jinja2 import Environment, FileSystemLoader
 from minio import Minio
 
-from config import LocalStorageDefaults, crd
+from config import LocalStorageDefaults, crd, mc_aliases
 
 @dataclass
 class S3Storage:
@@ -16,10 +16,11 @@ class S3Storage:
     storage_id: int
     host: str
     bucket: str
+    alias: str
     type: str = 's3'
 
     def __repr__(self):
-        return f"S3Storage(type={self.type}, id={self.storage_id}, host={self.host}, bucket={self.bucket})"
+        return f"S3Storage(type={self.type}, id={self.storage_id}, host={self.host}, alias={self.alias}, bucket={self.bucket})"
 
 @dataclass
 class LocalStorage:
@@ -43,6 +44,7 @@ def check_s3_storage(backend) -> S3Storage:
     parsed_url = urlparse(url_prefix)
     minio_host = parsed_url.netloc
     minio_bucket = parsed_url.path.strip('/')
+    minio_alias = mc_aliases.get(minio_host, 'server_alias')
 
     storage = Minio(
         minio_host,
@@ -51,10 +53,8 @@ def check_s3_storage(backend) -> S3Storage:
     )
     if not storage.bucket_exists(minio_bucket):
         raise ValueError(f'Bucket {minio_bucket} does not exist.')
-    else:
-        print(f'Bucket {minio_bucket} on {minio_host} exists.')
 
-    return S3Storage(storage_id=backend[0], storage=storage, host=minio_host, bucket=minio_bucket)
+    return S3Storage(storage_id=backend[0], storage=storage, host=minio_host, bucket=minio_bucket, alias=minio_alias)
 
 def check_local_storage(backend) -> LocalStorage:
 
