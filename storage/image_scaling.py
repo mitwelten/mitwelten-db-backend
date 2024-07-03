@@ -30,6 +30,7 @@ def main():
     argparser = argparse.ArgumentParser()
     argparser.add_argument('-s', '--source', required=False, type=int, help='storage source')
     argparser.add_argument('-t', '--target', required=True, type=int, help='storage target')
+    argparser.add_argument('-q', '--quiet', action='store_true', help='non-interactive mode')
     argparser.add_argument('--remove', action='store_true', help='remove original images after processing')
     argparser.add_argument('--target_type', type=int, default=1)
     argparser.add_argument('deployment_id', type=int, help='deployment selection (ID)')
@@ -99,12 +100,12 @@ def main():
 
     if in_place:
         print('in-place processing on backend', args.target)
-        if input('proceed? [Y|n]: ').lower() == 'n':
+        if not args.quiet and input('proceed? [Y|n]: ').lower() == 'n':
             return
         processed_records = in_place_processing(records, target_type, storage_backend)
     else:
         print(f'processing from source {args.source} to target {args.target}')
-        if input('proceed? [Y|n]: ').lower() == 'n':
+        if not args.quiet and input('proceed? [Y|n]: ').lower() == 'n':
             return
         processed_records = source_target_processing(records, target_type, storage_backend_source, storage_backend, args.remove)
 
