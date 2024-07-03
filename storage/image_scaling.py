@@ -218,12 +218,10 @@ def source_target_processing(records: List[Tuple[int, str]], target_type, source
         with pg.connect(host=crd.db.host, port=crd.db.port, database=crd.db.database, user=crd.db.user, password=crd.db.password) as connection:
             with connection.cursor() as cursor:
                 # set mm_files_image_storage.type = 1 # 0=original, 1=compressed
-                for record in processed_records:
-                    file_id, object_name, target_object_name = record
-                    cursor.execute('''
-                    insert into prod.mm_files_image_storage(file_id, storage_id, type)
-                    values (%s, %s, 1);
-                    ''', (target_backend.storage_id, file_id))
+                cursor.executemany(f'''
+                insert into {crd.db.schema}.mm_files_image_storage(file_id, storage_id, type)
+                values (%s, %s, 1);
+                ''', [(f_id, target_backend.storage_id, 1) for f_id, o, t in processed_records])
     except Exception as e:
         print(traceback.format_exc())
     else:
