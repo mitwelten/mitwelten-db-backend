@@ -7,10 +7,9 @@ batches = [
         'description': 'Selection for Mitwelten 8',
         'query': '''
         select f.file_id, object_name from prod.files_image f
-        join prod.mm_files_image_storage mfs on f.file_id = mfs.file_id
-        where mfs.storage_id in (%s, %s) and f.deployment_id in (1198, 1203, 1215, 1224, 2150)
-        group by f.file_id
-        having count(distinct mfs.storage_id) = 1
+        left join prod.mm_files_image_storage m1 on f.file_id = m1.file_id and m1.storage_id = %s and m1.type = 0
+        left join prod.mm_files_image_storage m2 on f.file_id = m2.file_id and m2.storage_id = %s and m2.type = 0
+        where f.deployment_id in (1198, 1203, 1215, 1224, 2150) and m2.file_id is null
         order by f.deployment_id, f.time;
         '''
     },
@@ -34,10 +33,9 @@ batches = [
         -- select count(*), pg_size_pretty(sum(f.file_size)) from prod.files_image f
         -- where f.deployment_id in (select deployment_id from selected_deployments);
         select f.file_id, object_name from prod.files_image f
-        join prod.mm_files_image_storage mfs on f.file_id = mfs.file_id
-        where mfs.storage_id in (%s, %s) and f.deployment_id in (select deployment_id from selected_deployments)
-        group by f.file_id
-        having count(distinct mfs.storage_id) = 1
+        left join prod.mm_files_image_storage m1 on f.file_id = m1.file_id and m1.storage_id = %s and m1.type = 0
+        left join prod.mm_files_image_storage m2 on f.file_id = m2.file_id and m2.storage_id = %s and m2.type = 0
+        where f.deployment_id in (select deployment_id from selected_deployments) and m2.file_id is null
         order by f.deployment_id, f.time;
         '''
     },
@@ -60,10 +58,9 @@ batches = [
         -- select count(*), pg_size_pretty(sum(f.file_size)) from prod.files_image f
         -- where f.deployment_id in (select deployment_id from selected_deployments);
         select f.file_id, object_name from prod.files_image f
-        join prod.mm_files_image_storage mfs on f.file_id = mfs.file_id
-        where mfs.storage_id in (%s, %s) and f.deployment_id in (select deployment_id from selected_deployments)
-        group by f.file_id
-        having count(distinct mfs.storage_id) = 1
+        left join prod.mm_files_image_storage m1 on f.file_id = m1.file_id and m1.storage_id = %s and m1.type = 0
+        left join prod.mm_files_image_storage m2 on f.file_id = m2.file_id and m2.storage_id = %s and m2.type = 0
+        where f.deployment_id in (select deployment_id from selected_deployments) and m2.file_id is null
         order by f.deployment_id, f.time;
         '''
     },
@@ -87,10 +84,9 @@ batches = [
         -- select count(*), pg_size_pretty(sum(f.file_size)) from prod.files_image f
         -- where f.deployment_id in (select deployment_id from selected_deployments);
         select f.file_id, object_name from prod.files_image f
-        join prod.mm_files_image_storage mfs on f.file_id = mfs.file_id
-        where mfs.storage_id in (%s, %s) and f.deployment_id in (select deployment_id from selected_deployments)
-        group by f.file_id
-        having count(distinct mfs.storage_id) = 1
+        left join prod.mm_files_image_storage m1 on f.file_id = m1.file_id and m1.storage_id = %s and m1.type = 0
+        left join prod.mm_files_image_storage m2 on f.file_id = m2.file_id and m2.storage_id = %s and m2.type = 0
+        where f.deployment_id in (select deployment_id from selected_deployments) and m2.file_id is null
         order by f.deployment_id, f.time;
         '''
     },
@@ -115,10 +111,9 @@ batches = [
         -- select count(*), pg_size_pretty(sum(f.file_size)) from prod.files_image f
         -- where f.deployment_id in (select deployment_id from selected_deployments);
         select f.file_id, object_name from prod.files_image f
-        join prod.mm_files_image_storage mfs on f.file_id = mfs.file_id
-        where mfs.storage_id in (%s, %s) and f.deployment_id in (select deployment_id from selected_deployments)
-        group by f.file_id
-        having count(distinct mfs.storage_id) = 1
+        left join prod.mm_files_image_storage m1 on f.file_id = m1.file_id and m1.storage_id = %s and m1.type = 0
+        left join prod.mm_files_image_storage m2 on f.file_id = m2.file_id and m2.storage_id = %s and m2.type = 0
+        where f.deployment_id in (select deployment_id from selected_deployments) and m2.file_id is null
         order by f.deployment_id, f.time;
         '''
     },
@@ -131,7 +126,7 @@ batches = [
         -- batch 5
         select f.file_id, object_name from prod.files_image f
         join prod.mm_files_image_storage mfs on f.file_id = mfs.file_id
-        where mfs.storage_id in (%s, %s) and f.deployment_id = 829
+        where mfs.storage_id in (%s, %s) and mfs.type = 0 and f.deployment_id = 829
         group by f.file_id
         having count(distinct mfs.storage_id) = 1
         limit 42;
@@ -177,10 +172,9 @@ batches = [
             where n.type in ('Wild Cam', 'Phaeno Cam')
         )
         select f.file_id, object_name from prod.files_image f
-        join prod.mm_files_image_storage mfs on f.file_id = mfs.file_id
-        where mfs.storage_id in (%s, %s) and f.deployment_id in (select deployment_id from selected_deployments)
-        group by f.file_id
-        having count(distinct mfs.storage_id) = 1
+        left join prod.mm_files_image_storage m1 on f.file_id = m1.file_id and m1.storage_id = %s and m1.type = 0
+        left join prod.mm_files_image_storage m2 on f.file_id = m2.file_id and m2.storage_id = %s and m2.type = 0
+        where f.deployment_id in (select deployment_id from selected_deployments) and m2.file_id is null
         order by f.deployment_id, f.time;
         '''
     },
