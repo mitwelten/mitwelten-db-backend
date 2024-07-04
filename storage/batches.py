@@ -145,16 +145,11 @@ batches = [
             from prod.deployments d
             where lower(period) > date('2022-07-01')
         )
-        -- select count(*), round(sum(file_size)/1024.0/1024.0/1024.0/1024.0, 2) as size_tb
-        -- from prod.files_audio f
-        -- left join mm_files_audio_storage m on m.file_id = f.file_id
-        -- where f.deployment_id in (select deployment_id from selected_deployments)
-        --   and m.file_id is not null;
+        -- select count(*), round(sum(file_size)/1024.0/1024.0/1024.0/1024.0, 2) as size_tb from prod.files_audio f
         select f.file_id, object_name from prod.files_audio f
-        join prod.mm_files_audio_storage mfs on f.file_id = mfs.file_id
-        where mfs.storage_id in (%s, %s) and f.deployment_id in (select deployment_id from selected_deployments)
-        group by f.file_id
-        having count(distinct mfs.storage_id) = 1
+        left join prod.mm_files_audio_storage m1 on f.file_id = m1.file_id and m1.storage_id = %s and m1.type = 0
+        left join prod.mm_files_audio_storage m2 on f.file_id = m2.file_id and m2.storage_id = %s and m2.type = 0
+        where f.deployment_id in (select deployment_id from selected_deployments) and m2.file_id is null
         order by f.deployment_id, f.time;
         '''
     },
@@ -174,6 +169,26 @@ batches = [
         select f.file_id, object_name from prod.files_image f
         left join prod.mm_files_image_storage m1 on f.file_id = m1.file_id and m1.storage_id = %s and m1.type = 0
         left join prod.mm_files_image_storage m2 on f.file_id = m2.file_id and m2.storage_id = %s and m2.type = 0
+        where f.deployment_id in (select deployment_id from selected_deployments) and m2.file_id is null
+        order by f.deployment_id, f.time;
+        '''
+    },
+    {
+        'id': 'batch_8',
+        'type': 'audio',
+        'target': 'mw-archiv-5',
+        'description': 'All audio files of nodes deployed before 2022-01-01',
+        'query': '''
+        -- count 699822, total size 4.44 TiB
+        with selected_deployments as (
+            select d.deployment_id as deployment_id
+            from prod.deployments d
+            where lower(period) < date('2022-01-01')
+        )
+        -- select count(*), round(sum(file_size)/1024.0/1024.0/1024.0/1024.0, 2) as size_tb from prod.files_audio f
+        select f.file_id, object_name from prod.files_audio f
+        left join prod.mm_files_audio_storage m1 on f.file_id = m1.file_id and m1.storage_id = %s and m1.type = 0
+        left join prod.mm_files_audio_storage m2 on f.file_id = m2.file_id and m2.storage_id = %s and m2.type = 0
         where f.deployment_id in (select deployment_id from selected_deployments) and m2.file_id is null
         order by f.deployment_id, f.time;
         '''
