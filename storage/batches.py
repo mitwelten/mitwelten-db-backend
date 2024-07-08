@@ -6,7 +6,7 @@ batches = [
         'target': 'Mitwelten 8',
         'description': 'Selection for Mitwelten 8',
         'query': '''
-        select f.file_id, object_name from prod.files_image f
+        select f.file_id, object_name, file_size from prod.files_image f
         left join prod.mm_files_image_storage m1 on f.file_id = m1.file_id and m1.storage_id = %s and m1.type = 0
         left join prod.mm_files_image_storage m2 on f.file_id = m2.file_id and m2.storage_id = %s and m2.type = 0
         where f.deployment_id in (1198, 1203, 1215, 1224, 2150) and m2.file_id is null
@@ -32,7 +32,7 @@ batches = [
         )
         -- select count(*), pg_size_pretty(sum(f.file_size)) from prod.files_image f
         -- where f.deployment_id in (select deployment_id from selected_deployments);
-        select f.file_id, object_name from prod.files_image f
+        select f.file_id, object_name, file_size from prod.files_image f
         left join prod.mm_files_image_storage m1 on f.file_id = m1.file_id and m1.storage_id = %s and m1.type = 0
         left join prod.mm_files_image_storage m2 on f.file_id = m2.file_id and m2.storage_id = %s and m2.type = 0
         where f.deployment_id in (select deployment_id from selected_deployments) and m2.file_id is null
@@ -57,7 +57,7 @@ batches = [
         )
         -- select count(*), pg_size_pretty(sum(f.file_size)) from prod.files_image f
         -- where f.deployment_id in (select deployment_id from selected_deployments);
-        select f.file_id, object_name from prod.files_image f
+        select f.file_id, object_name, file_size from prod.files_image f
         left join prod.mm_files_image_storage m1 on f.file_id = m1.file_id and m1.storage_id = %s and m1.type = 0
         left join prod.mm_files_image_storage m2 on f.file_id = m2.file_id and m2.storage_id = %s and m2.type = 0
         where f.deployment_id in (select deployment_id from selected_deployments) and m2.file_id is null
@@ -83,7 +83,7 @@ batches = [
         )
         -- select count(*), pg_size_pretty(sum(f.file_size)) from prod.files_image f
         -- where f.deployment_id in (select deployment_id from selected_deployments);
-        select f.file_id, object_name from prod.files_image f
+        select f.file_id, object_name, file_size from prod.files_image f
         left join prod.mm_files_image_storage m1 on f.file_id = m1.file_id and m1.storage_id = %s and m1.type = 0
         left join prod.mm_files_image_storage m2 on f.file_id = m2.file_id and m2.storage_id = %s and m2.type = 0
         where f.deployment_id in (select deployment_id from selected_deployments) and m2.file_id is null
@@ -110,7 +110,7 @@ batches = [
         )
         -- select count(*), pg_size_pretty(sum(f.file_size)) from prod.files_image f
         -- where f.deployment_id in (select deployment_id from selected_deployments);
-        select f.file_id, object_name from prod.files_image f
+        select f.file_id, object_name, file_size from prod.files_image f
         left join prod.mm_files_image_storage m1 on f.file_id = m1.file_id and m1.storage_id = %s and m1.type = 0
         left join prod.mm_files_image_storage m2 on f.file_id = m2.file_id and m2.storage_id = %s and m2.type = 0
         where f.deployment_id in (select deployment_id from selected_deployments) and m2.file_id is null
@@ -124,7 +124,7 @@ batches = [
         'description': 'Testing batch',
         'query': '''
         -- batch 5
-        select f.file_id, object_name from prod.files_image f
+        select f.file_id, object_name, file_size from prod.files_image f
         join prod.mm_files_image_storage mfs on f.file_id = mfs.file_id
         where mfs.storage_id in (%s, %s) and mfs.type = 0 and f.deployment_id = 829
         group by f.file_id
@@ -148,7 +148,7 @@ batches = [
                 ) and n.type = 'Audio Logger'
         )
         -- select count(*), round(sum(file_size)/1024.0/1024.0/1024.0/1024.0, 2) as size_tb from prod.files_audio f
-        select f.file_id, object_name from prod.files_audio f
+        select f.file_id, object_name, file_size from prod.files_audio f
         left join prod.mm_files_audio_storage m1 on f.file_id = m1.file_id and m1.storage_id = %s and m1.type = 0
         left join prod.mm_files_audio_storage m2 on f.file_id = m2.file_id and m2.storage_id = %s and m2.type = 0
         where f.deployment_id in (select deployment_id from selected_deployments) and m2.file_id is null
@@ -168,7 +168,7 @@ batches = [
             left join prod.nodes n on d.node_id = n.node_id
             where n.type in ('Wild Cam', 'Phaeno Cam')
         )
-        select f.file_id, object_name from prod.files_image f
+        select f.file_id, object_name, file_size from prod.files_image f
         left join prod.mm_files_image_storage m1 on f.file_id = m1.file_id and m1.storage_id = %s and m1.type = 0
         left join prod.mm_files_image_storage m2 on f.file_id = m2.file_id and m2.storage_id = %s and m2.type = 0
         where f.deployment_id in (select deployment_id from selected_deployments) and m2.file_id is null
@@ -191,7 +191,7 @@ batches = [
                 and d.deployment_id not in (64, 65) -- move to batch_6, batch_9
         )
         -- select count(*), round(sum(file_size)/1024.0/1024.0/1024.0/1024.0, 2) as size_tb from prod.files_audio f
-        select f.file_id, object_name from prod.files_audio f
+        select f.file_id, object_name, file_size from prod.files_audio f
         left join prod.mm_files_audio_storage m1 on f.file_id = m1.file_id and m1.storage_id = %s and m1.type = 0
         left join prod.mm_files_audio_storage m2 on f.file_id = m2.file_id and m2.storage_id = %s and m2.type = 0
         where f.deployment_id in (select deployment_id from selected_deployments) and m2.file_id is null
@@ -214,7 +214,7 @@ batches = [
                 ) and n.type = 'Audio Logger'
         )
         -- select count(*), round(sum(file_size)/1024.0/1024.0/1024.0/1024.0, 2) as size_tb from prod.files_audio f
-        select f.file_id, object_name from prod.files_audio f
+        select f.file_id, object_name, file_size from prod.files_audio f
         left join prod.mm_files_audio_storage m1 on f.file_id = m1.file_id and m1.storage_id = %s and m1.type = 0
         left join prod.mm_files_audio_storage m2 on f.file_id = m2.file_id and m2.storage_id = %s and m2.type = 0
         where f.deployment_id in (select deployment_id from selected_deployments) and m2.file_id is null

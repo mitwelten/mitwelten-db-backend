@@ -3,6 +3,7 @@ import os
 import argparse
 import signal
 import logging
+from functools import reduce
 
 import psycopg2 as pg
 from tqdm import tqdm
@@ -12,6 +13,11 @@ from batches import batches
 from storage_backend import (
     get_storage_backend, create_local_storage_backend, list_storage_backends
 )
+
+iec_suffixes = ['B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB']
+
+def format_size(size, exponent=2):
+    return str(round(size / pow(1024, exponent), 2)) + ' ' + iec_suffixes[exponent]
 
 def main():
     argparser = argparse.ArgumentParser()
@@ -83,8 +89,11 @@ def main():
             cursor.execute(batch['query'], (args.source, args.target))
             object_files = cursor.fetchall()
 
+    total_filesize = reduce(lambda x, y: x + y, [f[2] for f in object_files])
     logging.info(f'batch: {args.batch_id}')
-    logging.info(f'object files remaining in batch: {len(object_files)}')
+    msg = f'object files remaining in batch: {len(object_files)}, total filesize: {format_size(total_filesize, 3)}'
+    logging.info(msg)
+    print(msg)
 
     try:
         source_storage_backend = get_storage_backend(args.source)
@@ -136,7 +145,8 @@ def main():
                 logging.info(f'Committed {len(update_ids)} changes')
                 update_ids.clear()
 
-        for object_file in tqdm(object_files):
+        progress = tqdm(total=total_filesize, unit='B', unit_scale=True, unit_divisor=1024)
+        for object_file in object_files:
             if not keep_running:
                 tqdm.write('Interrupt received. Exiting...')
                 break
@@ -166,6 +176,8 @@ def main():
                     if len(update_ids) == 1000 or timer + timedelta(seconds=900) < datetime.now():
                         commit_changes()
                         timer = datetime.now()
+                finally:
+                    progress.update(object_file[2])
 
         commit_changes()
 
