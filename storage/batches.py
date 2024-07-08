@@ -142,7 +142,7 @@ batches = [
         with selected_deployments as (
             select d.deployment_id as deployment_id
             from prod.deployments d
-            left join nodes n on d.node_id = n.node_id
+            left join prod.nodes n on d.node_id = n.node_id
             where (lower(period) > date('2022-07-01')
                     or deployment_id in (64, 1276) -- moved from batch_8
                 ) and n.type = 'Audio Logger'
@@ -185,7 +185,7 @@ batches = [
         with selected_deployments as (
             select d.deployment_id as deployment_id
             from prod.deployments d
-            left join nodes n on d.node_id = n.node_id
+            left join prod.nodes n on d.node_id = n.node_id
             where lower(period) < date('2021-10-01')
                 and n.type = 'Audio Logger'
                 and d.deployment_id not in (64, 1276) -- move to batch_6
@@ -208,7 +208,7 @@ batches = [
         with selected_deployments as (
             select d.deployment_id as deployment_id
             from prod.deployments d
-            left join nodes n on d.node_id = n.node_id
+            left join prod.nodes n on d.node_id = n.node_id
             where lower(period) between date('2021-10-01') and date('2022-07-01')
                 and n.type = 'Audio Logger'
         )
