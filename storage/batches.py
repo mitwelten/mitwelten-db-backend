@@ -136,14 +136,13 @@ batches = [
         'id': 'batch_6',
         'type': 'audio',
         'target': 'mw-archiv-4',
-        'description': 'All audio files of nodes deployed after 2022-06-07',
+        'description': 'All audio files of nodes deployed after 2022-07-01',
         'query': '''
         -- count 1062781, total size 7.81 TB
-        -- start lowering the date to get more files if ExFAT allows
         with selected_deployments as (
             select d.deployment_id as deployment_id
             from prod.deployments d
-            where lower(period) > date('2022-06-07')
+            where lower(period) > date('2022-07-01')
         )
         -- select count(*), round(sum(file_size)/1024.0/1024.0/1024.0/1024.0, 2) as size_tb from prod.files_audio f
         select f.file_id, object_name from prod.files_audio f
@@ -184,6 +183,26 @@ batches = [
             select d.deployment_id as deployment_id
             from prod.deployments d
             where lower(period) < date('2022-01-01')
+        )
+        -- select count(*), round(sum(file_size)/1024.0/1024.0/1024.0/1024.0, 2) as size_tb from prod.files_audio f
+        select f.file_id, object_name from prod.files_audio f
+        left join prod.mm_files_audio_storage m1 on f.file_id = m1.file_id and m1.storage_id = %s and m1.type = 0
+        left join prod.mm_files_audio_storage m2 on f.file_id = m2.file_id and m2.storage_id = %s and m2.type = 0
+        where f.deployment_id in (select deployment_id from selected_deployments) and m2.file_id is null
+        order by f.deployment_id, f.time;
+        '''
+    },
+    {
+        'id': 'batch_9',
+        'type': 'audio',
+        'target': 'mw-archiv-3',
+        'description': 'Remaining audio files',
+        'query': '''
+        -- count 699822, total size 4.44 TiB
+        with selected_deployments as (
+            select d.deployment_id as deployment_id
+            from prod.deployments d
+            where lower(period) between date('2022-01-01') and date('2022-07-01')
         )
         -- select count(*), round(sum(file_size)/1024.0/1024.0/1024.0/1024.0, 2) as size_tb from prod.files_audio f
         select f.file_id, object_name from prod.files_audio f
