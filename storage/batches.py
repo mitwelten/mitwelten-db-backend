@@ -144,7 +144,7 @@ batches = [
             from prod.deployments d
             left join prod.nodes n on d.node_id = n.node_id
             where (lower(period) > date('2022-07-01')
-                    or deployment_id in (64, 1276) -- moved from batch_8 / batch_9
+                    or deployment_id in (64) -- moved from batch_8
                 ) and n.type = 'Audio Logger'
         )
         -- select count(*), round(sum(file_size)/1024.0/1024.0/1024.0/1024.0, 2) as size_tb from prod.files_audio f
@@ -188,7 +188,7 @@ batches = [
             left join prod.nodes n on d.node_id = n.node_id
             where lower(period) < date('2021-10-01')
                 and n.type = 'Audio Logger'
-                and d.deployment_id not in (64, 1276) -- move to batch_6
+                and d.deployment_id not in (64, 65) -- move to batch_6, batch_9
         )
         -- select count(*), round(sum(file_size)/1024.0/1024.0/1024.0/1024.0, 2) as size_tb from prod.files_audio f
         select f.file_id, object_name from prod.files_audio f
@@ -209,9 +209,9 @@ batches = [
             select d.deployment_id as deployment_id
             from prod.deployments d
             left join prod.nodes n on d.node_id = n.node_id
-            where lower(period) between date('2021-10-01') and date('2022-07-01')
-                and n.type = 'Audio Logger'
-                and d.deployment_id not in (64, 1276) -- move to batch_6
+            where (lower(period) between date('2021-10-01') and date('2022-07-01')
+                    or deployment_id in (65) -- moved from batch_8
+                ) and n.type = 'Audio Logger'
         )
         -- select count(*), round(sum(file_size)/1024.0/1024.0/1024.0/1024.0, 2) as size_tb from prod.files_audio f
         select f.file_id, object_name from prod.files_audio f
