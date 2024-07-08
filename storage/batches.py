@@ -136,14 +136,14 @@ batches = [
         'id': 'batch_6',
         'type': 'audio',
         'target': 'mw-archiv-4',
-        'description': 'All audio files of nodes deployed after 2022-07-01',
+        'description': 'All audio files of nodes deployed after 2022-06-07',
         'query': '''
         -- count 1062781, total size 7.81 TB
-        -- start lowering the date to get more files if ExtFAT allows
+        -- start lowering the date to get more files if ExFAT allows
         with selected_deployments as (
             select d.deployment_id as deployment_id
             from prod.deployments d
-            where lower(period) > date('2022-07-01')
+            where lower(period) > date('2022-06-07')
         )
         -- select count(*), round(sum(file_size)/1024.0/1024.0/1024.0/1024.0, 2) as size_tb from prod.files_audio f
         select f.file_id, object_name from prod.files_audio f
