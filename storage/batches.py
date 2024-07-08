@@ -182,7 +182,7 @@ batches = [
         with selected_deployments as (
             select d.deployment_id as deployment_id
             from prod.deployments d
-            where lower(period) < date('2022-01-01')
+            where lower(period) < date('2021-10-01')
         )
         -- select count(*), round(sum(file_size)/1024.0/1024.0/1024.0/1024.0, 2) as size_tb from prod.files_audio f
         select f.file_id, object_name from prod.files_audio f
@@ -202,7 +202,7 @@ batches = [
         with selected_deployments as (
             select d.deployment_id as deployment_id
             from prod.deployments d
-            where lower(period) between date('2022-01-01') and date('2022-07-01')
+            where lower(period) between date('2021-10-01') and date('2022-07-01')
         )
         -- select count(*), round(sum(file_size)/1024.0/1024.0/1024.0/1024.0, 2) as size_tb from prod.files_audio f
         select f.file_id, object_name from prod.files_audio f
