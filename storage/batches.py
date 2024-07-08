@@ -142,7 +142,10 @@ batches = [
         with selected_deployments as (
             select d.deployment_id as deployment_id
             from prod.deployments d
-            where lower(period) > date('2022-07-01')
+            left join nodes n on d.node_id = n.node_id
+            where (lower(period) > date('2022-07-01')
+                    or deployment_id in (64, 1276) -- moved from batch_8
+                ) and n.type = 'Audio Logger'
         )
         -- select count(*), round(sum(file_size)/1024.0/1024.0/1024.0/1024.0, 2) as size_tb from prod.files_audio f
         select f.file_id, object_name from prod.files_audio f
@@ -176,13 +179,16 @@ batches = [
         'id': 'batch_8',
         'type': 'audio',
         'target': 'mw-archiv-5',
-        'description': 'All audio files of nodes deployed before 2022-01-01',
+        'description': 'All audio files of nodes deployed before 2021-10-01',
         'query': '''
         -- count 699822, total size 4.44 TiB
         with selected_deployments as (
             select d.deployment_id as deployment_id
             from prod.deployments d
+            left join nodes n on d.node_id = n.node_id
             where lower(period) < date('2021-10-01')
+                and n.type = 'Audio Logger'
+                and d.deployment_id not in (64, 1276) -- move to batch_6
         )
         -- select count(*), round(sum(file_size)/1024.0/1024.0/1024.0/1024.0, 2) as size_tb from prod.files_audio f
         select f.file_id, object_name from prod.files_audio f
@@ -202,7 +208,9 @@ batches = [
         with selected_deployments as (
             select d.deployment_id as deployment_id
             from prod.deployments d
+            left join nodes n on d.node_id = n.node_id
             where lower(period) between date('2021-10-01') and date('2022-07-01')
+                and n.type = 'Audio Logger'
         )
         -- select count(*), round(sum(file_size)/1024.0/1024.0/1024.0/1024.0, 2) as size_tb from prod.files_audio f
         select f.file_id, object_name from prod.files_audio f
