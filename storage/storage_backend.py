@@ -17,19 +17,33 @@ class S3Storage:
     host: str
     bucket: str
     alias: str
+    priority: int
+    notes: str
     type: str = 's3'
 
     def __repr__(self):
-        return f"S3Storage(type={self.type}, id={self.storage_id}, host={self.host}, alias={self.alias}, bucket={self.bucket})"
+        return f"S3Storage(type={self.type}, id={self.storage_id}, host={self.host}, alias={self.alias}, bucket={self.bucket}, priority={self.priority}, notes={self.notes[:32] + '...'})"
 
 @dataclass
 class LocalStorage:
     path: str
     storage_id: int
+    priority: int
+    notes: str
     type: str = 'local'
 
     def __repr__(self):
-        return f"LocalStorage(type={self.type}, id={self.storage_id}, path={self.path})"
+        return f"LocalStorage(type={self.type}, id={self.storage_id}, path={self.path}, priority={self.priority}, notes={self.notes[:32] + '...'})"
+
+class StorageBackendNotFoundError(Exception):
+    def __init__(self, backend_id):
+        self.backend_id = backend_id
+        super().__init__(f'No storage backend with id {backend_id} found.')
+
+class NoLocalStoragePathError(Exception):
+    def __init__(self, backend_id):
+        self.backend_id = backend_id
+        super().__init__('No url_prefix provided. Exiting.')
 
 def parse_kv_file(file_path):
     kv_dict = {}
@@ -66,7 +80,7 @@ def check_local_storage(backend) -> LocalStorage:
             # ask the user to input the path to the storage device or directory
             url_prefix = input("Enter the path to the storage device or directory: ")
             if len(url_prefix) == 0:
-                raise ValueError('No url_prefix provided. Exiting.')
+                raise NoLocalStoragePathError('No url_prefix provided. Exiting.')
 
         else: break
 
@@ -90,7 +104,7 @@ def check_local_storage(backend) -> LocalStorage:
     if not os.access(abs_storage_dir, os.W_OK):
         raise ValueError(f"backend {abs_storage_dir} is not writable.")
 
-    return LocalStorage(storage_id=backend_properties['storage_id'], path=abs_storage_dir)
+    return LocalStorage(storage_id=backend_properties['storage_id'], path=abs_storage_dir, priority=backend[3], notes=backend[-1])
 
 def get_storage_backend(backend_id: int) -> Union[S3Storage, LocalStorage]:
     with pg.connect(host=crd.db.host, port=crd.db.port, database=crd.db.database, user=crd.db.user, password=crd.db.password) as connection:
@@ -99,7 +113,7 @@ def get_storage_backend(backend_id: int) -> Union[S3Storage, LocalStorage]:
             backend = cursor.fetchone()
 
     if not backend:
-        raise ValueError(f'No storage backend with id {backend_id} found.')
+        raise StorageBackendNotFoundError(backend_id)
 
     if str(backend[2]).lower() == 's3':
         return check_s3_storage(backend)

@@ -35,10 +35,7 @@ A local storage backend consists of the following components:
 | `{{dot_file_name}}` | dot-file idenitfying the storage backend                                  |
 | `README.md`             | auto-generated info about the SB                                          |
 | `{{storage_dir}}`               | root of data to be stored (to contain path equivalent of S3 object names) |
+| `REPORT.md`             | auto-generated report about the data stored in the SB                     |
+| `archive_index.db`      | SQlite3 file index of data stored in the SB                               |
 
-With the exception of the `README.md` file, all files and directories are managed by the storage backend
-and should not be altered manually.
-
-## Example uses of the CLI
-
-TBD
+All files and directories are managed by the storage backend and should not be altered manually.
