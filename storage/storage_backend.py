@@ -68,7 +68,7 @@ def check_s3_storage(backend) -> S3Storage:
     if not storage.bucket_exists(minio_bucket):
         raise ValueError(f'Bucket {minio_bucket} does not exist.')
 
-    return S3Storage(storage_id=backend[0], storage=storage, host=minio_host, bucket=minio_bucket, alias=minio_alias)
+    return S3Storage(storage_id=backend[0], storage=storage, host=minio_host, bucket=minio_bucket, alias=minio_alias, priority=backend[3], notes=backend[-1])
 
 def check_local_storage(backend) -> LocalStorage:
 

@@ -221,4 +221,18 @@ batches = [
         order by f.deployment_id, f.time;
         '''
     },
+    {
+        'id': 'copy_compressed',
+        'type': 'image',
+        'target': 's3',
+        'description': 'copy compressed images',
+        'query': '''
+        select f.file_id, replace(object_name, '.jpg', '.webp'), file_size, m1.type
+        from prod.files_image f
+        left join prod.mm_files_image_storage m1 on f.file_id = m1.file_id and m1.storage_id = %s and m1.type = 1
+        left join prod.mm_files_image_storage m2 on f.file_id = m2.file_id and m2.storage_id = %s and m2.type = 1
+        where m1.type = 1 and m2.file_id is null
+        order by f.deployment_id, f.time;
+        '''
+    },
 ]

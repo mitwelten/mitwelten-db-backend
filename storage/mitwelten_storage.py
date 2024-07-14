@@ -109,6 +109,9 @@ def main():
         if target_storage_backend.type == 'local':
             target_storage = target_storage_backend.path
             logging.info(f'target: {args.target} ({target_storage_backend})')
+        elif target_storage_backend.type == 's3':
+            target_storage = target_storage_backend.storage
+            logging.info(f'target: {args.target} ({target_storage_backend})')
         else:
             logging.error(f'Unsupported target storage type: {target_storage_backend.type}')
             return
@@ -139,8 +142,8 @@ def main():
                 tqdm.write(f'Committing changes...')
                 with connection.cursor() as cursor:
                     cursor.executemany(f'''
-                        insert into {crd.db.schema}.{target_table} (file_id, storage_id) values (%s, %s)
-                    ''', [(file_id, args.target) for file_id in update_ids])
+                        insert into {crd.db.schema}.{target_table} (file_id, storage_id, type) values (%s, %s, %s)
+                    ''', [(file_id[0], args.target, file_id[1]) for file_id in update_ids])
                 connection.commit()
                 logging.info(f'Committed {len(update_ids)} changes')
                 update_ids.clear()
@@ -153,7 +156,27 @@ def main():
             object_name = object_file[1]
 
             if target_storage_backend.type == 's3':
-                ...
+
+                try:
+                    # Copy object to target storage
+                    tqdm.write(object_name)
+                    response = source_storage.get_object(source_storage_backend.bucket, object_name)
+                    target_storage.put_object(target_storage_backend.bucket, object_name, response, int(response.headers['Content-Length']), response.headers['Content-Type'])
+                    tags = source_storage.get_object_tags(source_storage_backend.bucket, object_name)
+                    if tags:
+                        target_storage.set_object_tags(target_storage_backend.bucket, object_name, tags)
+                except Exception as e:
+                    logging.error(f'Error copying object {object_name} to target storage: {e}')
+                else:
+                    if len(object_file) > 3:
+                        update_ids.append((object_file[0], object_file[3]))
+                    else:
+                        update_ids.append((object_file[0], 0))
+                    if len(update_ids) == 1000 or timer + timedelta(seconds=900) < datetime.now():
+                        commit_changes()
+                        timer = datetime.now()
+                finally:
+                    progress.update(object_file[2])
 
             if target_storage_backend.type == 'local':
 
@@ -172,7 +195,7 @@ def main():
                 except Exception as e:
                     logging.error(f'Error copying object {object_name} to target storage: {e}')
                 else:
-                    update_ids.append(object_file[0])
+                    update_ids.append((object_file[0], 0))
                     if len(update_ids) == 1000 or timer + timedelta(seconds=900) < datetime.now():
                         commit_changes()
                         timer = datetime.now()
