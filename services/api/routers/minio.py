@@ -1,5 +1,4 @@
 from os import path
-from typing import Annotated
 
 from api.config import crd, supported_image_formats, thumbnail_size
 from api.database import database
@@ -54,11 +53,11 @@ def stream_minio_response(response):
         response.release_conn()
 
 def get_thumbnail_name(object_name: str, image_format: str):
-    """
+    '''
     :param object_name: the name of the file including path and extension
     :param image_format: the mime-type of the image
     :return: standardized thumbnail file name
-    """
+    '''
     name = object_name.rsplit('.', 1)[0]
     return f'{name}_{thumbnail_size[0]}x{thumbnail_size[1]}.{image_format}'
 
@@ -185,9 +184,6 @@ async def post_discover_upload(file: UploadFile):
         except Exception:
             # thumbnail is optional, no action required
             pass
-
-    return { 'object_name': upload.object_name, 'etag': upload.etag }
-
 
     return { 'object_name': upload.object_name, 'etag': upload.etag }
 
