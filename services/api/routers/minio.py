@@ -33,6 +33,15 @@ bucket_exists = storage.bucket_exists(crd.minio.bucket)
 if not bucket_exists:
     print(f'Bucket {crd.minio.bucket} does not exist.')
 
+storage_scaled = Minio(
+    crd.minio_scaled.host,
+    access_key=crd.minio_scaled.access_key,
+    secret_key=crd.minio_scaled.secret_key,
+)
+bucket_exists = storage_scaled.bucket_exists(crd.minio_scaled.bucket)
+if not bucket_exists:
+    print(f'Bucket {crd.minio_scaled.bucket} does not exist.')
+
 def stream_minio_response(response):
     try:
         while True:
@@ -66,12 +75,13 @@ async def get_walk_download(request: Request, object_name: str):
                 bindparams(object_name=object_name))
             if not whitelisted['count']:
                 raise HTTPException(status_code=401, detail='Access denied')
-            response = storage.get_object(crd.minio.bucket, path.splitext('scaled/' + path.basename(object_name))[0] + '.webp')
+            response = storage_scaled.get_object(crd.minio_scaled.bucket, path.splitext(object_name)[0] + '.webp')
             return StreamingResponse(stream_minio_response(response), headers=response.headers)
         except S3Error as e:
             if e.code == 'NoSuchKey':
                 raise HTTPException(status_code=404, detail='File not found')
     else:
+        # walk/public/... is whitelisted, and on unscaled server/bucket
         try:
             response = storage.get_object(crd.minio.bucket, object_name)
             return StreamingResponse(stream_minio_response(response), headers=response.headers)
@@ -86,7 +96,7 @@ async def get_tv_download(request: Request, object_name: str):
             bindparams(object_name=path.splitext(object_name)[0] + '%'))
         if not whitelisted['count']:
             raise HTTPException(status_code=401, detail='Access denied')
-        response = storage.get_object(crd.minio.bucket, object_name)
+        response = storage_scaled.get_object(crd.minio_scaled.bucket, object_name)
         return StreamingResponse(stream_minio_response(response), headers=response.headers)
     except S3Error as e:
         if e.code == 'NoSuchKey':
@@ -108,6 +118,7 @@ async def get_discover_file(object_name: str):
             raise HTTPException(status_code=404, detail='File not found')
 
 
+# this will work for audio files, but not for images, as they were moved to another server
 @router.get('/files/{object_name:path}', dependencies=[Depends(check_oid_authentication)], summary='Media resources from S3 storage')
 async def get_download(object_name: str):
     '''
