@@ -653,6 +653,11 @@ services:
       - mitwelten
     restart: always
     container_name: mitwelten-discover
+    environment:
+      - KC_SERVER_URL=https://auth.mitwelten.org/auth/
+      - KC_CLIENT_ID=discover
+      - KC_REALM_NAME=mitwelten
+      - DOMAIN_NAME=https://discover.mitwelten.org
     labels:
       - "traefik.enable=true"
       - "traefik.http.services.mwdiscover.loadbalancer.server.port=80"
