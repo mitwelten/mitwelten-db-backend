@@ -69,7 +69,7 @@ async def get_stack_selection(
         left join {crd.db.schema}.files_image f on mfs.file_id = f.file_id
         where
             deployment_id = :deployment_id
-            and sb.priority = 0
+            and sb.priority = 1
             and :period ::tstzrange @> time
         group by mfs.file_id, mfs.type, sb.storage_id
     )
