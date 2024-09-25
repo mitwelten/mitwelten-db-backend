@@ -76,7 +76,7 @@ async def get_pax_measurements(
     time_to_condition = "AND time <= :time_to" if time_to else ""
     query = text(f"""
     SELECT time_bucket(:bucket_width, time) AS bucket,
-    sum(pax) as pax
+    mean(pax) as pax
     from {crd.db.schema}.sensordata_pax
     where deployment_id = :deployment_id
     {time_from_condition}
