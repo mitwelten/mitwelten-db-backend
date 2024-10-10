@@ -21,7 +21,7 @@ services:
     container_name: "traefik"
     command:
       - "--log.level=INFO"
-      - "--api.insecure=true"
+      - "--api"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.http.address=:80"
