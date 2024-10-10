@@ -33,6 +33,17 @@ services:
       - "--providers.file.filename=/configs/traefik_tls.yml"
       - "--providers.file.watch=true"
 
+    labels:
+      # Dashboard
+      - "traefik.enable=true"
+      - "traefik.http.services.deployment-frontend.loadbalancer.server.port=443"
+      - "traefik.http.routers.traefik.rule=Host(`v000744.fhnw.ch`)"
+      - "traefik.http.routers.traefik.service=api@internal"
+      - "traefik.http.routers.traefik.middlewares=admin"
+      - "traefik.http.routers.traefik.tls.certresolver=ssl"
+      - "traefik.http.routers.traefik.entrypoints=https"
+      - "traefik.http.middlewares.admin.basicauth.users=${MANAGER_API_BASIC_AUTH_USER_PW}"
+
     ports:
       - "80:80"
       - "443:443"
