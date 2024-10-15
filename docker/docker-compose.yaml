@@ -36,7 +36,7 @@ services:
     labels:
       # Dashboard
       - "traefik.enable=true"
-      - "traefik.http.services.deployment-frontend.loadbalancer.server.port=443"
+      - "traefik.http.services.admin.loadbalancer.server.port=443"
       - "traefik.http.routers.traefik.rule=Host(`v000744.fhnw.ch`)"
       - "traefik.http.routers.traefik.service=api@internal"
       - "traefik.http.routers.traefik.middlewares=admin"
