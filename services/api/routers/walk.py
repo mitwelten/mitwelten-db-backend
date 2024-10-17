@@ -78,16 +78,15 @@ def get_community_hotspots():
 @router.get('/walk/data-hotspots/pax', response_model=HotspotDataPaxResponse)
 async def get_pax_hotspots(summary: Optional[int] = Query(1, alias='summary', example=1),
                            tag_ids: Optional[List[int]] = Query([136, 137], alias='tag', example='tag=136&tag=137')):
-    interval = '7 days' if summary == 1 else '1 month' if summary == 2 else '1 year'
+    interval = ['2023-06-16', '2023-09-01'] if summary == 1 else ['2024-06-16', '2024-09-01']
     options = [
-        {'label': 'letzte 7 Tage', 'value': 1},
-        {'label': 'letzter Monat', 'value': 2},
-        {'label': 'letztes Jahr', 'value': 3}
+        {'label': 'Sommer 2023', 'value': 1},
+        {'label': 'Sommer 2024', 'value': 2}
     ]
     subquery = select(text('date(time at time zone \'UTC\') as dt'), tags.c.name.label('tag'), func.avg(data_pax.c.pax).label('pax_avg')).\
         outerjoin(deployments).outerjoin(mm_tags_deployments).outerjoin(tags).\
         where(tags.c.tag_id.in_(tag_ids)).\
-        where(data_pax.c.time > current_timestamp() - text(f'interval \'{interval}\'')).\
+        where(between(data_pax.c.time, datetime.fromisoformat(interval[0]), datetime.fromisoformat(interval[1]))).\
         group_by(tags.c.name, text('date(time at time zone \'UTC\')'))
     result = select(subquery.c.tag,
             func.round(func.avg(subquery.c.pax_avg), 1).label('pax_avg'),
