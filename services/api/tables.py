@@ -25,7 +25,7 @@ birdnet_input = sqlalchemy.Table(
 )
 
 birdnet_results = sqlalchemy.Table(
-    'birdnet_results',
+    'birdnet_results_filtered',
     metadata,
     sqlalchemy.Column('result_id',    sqlalchemy.Integer    , primary_key=True),
     sqlalchemy.Column('file_id',      sqlalchemy.Integer    , nullable=False),

@@ -113,7 +113,7 @@ async def detection_dates_by_id(
     f"""
     SELECT time_bucket(:bucket_width, (f.time + interval '1 second' * r.time_start)) AS bucket,
     count({distinct_arg} r.species) as detections
-    from {crd.db.schema}.birdnet_results r
+    from birdnet_results_filtered r
     left join {crd.db.schema}.files_audio f on f.file_id = r.file_id
     where r.confidence >= :conf
     and r.species in (
@@ -167,7 +167,7 @@ async def detection_locations_by_id(
     d.location,
     d.deployment_id,
     count({distinct_arg} r.species) as detections
-    from {crd.db.schema}.birdnet_results r
+    from birdnet_results_filtered r
     left join {crd.db.schema}.files_audio f on f.file_id = r.file_id
     left join {crd.db.schema}.deployments d on f.deployment_id = d.deployment_id
     where r.confidence >= :conf
@@ -221,7 +221,7 @@ async def detection_count(
     f"""
     SELECT
     count(r.species) as detections
-    from {crd.db.schema}.birdnet_results r
+    from birdnet_results_filtered r
     left join {crd.db.schema}.files_audio f on f.file_id = r.file_id
     left join {crd.db.schema}.deployments d on f.deployment_id = d.deployment_id
     where r.confidence >= :conf
@@ -267,7 +267,7 @@ async def detection_time_of_day(
         SELECT
             EXTRACT (hour from (f.time + interval '1 second' * r.time_start))*60 as minute_of_day,
             COUNT(DISTINCT r.species) AS detections
-        FROM {crd.db.schema}.birdnet_results r
+        FROM birdnet_results_filtered r
         LEFT JOIN {crd.db.schema}.files_audio f ON f.file_id = r.file_id
         WHERE r.confidence >=  :conf
         {deployment_filter}
@@ -300,7 +300,7 @@ async def detection_time_of_day(
             SELECT
             histogram(
                 EXTRACT (hour from (f.time + interval '1 second' * r.time_start))*60 + EXTRACT (minute from (f.time + interval '1 second' * r.time_start)), 0, 24*60, (24*60)/:bucket_width_m) as minute_buckets
-            FROM {crd.db.schema}.birdnet_results r
+            FROM birdnet_results_filtered r
             LEFT JOIN {crd.db.schema}.files_audio f ON f.file_id = r.file_id
             WHERE r.confidence >=  :conf
             AND r.species IN (
@@ -348,7 +348,7 @@ async def species_count_by_parent_taxon(
         s.label_en,
         count(r.species) as detections
     FROM {crd.db.schema}.taxonomy_data s
-    left join {crd.db.schema}.birdnet_results r on r.species = s.label_sci
+    left join birdnet_results_filtered r on r.species = s.label_sci
     WHERE s.datum_id IN (
         select species_id from {crd.db.schema}.taxonomy_tree
                 where species_id = :identifier
@@ -397,7 +397,7 @@ async def get_detected_species_list(
             t.datum_id,
             t.label_en,
             t.label_de
-        from {crd.db.schema}.birdnet_results r
+        from birdnet_results_filtered r
         left join {crd.db.schema}.files_audio f on f.file_id = r.file_id
         join {crd.db.schema}.taxonomy_data t on t.label_sci = r.species
         where r.confidence >= :conf
