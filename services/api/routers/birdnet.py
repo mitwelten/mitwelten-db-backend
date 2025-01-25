@@ -11,7 +11,7 @@ from pandas import to_timedelta
 
 import credentials as crd
 
-router = APIRouter(tags=['inferrence'])
+router = APIRouter(tags=['inference'])
 
 # ------------------------------------------------------------------------------
 # BIRDNET RESULTS

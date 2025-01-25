@@ -28,7 +28,7 @@ tags_metadata = [
         'description': 'API routes for explore.mitwelten.org',
     },
     {
-        'name': 'inferrence',
+        'name': 'inference',
         'description': 'Machine-Learning inference results',
     },
     {

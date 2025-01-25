@@ -72,7 +72,7 @@ tags_metadata = [
         'description': 'Node deployments management',
     },
     {
-        'name': 'inferrence',
+        'name': 'inference',
         'description': 'Machine-Learning inference results',
     },
     {
@@ -152,20 +152,20 @@ def login(login_state: bool = Depends(check_authentication)):
 
 # todo: give endOfRecords (select +1, see if array is full)
 # todo: adjustable confidence
-@app.get('/results/', response_model=List[Result], tags=['inferrence'])
+@app.get('/results/', response_model=List[Result], tags=['inference'])
 async def read_results(offset: int = 0, pagesize: int = Query(1000, gte=0, lte=1000)):
     query = results.select().where(results.c.confidence > 0.9).\
         limit(pagesize).offset(offset)
     return await database.fetch_all(query)
 
 # todo: adjustable confidence
-@app.get('/results_full/', response_model=List[ResultFull], tags=['inferrence'])
+@app.get('/results_full/', response_model=List[ResultFull], tags=['inference'])
 async def read_results_full(offset: int = 0, pagesize: int = Query(1000, gte=0, lte=1000)):
     query = results_file_taxonomy.select().where(results.c.confidence > 0.9).\
         limit(pagesize).offset(offset)
     return await database.fetch_all(query)
 
-@app.get('/results_full/{on_date}', response_model=List[ResultFull], tags=['inferrence'])
+@app.get('/results_full/{on_date}', response_model=List[ResultFull], tags=['inference'])
 async def read_results_full_on_date(on_date: date, offset: int = 0, pagesize: int = Query(1000, gte=0, lte=1000)):
     query = results_file_taxonomy.select().where(and_(func.date(results_file_taxonomy.c.object_time) == on_date, results_file_taxonomy.c.confidence > 0.9)).\
         limit(pagesize).offset(offset)\
@@ -173,7 +173,7 @@ async def read_results_full_on_date(on_date: date, offset: int = 0, pagesize: in
 
     return await database.fetch_all(query)
 
-@app.get('/results_full/single/{filter:path}', response_model=List[ResultsGrouped], tags=['inferrence'])
+@app.get('/results_full/single/{filter:path}', response_model=List[ResultsGrouped], tags=['inference'])
 async def read_results_full(filter: str):
     query = select([results_file_taxonomy.c.species, results_file_taxonomy.c.time_start_relative, results_file_taxonomy.c.duration, results_file_taxonomy.c.image_url])\
             .where(and_(results_file_taxonomy.c.confidence > 0.9, results_file_taxonomy.c.object_name == filter))\
@@ -181,7 +181,7 @@ async def read_results_full(filter: str):
     results = await database.fetch_all(query)
     return results
 
-@app.get('/results_full/grouped/{from_date}', response_model=List[str], tags=['inferrence'])
+@app.get('/results_full/grouped/{from_date}', response_model=List[str], tags=['inference'])
 async def read_grouped_full(from_date: date, offset: int = 0, pagesize: int = Query(1000, gte=0, lte=1000)):
     query = select(results_file_taxonomy.c.object_name, func.count(results_file_taxonomy.c.object_name))\
         .filter(and_(results_file_taxonomy.c.confidence > 0.9, results_file_taxonomy.c.object_time >= from_date))\
@@ -191,7 +191,7 @@ async def read_grouped_full(from_date: date, offset: int = 0, pagesize: int = Qu
     results = await database.fetch_all(query)
     return [result.object_name for result in results]
 
-@app.get('/species/', tags=['inferrence'])
+@app.get('/species/', tags=['inference'])
 async def read_species(start: int = 0, end: int = 0, conf: float = 0.9):
     query = select(results.c.species, func.count(results.c.species).label('count')).\
         where(results.c.confidence >= conf).\
@@ -203,7 +203,7 @@ async def read_species(start: int = 0, end: int = 0, conf: float = 0.9):
         with_only_columns(query, taxonomy_data.c.label_de, taxonomy_data.c.label_en, taxonomy_data.c.image_url)
     return await database.fetch_all(labelled_query)
 
-@app.get('/species/{spec}', tags=['inferrence']) # , response_model=List[Species]
+@app.get('/species/{spec}', tags=['inference']) # , response_model=List[Species]
 async def read_species_detail(spec: str, start: int = 0, end: int = 0, conf: float = 0.9):
     query = select(species.c.species, func.min(species.c.time_start).label('earliest'),
             func.max(species.c.time_start).label('latest'),
@@ -215,7 +215,7 @@ async def read_species_detail(spec: str, start: int = 0, end: int = 0, conf: flo
         with_only_columns(query, taxonomy_data.c.label_de, taxonomy_data.c.label_en, taxonomy_data.c.image_url)
     return await database.fetch_all(labelled_query)
 
-@app.get('/species/{spec}/day/', tags=['inferrence']) # , response_model=List[Species]
+@app.get('/species/{spec}/day/', tags=['inference']) # , response_model=List[Species]
 async def read_species_day(spec: str, start: int = 0, end: int = 0, conf: float = 0.9):
     query = select(species_day.c.species, species_day.c.date,
             func.count(species_day.c.species).label('count')).\
