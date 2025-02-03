@@ -65,7 +65,7 @@ async def get_stacked_bar(
             ROW_NUMBER() OVER (PARTITION BY time_bucket(:bucket_width, time) ORDER BY count(*) DESC)
         FROM
             {crd.db.schema}.files_audio AS audio
-            LEFT OUTER JOIN {crd.db.schema}.birdnet_results AS br ON audio.file_id = br.file_id
+            LEFT OUTER JOIN {crd.db.schema}.birdnet_results_filtered AS br ON audio.file_id = br.file_id
         WHERE
             audio.deployment_id = :deployment_id AND br.confidence > :confidence
             {time_from_condition}

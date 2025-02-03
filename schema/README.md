@@ -111,6 +111,16 @@ More details on the storage layer can be found in the [storage README](../storag
 - __results__: identified species
 - __species occurrence__: manually maintained list of species expected to be spotted at project location
 
+##### Species Occurrence Filters
+
+Over the course of the research project we narrowed down the species that are expected at specific locations.
+The data is maintained in project-internal google-sheets and have been exported into TSV lists,
+maintained in [mitwelten-ml-backend/evaluation/birds/filters](https://github.com/mitwelten/mitwelten-ml-backend/tree/main/evaluation/birds/filters).
+
+To provide the web-apps Explore and Discover with the filtered data, a materialised view [`birdnet_results_filtered`](./birdnet_results_filtered.sql) has been created.
+As of commit 589fb32866de46eed80867b8bd14c4120b152615, this view is used by the data API,
+and needs to be manually reset to `birdnet_results` when unfiltered data is needed.
+
 #### Pollinator Pipeline
 
 - __image_results__: Acts as connection table betweend different model configurations and results
