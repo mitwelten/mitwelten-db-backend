@@ -125,6 +125,19 @@ async def check_image(body: ImageValidationRequest) -> None:
 
 @router.post('/validate/audio', dependencies=[Depends(AuthenticationChecker())], response_model=AudioValidationResponse, tags=['ingest'])
 async def check_audio(body: AudioValidationRequest) -> None:
+    '''
+    Check if a metadata record with the same sha256 hash and/or object name
+    exists, i.e. if this file has already been ingested.
+
+    If the file has not been ingested, create a new object name for it, else
+    report the existing object name.
+
+    Check if the node that recorded the file to be ingested is deployed at the
+    time of recording.
+
+    **IMPORTANT**: This function returns status 200 even if the validation
+    fails. The validation result is returned in the response body.
+    '''
 
     duplicate_query = text(f'''
     WITH n AS (
@@ -145,6 +158,7 @@ async def check_audio(body: AudioValidationRequest) -> None:
 
     object_name = None
     if duplicate_result == None:
+        # create new object name
         object_name_query = text('''
         SELECT :node_label ||'/'||to_char(:timestamp at time zone 'UTC', 'YYYY-mm-DD/HH24/') -- file_path (node_label, timestamp)
         || :node_label ||'_'||to_char(:timestamp at time zone 'UTC', 'YYYY-mm-DD"T"HH24-MI-SS"Z"')||:extension -- file_name (node_label, timestamp, extension)
@@ -153,8 +167,10 @@ async def check_audio(body: AudioValidationRequest) -> None:
         object_name_result = await database.fetch_one(object_name_query)
         object_name = object_name_result._mapping['object_name']
     else:
+        # report existing object name
         object_name = duplicate_result._mapping['object_name']
 
+    # check if node is deployed at the time of recording
     deployment_query = select(deployments.c.deployment_id).join(nodes).\
         where(nodes.c.node_label == body.node_label, text('period @> :timestamp ::timestamptz').bindparams(timestamp=body.timestamp))
     deployment_result = await database.fetch_one(deployment_query)

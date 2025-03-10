@@ -1,10 +1,10 @@
 from api.database import database
 from api.dependencies import check_authentication, AuthenticationChecker
-from api.models import ImageRequest, AudioRequest, PaxMeasurement
-from api.tables import files_image, files_audio, data_pax, deployments, nodes
+from api.models import EnvMeasurement, ImageRequest, AudioRequest, PaxMeasurement
+from api.tables import files_image, files_audio, data_pax, data_env, deployments, nodes
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.sql import insert, select, and_, text
+from sqlalchemy.sql import insert, select, and_, or_, text
 
 router = APIRouter(tags=['ingest'])
 
@@ -75,7 +75,7 @@ async def ingest_pax(body: PaxMeasurement):
         deployment_id_subquery = select(deployments.c.deployment_id).filter(
             and_(
                 deployments.c.node_id == node_id_subquery,
-                text("upper(period) is NULL")
+                or_(text("upper(period) is NULL"), text("upper(period) >= now()"))
             )
         ).scalar_subquery()
         insert_stmt = insert(data_pax).values(
@@ -83,6 +83,41 @@ async def ingest_pax(body: PaxMeasurement):
             deployment_id=deployment_id_subquery,
             pax=body.pax,
             voltage=body.voltage
+        )
+        await database.execute(insert_stmt)
+
+    except Exception as e:
+        await transaction.rollback()
+        print(str(e))
+        raise HTTPException(status_code=409, detail=str(e))
+
+    else:
+        await transaction.commit()
+
+@router.post('/ingest/env', dependencies=[Depends(check_authentication)])
+async def ingest_env(body: EnvMeasurement):
+    transaction = await database.transaction()
+
+    try:
+        if body.nodeLabel is not None:
+            node_id_subquery = select(nodes.c.node_id).filter(nodes.c.node_label == body.nodeLabel).scalar_subquery()
+        elif body.deviceEui is not None:
+            node_id_subquery = select(nodes.c.node_id).filter(nodes.c.serial_number == body.deviceEui).scalar_subquery()
+        else:
+            raise HTTPException(status_code=409, detail="Invalid Node Identifier")
+        deployment_id_subquery = select(deployments.c.deployment_id).filter(
+            and_(
+                deployments.c.node_id == node_id_subquery,
+                or_(text("upper(period) is NULL"), text("upper(period) >= now()"))
+            )
+        ).scalar_subquery()
+        insert_stmt = insert(data_env).values(
+            time=body.time,
+            deployment_id=deployment_id_subquery,
+            voltage=body.voltage,
+            temperature=body.temperature,
+            humidity=body.humidity,
+            moisture=body.moisture
         )
         await database.execute(insert_stmt)
 

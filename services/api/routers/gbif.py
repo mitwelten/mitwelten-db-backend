@@ -29,14 +29,14 @@ async def gbif_detection_dates_by_id(
     count(key) as detections
     from {crd.db_cache.schema}.gbif
     where (
-    speciesKey = :identifier 
-    or speciesKey = :identifier 
-    or genusKey = :identifier 
-    or familyKey = :identifier 
-    or orderKey = :identifier 
-    or classKey = :identifier 
-    or phylumKey = :identifier 
-    or kingdomKey = :identifier 
+    speciesKey = :identifier
+    or speciesKey = :identifier
+    or genusKey = :identifier
+    or familyKey = :identifier
+    or orderKey = :identifier
+    or classKey = :identifier
+    or phylumKey = :identifier
+    or kingdomKey = :identifier
     )
     {time_from_condition}
     {time_to_condition}
@@ -57,7 +57,7 @@ async def gbif_detection_dates_by_id(
 
 @router.get('/gbif/{identifier}/location' , response_model=List[DetectionsByLocation])
 async def gbif_detection_locations_by_id(
-    identifier: int,  
+    identifier: int,
     time_from: Optional[datetime] = Query(None, alias='from', example='2021-09-01T00:00:00.000Z'),
     time_to: Optional[datetime] = Query(None, alias='to', example='2022-08-31T23:59:59.999Z'),
     ) -> List[DetectionsByLocation]:
@@ -65,20 +65,20 @@ async def gbif_detection_locations_by_id(
     time_to_condition = "AND eventdate <= :time_to" if time_to else ""
     query = text(
     f"""
-    SELECT 
+    SELECT
     decimallatitude as lat,
     decimallongitude as lon,
     count(key) as detections
     from {crd.db_cache.schema}.gbif
     where (
-    speciesKey = :identifier 
-    or speciesKey = :identifier 
-    or genusKey = :identifier 
-    or familyKey = :identifier 
-    or orderKey = :identifier 
-    or classKey = :identifier 
-    or phylumKey = :identifier 
-    or kingdomKey = :identifier 
+    speciesKey = :identifier
+    or speciesKey = :identifier
+    or genusKey = :identifier
+    or familyKey = :identifier
+    or orderKey = :identifier
+    or classKey = :identifier
+    or phylumKey = :identifier
+    or kingdomKey = :identifier
     )
     {time_from_condition}
     {time_to_condition}
@@ -103,7 +103,7 @@ async def gbif_detection_locations_by_id(
 
 @router.get('/gbif/{identifier}/count')
 async def gbif_detection_count(
-    identifier: int,  
+    identifier: int,
     time_from: Optional[datetime] = Query(None, alias='from', example='2021-09-01T00:00:00.000Z'),
     time_to: Optional[datetime] = Query(None, alias='to', example='2022-08-31T23:59:59.999Z'),
     ):
@@ -111,18 +111,18 @@ async def gbif_detection_count(
     time_to_condition = "AND eventdate <= :time_to" if time_to else ""
     query = text(
     f"""
-    SELECT 
+    SELECT
     count(key) as detections
     from {crd.db_cache.schema}.gbif
     where (
-    speciesKey = :identifier 
-    or speciesKey = :identifier 
-    or genusKey = :identifier 
-    or familyKey = :identifier 
-    or orderKey = :identifier 
-    or classKey = :identifier 
-    or phylumKey = :identifier 
-    or kingdomKey = :identifier 
+    speciesKey = :identifier
+    or speciesKey = :identifier
+    or genusKey = :identifier
+    or familyKey = :identifier
+    or orderKey = :identifier
+    or classKey = :identifier
+    or phylumKey = :identifier
+    or kingdomKey = :identifier
     )
     {time_from_condition}
     {time_to_condition}
@@ -138,7 +138,7 @@ async def gbif_detection_count(
 
 @router.get('/gbif/{identifier}/time_of_day')
 async def gbif_detection_time_of_day(
-    identifier: int,  
+    identifier: int,
     bucket_width_m:int = 30,
     time_from: Optional[datetime] = Query(None, alias='from', example='2021-09-01T00:00:00.000Z'),
     time_to: Optional[datetime] = Query(None, alias='to', example='2022-08-31T23:59:59.999Z'),
@@ -151,19 +151,19 @@ async def gbif_detection_time_of_day(
     unnest((hist.minute_buckets[2:])[: array_length(hist.minute_buckets,1)-2]) as detections,
     generate_series(0, 24*60-1, :bucket_width_m) AS minute_of_day
     FROM (
-        SELECT 
+        SELECT
         histogram(
             EXTRACT (hour from eventdate)*60 + EXTRACT (minute from eventdate), 0, 24*60, (24*60)/:bucket_width_m) as minute_buckets
         FROM {crd.db_cache.schema}.gbif
         WHERE (
-        speciesKey = :identifier 
-        or speciesKey = :identifier 
-        or genusKey = :identifier 
-        or familyKey = :identifier 
-        or orderKey = :identifier 
-        or classKey = :identifier 
-        or phylumKey = :identifier 
-        or kingdomKey = :identifier 
+        speciesKey = :identifier
+        or speciesKey = :identifier
+        or genusKey = :identifier
+        or familyKey = :identifier
+        or orderKey = :identifier
+        or classKey = :identifier
+        or phylumKey = :identifier
+        or kingdomKey = :identifier
         )
         AND EXTRACT (hour from eventdate)*3600 + EXTRACT (minute from eventdate)*60+EXTRACT (SECOND from eventdate) >0
         {time_from_condition}
@@ -195,14 +195,14 @@ async def gbif_occurence_datasets(
     max(datasetname) as datasetname
     from {crd.db_cache.schema}.gbif
     where (
-    speciesKey = :identifier 
-    or speciesKey = :identifier 
-    or genusKey = :identifier 
-    or familyKey = :identifier 
-    or orderKey = :identifier 
-    or classKey = :identifier 
-    or phylumKey = :identifier 
-    or kingdomKey = :identifier 
+    speciesKey = :identifier
+    or speciesKey = :identifier
+    or genusKey = :identifier
+    or familyKey = :identifier
+    or orderKey = :identifier
+    or classKey = :identifier
+    or phylumKey = :identifier
+    or kingdomKey = :identifier
     )
     {time_from_condition}
     {time_to_condition}
@@ -219,8 +219,8 @@ async def gbif_occurence_datasets(
         dict(
         name=r.datasetname if r.datasetname is not None else r.datasetkey,
         datasetkey=r.datasetkey,
-        reference=f"https://www.gbif.org/dataset/{r.datasetkey}" 
-        ) 
+        reference=f"https://www.gbif.org/dataset/{r.datasetkey}"
+        )
         for r in results
         ]
 
@@ -247,14 +247,14 @@ async def gbif_occurences_by_id(
         datasetkey
     from {crd.db_cache.schema}.gbif
     where (
-    speciesKey = :identifier 
-    or speciesKey = :identifier 
-    or genusKey = :identifier 
-    or familyKey = :identifier 
-    or orderKey = :identifier 
-    or classKey = :identifier 
-    or phylumKey = :identifier 
-    or kingdomKey = :identifier 
+    speciesKey = :identifier
+    or speciesKey = :identifier
+    or genusKey = :identifier
+    or familyKey = :identifier
+    or orderKey = :identifier
+    or classKey = :identifier
+    or phylumKey = :identifier
+    or kingdomKey = :identifier
     )
     {time_from_condition}
     {time_to_condition}
@@ -271,7 +271,7 @@ async def gbif_occurences_by_id(
     results = await database_cache.fetch_all(query)
     taxon_keys = list(set([r.taxon_key for r in results]))
     taxon_query = text(f"""
-        SELECT 
+        SELECT
         datum_id,
         label_sci,
         label_de,
@@ -281,7 +281,7 @@ async def gbif_occurences_by_id(
     """).bindparams(bindparam('taxon_list', value=taxon_keys, expanding=True))
     taxon_results = await database.fetch_all(taxon_query)
     taxon_mapping = {r.datum_id:dict(label_sci=r.label_sci,label_de=r.label_de,label_en=r.label_en) for r in taxon_results}
-   
+
     response = [
         dict(
         time=r.ts,
@@ -294,5 +294,5 @@ async def gbif_occurences_by_id(
         datasetName=r.datasetname,
         datasetKey = r.datasetkey)
         for r in results]
-    
+
     return response

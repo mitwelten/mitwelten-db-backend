@@ -24,8 +24,8 @@ birdnet_input = sqlalchemy.Table(
     sqlalchemy.Column('location',     GeometryPoint        , nullable=False)
 )
 
-results = sqlalchemy.Table(
-    'birdnet_results',
+birdnet_results = sqlalchemy.Table(
+    'birdnet_results_filtered',
     metadata,
     sqlalchemy.Column('result_id',    sqlalchemy.Integer    , primary_key=True),
     sqlalchemy.Column('file_id',      sqlalchemy.Integer    , nullable=False),
@@ -35,7 +35,7 @@ results = sqlalchemy.Table(
     sqlalchemy.Column('species',      sqlalchemy.String(255), nullable=False)
 )
 
-species = sqlalchemy.Table(
+birdnet_species = sqlalchemy.Table(
     'birdnet_inferred_species',
     metadata,
     sqlalchemy.Column('species',    sqlalchemy.String(255)),
@@ -43,7 +43,7 @@ species = sqlalchemy.Table(
     sqlalchemy.Column('time_start', sqlalchemy.TIMESTAMP)
 )
 
-species_day = sqlalchemy.Table(
+birdnet_species_day = sqlalchemy.Table(
     'birdnet_inferred_species_day',
     metadata,
     sqlalchemy.Column('species',    sqlalchemy.String(255)),
@@ -73,7 +73,7 @@ image_results = sqlalchemy.Table(
     sqlalchemy.Column('config_id', sqlalchemy.String, ForeignKey('pollinator_inference_config.config_id')),
 )
 
-results_file_taxonomy = sqlalchemy.Table(
+birdnet_results_file_taxonomy = sqlalchemy.Table(
     'birdnet_inferred_species_file_taxonomy',
     metadata,
     sqlalchemy.Column('species',     sqlalchemy.String(255)),
@@ -119,7 +119,7 @@ taxonomy_data = sqlalchemy.Table(
     sqlalchemy.Column('updated_at',  sqlalchemy.TIMESTAMP, nullable=False),
 )
 
-tasks = sqlalchemy.Table(
+birdnet_tasks = sqlalchemy.Table(
     'birdnet_tasks',
     metadata,
     sqlalchemy.Column('task_id',        sqlalchemy.Integer    , primary_key=True),
@@ -224,7 +224,7 @@ files_audio = sqlalchemy.Table(
     sqlalchemy.Column('duration',       sqlalchemy.REAL,                      nullable=False),
     sqlalchemy.Column('serial_number',  sqlalchemy.String(32),                nullable=True),
     sqlalchemy.Column('format',         sqlalchemy.String(64),                nullable=True),
-    sqlalchemy.Column('file_size',      sqlalchemy.Integer,                   nullable=False),
+    sqlalchemy.Column('file_size',      sqlalchemy.BigInteger,                nullable=False),
     sqlalchemy.Column('sample_rate',    sqlalchemy.Integer,                   nullable=False),
     sqlalchemy.Column('bit_depth',      sqlalchemy.Integer,                   nullable=True),
     sqlalchemy.Column('channels',       sqlalchemy.Integer,                   nullable=True),
@@ -419,4 +419,10 @@ environment = sqlalchemy.Table(
     sqlalchemy.Column('created_at'     , sqlalchemy.TIMESTAMP, nullable=False),
     sqlalchemy.Column('updated_at'     , sqlalchemy.TIMESTAMP, nullable=True),
     schema=crd.db.schema,
+)
+
+storage_whitelist = sqlalchemy.Table(
+    'storage_whitelist',
+    metadata,
+    sqlalchemy.Column('object_name', sqlalchemy.Text, primary_key=True),
 )

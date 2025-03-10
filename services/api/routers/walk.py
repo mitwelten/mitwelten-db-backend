@@ -1,3 +1,5 @@
+import json
+import requests
 from typing import List, Optional
 from datetime import datetime
 
@@ -5,19 +7,20 @@ from api.database import database
 from api.dependencies import AuthenticationChecker
 from api.tables import (
     files_image, deployments, nodes, walk_text, walk_hotspot, walk, data_pax,
-    tags, mm_tags_deployments, pollinators, image_results
+    tags, mm_tags_deployments, pollinators, image_results, birdnet_results,
+    files_audio
 )
 from api.models import (
     SectionText, Walk, HotspotImageSingle, HotspotImageSequence,
     HotspotInfotext, HotspotAudioText, HotspotData, HotspotDataPaxResponse,
-    HotspotDataPollinatorsResponse
+    HotspotDataPollinatorsResponse, HotspotDataBirdsResponse
 )
 
 from asyncpg.exceptions import ForeignKeyViolationError
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi_cache.decorator import cache
 from sqlalchemy.sql import select, text, update, delete, insert, func, between
 from sqlalchemy.sql.functions import current_timestamp
-import json
 
 router = APIRouter(tags=['images', 'walk'])
 
@@ -64,19 +67,26 @@ async def get_walk_hotspots(walk_id: int)-> List[HotspotData|HotspotInfotext|Hot
         result.append(rd)
     return result
 
+@router.get('/walk/community-hotspots')
+@cache(expire=3600)
+def get_community_hotspots():
+    url = 'https://beidebasel.wildenachbarn.ch/api/v1.0/mitwelten'
+    response = requests.get(url)
+    response.raise_for_status()
+    return response.json()
+
 @router.get('/walk/data-hotspots/pax', response_model=HotspotDataPaxResponse)
 async def get_pax_hotspots(summary: Optional[int] = Query(1, alias='summary', example=1),
                            tag_ids: Optional[List[int]] = Query([136, 137], alias='tag', example='tag=136&tag=137')):
-    interval = '7 days' if summary == 1 else '1 month' if summary == 2 else '1 year'
+    interval = ['2023-06-16', '2023-09-01'] if summary == 1 else ['2024-06-16', '2024-09-01']
     options = [
-        {'label': 'letzte 7 Tage', 'value': 1},
-        {'label': 'letzter Monat', 'value': 2},
-        {'label': 'letztes Jahr', 'value': 3}
+        {'label': 'Sommer 2023', 'value': 1},
+        {'label': 'Sommer 2024', 'value': 2}
     ]
     subquery = select(text('date(time at time zone \'UTC\') as dt'), tags.c.name.label('tag'), func.avg(data_pax.c.pax).label('pax_avg')).\
         outerjoin(deployments).outerjoin(mm_tags_deployments).outerjoin(tags).\
         where(tags.c.tag_id.in_(tag_ids)).\
-        where(data_pax.c.time > current_timestamp() - text(f'interval \'{interval}\'')).\
+        where(between(data_pax.c.time, datetime.fromisoformat(interval[0]), datetime.fromisoformat(interval[1]))).\
         group_by(tags.c.name, text('date(time at time zone \'UTC\')'))
     result = select(subquery.c.tag,
             func.round(func.avg(subquery.c.pax_avg), 1).label('pax_avg'),
@@ -88,6 +98,38 @@ async def get_pax_hotspots(summary: Optional[int] = Query(1, alias='summary', ex
         datapoints = await database.fetch_all(result),
         summaryOptions = options,
         chart = 'bar'
+    )
+
+@router.get('/walk/data-hotspots/birds', response_model=HotspotDataBirdsResponse)
+async def get_pollinator_hotspots(tag_id: int = Query(163, alias='tag', example='tag=163'),
+                           summary: Optional[int] = Query(1, alias='summary', example=1)):
+
+    options = [
+        {'label': 'Auenwald', 'value': 163},
+        {'label': 'Birsufer', 'value': 162},
+        {'label': 'Trockenwiese', 'value': 161}
+    ]
+    if summary == None or summary == 1:
+        summary = 163
+
+    time_from = datetime.fromisoformat('2023-01-01')
+    time_to = datetime.fromisoformat('2023-12-31')
+
+    query = select(birdnet_results.c.species.label('class'), func.extract('month', func.date(files_audio.c.time)).label('month'), func.count().label('count')).\
+        select_from(files_audio).\
+        outerjoin(mm_tags_deployments, mm_tags_deployments.c.deployments_deployment_id == files_audio.c.deployment_id).\
+            outerjoin(birdnet_results, birdnet_results.c.file_id == files_audio.c.file_id).\
+        where(mm_tags_deployments.c.tags_tag_id == summary).\
+        where(between(files_audio.c.time, time_from, time_to)).\
+        where(birdnet_results.c.confidence > 0.9).\
+        where(birdnet_results.c.species.in_(('Sylvia atricapilla', 'Erithacus rubecula', 'Fringilla coelebs', 'Aegithalos caudatus', 'Turdus merula', 'Phylloscopus collybita', 'Certhia brachydactyla'))).\
+        group_by(birdnet_results.c.species, text('month')) #.\
+        # having(func.count() > 100) #.\
+        # order_by(birdnet_results.c.species, text('month'))
+    return HotspotDataBirdsResponse(
+        datapoints = await database.fetch_all(query),
+        summaryOptions = options,
+        chart = 'heatmap'
     )
 
 @router.get('/walk/data-hotspots/pollinators', response_model=HotspotDataPollinatorsResponse)

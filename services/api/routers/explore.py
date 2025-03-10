@@ -56,7 +56,7 @@ async def post_collection(collection: List[dict], request: Request, is_allowed: 
             detail='Authentication failed',
             headers={'WWW-Authenticate': 'Bearer'},
         )
-    
+
     transaction = await database.transaction()
 
     try:
@@ -76,14 +76,14 @@ async def post_collection(collection: List[dict], request: Request, is_allowed: 
     else:
         await transaction.commit()
         return True
-    
+
 @router.get('/explore/annotations',  response_model=List[Annotation])
 async def get_annotation_list(is_allowed: bool = Depends(AuthenticationChecker())) -> List[Annotation]:
     query = select(annotations,  user_entity.c.first_name, user_entity.c.last_name, user_entity.c.username)\
         .select_from(annotations)\
         .outerjoin(user_entity, user_entity.c.id == annotations.c.user_sub)
     results = await database.fetch_all(query)
-    return [ 
+    return [
         Annotation(
             title=r.title,
             user_sub=r.user_sub,
@@ -92,12 +92,12 @@ async def get_annotation_list(is_allowed: bool = Depends(AuthenticationChecker()
             content=r.content,
             url=r.url,
             datasets=r.datasets,
-            full_name=f'{r.first_name} {r.last_name}' 
+            full_name=f'{r.first_name} {r.last_name}'
             if r.first_name is not None and r.last_name is not None
             else "Mitwelten User",
             username=r.username if r.username is not None else "mitwelten",
             id=r.annot_id
-        ) 
+        )
         for r in results
         ]
 
@@ -117,7 +117,7 @@ async def get_annotation_by_id(annot_id: int, is_allowed: bool = Depends(Authent
                 content=result.content,
                 url=result.url,
                 datasets=result.datasets,
-                full_name=f'{result.first_name} {result.last_name}' 
+                full_name=f'{result.first_name} {result.last_name}'
                 if result.first_name is not None and result.last_name is not None
                 else "Mitwelten User",
                 username=result.username if result.username is not None else "mitwelten",
@@ -183,7 +183,7 @@ async def post_annotation(body: AnnotationContent, request: Request, is_allowed:
             detail='Authentication failed',
             headers={'WWW-Authenticate': 'Bearer'},
         )
-    
+
     transaction = await database.transaction()
 
     try:
@@ -206,7 +206,7 @@ async def post_annotation(body: AnnotationContent, request: Request, is_allowed:
     else:
         await transaction.commit()
         return True
-   
+
 @router.put('/explore/annotations/{annot_id}')
 async def post_annotation(annot_id: int,body: AnnotationText, request: Request, is_allowed: bool = Depends(AuthenticationChecker())):
     auth_header = request.headers.get("authorization")
@@ -224,7 +224,7 @@ async def post_annotation(annot_id: int,body: AnnotationText, request: Request, 
             detail='Authentication failed',
             headers={'WWW-Authenticate': 'Bearer'},
         )
-    
+
     transaction = await database.transaction()
 
     try:

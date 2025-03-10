@@ -31,10 +31,22 @@ class MinioConfig(object):
     access_key = ''
     secret_key = ''
 
+class MinioConfigScaled(MinioConfig):
+    '''Scaled images'''
+    host = ''
+    bucket = ''
+
+class MinioConfigWeb(MinioConfig):
+    '''Web content'''
+    host = ''
+    bucket = ''
+
 db = DbConfig()
 db_cache = CacheDbConfig()
 ba = BasicAuth()
 oidc = OidcConfig()
 minio = MinioConfig()
+minio_scaled = MinioConfigScaled()
+minio_web = MinioConfigWeb()
 
 DEV = False

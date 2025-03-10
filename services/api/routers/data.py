@@ -76,7 +76,7 @@ async def get_pax_measurements(
     time_to_condition = "AND time <= :time_to" if time_to else ""
     query = text(f"""
     SELECT time_bucket(:bucket_width, time) AS bucket,
-    sum(pax) as pax
+    AVG(pax) as pax
     from {crd.db.schema}.sensordata_pax
     where deployment_id = :deployment_id
     {time_from_condition}
@@ -104,7 +104,7 @@ async def get_pax_measurements_time_of_day(
     query = text(f"""
     SELECT
         FLOOR((EXTRACT(hour FROM time) * 60 + EXTRACT(minute FROM time)) / :bucket_width_m) * :bucket_width_m as minute_of_day,
-        sum(pax) as pax
+        AVG(pax) as pax
     FROM {crd.db.schema}.sensordata_pax
     WHERE deployment_id = :deployment_id
     {time_from_condition}
@@ -140,7 +140,7 @@ async def get_pax_locations(
             p.deployment_id,
             d.location[0] as lat,
             d.location[1] as lon,
-            sum(p.pax) as pax
+            AVG(p.pax) as pax
         FROM {crd.db.schema}.sensordata_pax p
         left join {crd.db.schema}.deployments d on d.deployment_id = p.deployment_id
         {time_condition}

@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS files_audio
     duration double precision NOT NULL,
     serial_number character varying(32),
     format character varying(64),
-    file_size integer NOT NULL,
+    file_size bigint NOT NULL,
     sample_rate integer NOT NULL,
     bit_depth smallint,
     channels smallint,
@@ -109,6 +109,68 @@ CREATE TABLE IF NOT EXISTS birdnet_tasks
     end_on timestamptz,
     PRIMARY KEY (task_id),
     CONSTRAINT unique_task_in_batch UNIQUE (file_id, config_id, batch_id)
+);
+
+-- batdetect2 SpectrogramParameters, ModelParameters, ProcessingConfiguration
+CREATE TABLE IF NOT EXISTS batnet_configs
+(
+    config_id serial,
+    config jsonb NOT NULL,
+    comment text,
+    created_at timestamptz NOT NULL DEFAULT current_timestamp,
+    updated_at timestamptz NOT NULL DEFAULT current_timestamp,
+    PRIMARY KEY (config_id),
+    UNIQUE (config)
+);
+
+CREATE TABLE IF NOT EXISTS batnet_tasks
+(
+    task_id serial,
+    file_id integer NOT NULL,
+    config_id integer NOT NULL,
+    state integer NOT NULL,
+    scheduled_on timestamptz NOT NULL,
+    pickup_on timestamptz,
+    end_on timestamptz,
+    PRIMARY KEY (task_id),
+    CONSTRAINT unique_task UNIQUE (file_id, config_id),
+    CONSTRAINT batnet_tasks_config_id_fkey FOREIGN KEY (config_id)
+        REFERENCES batnet_configs (config_id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE RESTRICT,
+    CONSTRAINT batnet_tasks_file_id_fkey FOREIGN KEY (file_id)
+        REFERENCES files_audio (file_id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE RESTRICT
+);
+
+CREATE TABLE IF NOT EXISTS batnet_results
+(
+    result_id serial,
+    task_id integer NOT NULL,
+    file_id integer NOT NULL,
+
+    class character varying(128),
+    event character varying(128),
+    individual integer,
+    class_prob real,
+    det_prob real,
+    start_time real,
+    end_time real,
+    high_freq real,
+    low_freq real,
+
+    PRIMARY KEY (result_id),
+    CONSTRAINT batnet_results_file_id_fkey FOREIGN KEY (file_id)
+        REFERENCES files_audio (file_id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
+        NOT VALID,
+    CONSTRAINT batnet_results_task_id_fkey FOREIGN KEY (task_id)
+        REFERENCES batnet_tasks (task_id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
+        NOT VALID
 );
 
 CREATE TABLE IF NOT EXISTS nodes
@@ -355,6 +417,91 @@ CREATE TABLE IF NOT EXISTS storage_whitelist
     PRIMARY KEY (object_name)
 );
 
+CREATE TABLE IF NOT EXISTS prod.storage_backend
+(
+    storage_id serial NOT NULL,
+    url_prefix text NOT NULL,
+    type character varying(8),
+    priority integer NOT NULL DEFAULT 0,
+    notes text,
+    created_at timestamp with time zone NOT NULL DEFAULT current_timestamp,
+    updated_at timestamp with time zone NOT NULL DEFAULT current_timestamp,
+    PRIMARY KEY (storage_id),
+    UNIQUE (url_prefix)
+);
+
+CREATE TABLE IF NOT EXISTS prod.mm_files_audio_storage
+(
+    file_id integer NOT NULL,
+    storage_id integer NOT NULL,
+    type smallint NOT NULL DEFAULT 0,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone DEFAULT current_timestamp,
+    PRIMARY KEY (file_id, storage_id)
+);
+
+CREATE TABLE IF NOT EXISTS prod.mm_files_image_storage
+(
+    file_id integer NOT NULL,
+    storage_id integer NOT NULL,
+    type smallint NOT NULL DEFAULT 0,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone DEFAULT current_timestamp,
+    PRIMARY KEY (file_id, storage_id)
+);
+
+CREATE TABLE IF NOT EXISTS prod.mm_files_note_storage
+(
+    file_id integer NOT NULL,
+    storage_id integer NOT NULL,
+    type smallint NOT NULL DEFAULT 0,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone DEFAULT current_timestamp,
+    PRIMARY KEY (file_id, storage_id)
+);
+
+ALTER TABLE IF EXISTS prod.mm_files_audio_storage
+    ADD FOREIGN KEY (file_id)
+    REFERENCES prod.files_audio (file_id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE NO ACTION
+    NOT VALID;
+
+ALTER TABLE IF EXISTS prod.mm_files_audio_storage
+    ADD FOREIGN KEY (storage_id)
+    REFERENCES prod.storage_backend (storage_id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE NO ACTION
+    NOT VALID;
+
+ALTER TABLE IF EXISTS prod.mm_files_image_storage
+    ADD FOREIGN KEY (file_id)
+    REFERENCES prod.files_image (file_id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE NO ACTION
+    NOT VALID;
+
+ALTER TABLE IF EXISTS prod.mm_files_image_storage
+    ADD FOREIGN KEY (storage_id)
+    REFERENCES prod.storage_backend (storage_id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE NO ACTION
+    NOT VALID;
+
+ALTER TABLE IF EXISTS prod.mm_files_note_storage
+    ADD FOREIGN KEY (file_id)
+    REFERENCES prod.files_note (file_id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE NO ACTION
+    NOT VALID;
+
+ALTER TABLE IF EXISTS prod.mm_files_note_storage
+    ADD FOREIGN KEY (storage_id)
+    REFERENCES prod.storage_backend (storage_id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE NO ACTION
+    NOT VALID;
+
 ALTER TABLE IF EXISTS files_audio
     ADD FOREIGN KEY (deployment_id)
     REFERENCES deployments (deployment_id) MATCH SIMPLE
@@ -462,6 +609,10 @@ ALTER TABLE IF EXISTS image_results
   ON DELETE NO ACTION
   NOT VALID;
 
+ALTER TABLE image_results
+  ADD CONSTRAINT unique_file_config
+  UNIQUE (file_id, config_id);
+
 ALTER TABLE IF EXISTS flowers
   ADD FOREIGN KEY (result_id)
   REFERENCES  image_results  (result_id) MATCH SIMPLE
@@ -525,6 +676,21 @@ CREATE INDEX IF NOT EXISTS taxonomy_data_label_sci_idx
 CREATE INDEX IF NOT EXISTS storage_whitelist_object_name_idx
     ON storage_whitelist USING btree
     (object_name ASC NULLS LAST);
+
+CREATE INDEX IF NOT EXISTS mm_files_audio_storage_type_idx
+    ON prod.mm_files_audio_storage USING btree
+    (type ASC NULLS LAST)
+    WITH (deduplicate_items=True);
+
+CREATE INDEX IF NOT EXISTS mm_files_image_storage_type_idx
+    ON prod.mm_files_image_storage USING btree
+    (type ASC NULLS LAST)
+    WITH (deduplicate_items=True);
+
+CREATE INDEX IF NOT EXISTS mm_files_note_storage_type_idx
+    ON prod.mm_files_note_storage USING btree
+    (type ASC NULLS LAST)
+    WITH (deduplicate_items=True);
 
 CREATE OR REPLACE VIEW birdnet_input
     AS
@@ -652,6 +818,7 @@ TO mitwelten_rest;
 
 GRANT SELECT ON
   birdnet_configs,
+  batnet_configs,
   files_audio,
   files_image,
   birdnet_results,

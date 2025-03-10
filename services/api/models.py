@@ -37,8 +37,8 @@ end timestamp"):
 The pydantic model / type definition also converts this `tstzrange` back into
 the aforementioned format when retrieving (using as a response model).
 '''
-    start: datetime = Field(..., example='2021-09-11T22:00:00+00:00', title='Beginning of period (inclusive)')
-    end: datetime = Field(..., example='2021-10-14T22:00:00Z', title='End of period (non inclusive)')
+    start: Optional[datetime] = Field(None, example='2021-09-11T22:00:00+00:00', title='Beginning of period (inclusive)')
+    end: Optional[datetime] = Field(None, example='2021-10-14T22:00:00Z', title='End of period (non inclusive)')
 
     def __init__(self, start: datetime, end: datetime):
         self.start = start
@@ -53,17 +53,16 @@ the aforementioned format when retrieving (using as a response model).
         yield cls.validate_type
 
     @classmethod
-    def validate_type(cls, val: Range):
+    def validate_type(cls, val):
         if isinstance(val, Range):
             return {'start': val.lower, 'end': val.upper}
-        elif 'start' in val and 'end' in val:
-            lower = None
-            upper = None
-            if val['start'] != '' and val['start'] != None:
-                lower = datetime.fromisoformat(cls.stripz(val['start']))
-            if val['end'] != '' and val['end'] != None:
-                upper = datetime.fromisoformat(cls.stripz(val['end']))
-            return Range(lower=lower, upper=upper)
+        lower = None
+        upper = None
+        if val.get('start'):
+            lower = datetime.fromisoformat(cls.stripz(val['start']))
+        if val.get('end'):
+            upper = datetime.fromisoformat(cls.stripz(val['end']))
+        return Range(lower=lower, upper=upper)
 
     def __repr__(self):
         return f'TimeStampRange({super().__repr__()})'
@@ -275,6 +274,12 @@ class DeploymentRequest(BaseModel):
     period: TimeStampRange
     tags: Optional[List[str]] = None
 
+class TVStackSelectionRequest(BaseModel):
+    deployment_id: int
+    period: TimeStampRange
+    interval: Optional[int]
+    phase: Optional[str] = None
+
 class QueueInputDefinition(BaseModel):
     node_label: str # for now keep this required. TODO: implement update for all dask when node_label not present
 
@@ -343,6 +348,15 @@ class PaxMeasurement(BaseModel):
     pax: int
     voltage: float
 
+class EnvMeasurement(BaseModel):
+    time: datetime
+    nodeLabel: Optional[constr(regex=r'\d{4}-\d{4}')] = None
+    deviceEui: Optional[str] = None
+    voltage: float
+    temperature: float
+    humidity: float
+    moisture: float
+
 class ApiResponse(BaseModel):
     code: Optional[int] = None
     type: Optional[str] = None
@@ -373,7 +387,7 @@ class Note(BaseModel):
     files: Optional[List[File]] = None
 
 class NoteResponse(Note):
-    author: str
+    author: Optional[str] = None
 
 class PatchNote(Note):
     '''
@@ -441,6 +455,11 @@ class DetectionsByLocation(BaseModel):
 
 class DetectionLocationResult(DetectionsByLocation):
     deployment_id: int
+
+class BirdSpeciesCount(BaseModel):
+    bucket: datetime
+    species: str = Field(..., example='Parus major')
+    count: int = Field(..., example=42)
 
 # Walks
 
@@ -511,6 +530,11 @@ class PaxDataPoint(BaseModel):
     pax_min: float
     pax_max: float
 
+class BirdsDataPoint(BaseModel):
+    species: str = Field(..., alias='class')
+    month: int
+    count: int
+
 class PollinatorDataPoint(BaseModel):
     class_: str = Field(..., alias='class')
     month: int
@@ -522,6 +546,11 @@ class ChartSummaryOption(BaseModel):
 
 class HotspotDataPaxResponse(BaseModel):
     datapoints: List[PaxDataPoint]
+    summaryOptions: List[ChartSummaryOption]
+    chart: str
+
+class HotspotDataBirdsResponse(BaseModel):
+    datapoints: List[BirdsDataPoint]
     summaryOptions: List[ChartSummaryOption]
     chart: str
 

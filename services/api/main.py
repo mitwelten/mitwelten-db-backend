@@ -1,14 +1,18 @@
 from api.database import database, database_cache
 from api.dependencies import crd
 from api.routers import (
-    birdnet, data, deployments, geo, notes, ingest, minio, nodes, queue, tags,
+    birdnet, data, deployments, discover, geo, notes, ingest, minio, nodes, queue, tags,
     taxonomy, validators, walk, meteodata, pollinators, explore, gbif,
-    environment, statistics, auth
+    environment, statistics, auth, tv
 )
 
 from fastapi import Depends, FastAPI, Request, status
+from fastapi_cache import FastAPICache
+from fastapi_cache.backends.redis import RedisBackend
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+
+from redis import asyncio as aioredis
 
 tags_metadata = [
     {
@@ -24,7 +28,7 @@ tags_metadata = [
         'description': 'API routes for explore.mitwelten.org',
     },
     {
-        'name': 'inferrence',
+        'name': 'inference',
         'description': 'Machine-Learning inference results',
     },
     {
@@ -105,6 +109,7 @@ if crd.DEV == True:
         allow_origins=[
             'http://localhost',              # dev environment
             'http://localhost:4200',         # angular dev environment
+            'http://localhost:8000',         # dash dev environment
         ],
         allow_credentials=True,
         allow_methods=['*'],
@@ -115,6 +120,7 @@ app.include_router(auth.router)
 app.include_router(birdnet.router)
 app.include_router(data.router)
 app.include_router(deployments.router)
+app.include_router(discover.router)
 app.include_router(notes.router)
 app.include_router(geo.router)
 app.include_router(ingest.router)
@@ -125,6 +131,7 @@ app.include_router(tags.router)
 app.include_router(taxonomy.router)
 app.include_router(validators.router)
 app.include_router(walk.router)
+app.include_router(tv.router)
 app.include_router(meteodata.router)
 app.include_router(pollinators.router)
 app.include_router(explore.router)
@@ -144,6 +151,8 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 async def startup():
     await database.connect()
     await database_cache.connect()
+    redis = RedisBackend(aioredis.from_url('redis://redis_cache'))
+    FastAPICache.init(backend=redis, prefix='fastapi-cache')
 
 @app.on_event('shutdown')
 async def shutdown():

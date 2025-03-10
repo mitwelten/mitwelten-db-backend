@@ -15,13 +15,13 @@ networks:
 
 services:
   traefik:
-    image: "traefik:v2.8.8"
+    image: "traefik:v2.11.12"
     networks:
       - mitwelten
     container_name: "traefik"
     command:
       - "--log.level=INFO"
-      - "--api.insecure=true"
+      - "--api"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.http.address=:80"
@@ -32,6 +32,17 @@ services:
       - "--certificatesresolvers.ssl.acme.storage=/letsencrypt/acme.json"
       - "--providers.file.filename=/configs/traefik_tls.yml"
       - "--providers.file.watch=true"
+
+    labels:
+      # Dashboard
+      - "traefik.enable=true"
+      - "traefik.http.services.admin.loadbalancer.server.port=443"
+      - "traefik.http.routers.traefik.rule=Host(`v000744.fhnw.ch`)"
+      - "traefik.http.routers.traefik.service=api@internal"
+      - "traefik.http.routers.traefik.middlewares=admin"
+      - "traefik.http.routers.traefik.tls.certresolver=ssl"
+      - "traefik.http.routers.traefik.entrypoints=https"
+      - "traefik.http.middlewares.admin.basicauth.users=${MANAGER_API_BASIC_AUTH_USER_PW}"
 
     ports:
       - "80:80"
@@ -78,8 +89,109 @@ services:
       - "traefik.http.routers.kc.entrypoints=https"
       - "traefik.http.routers.kc.tls.certresolver=ssl"
 
+  pushprox:
+    container_name: pushprox
+    image: prom/pushprox:master
+    networks:
+      - mitwelten
+    restart: unless-stopped
+    entrypoint: ["/app/pushprox-proxy", "--web.listen-address=:8082"]
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.services.pushprox.loadbalancer.server.port=8082"
+
+      # for http
+      - "traefik.http.routers.pushprox_insecure.rule=Host(`push.mitwelten.org`)"
+      - "traefik.http.routers.pushprox_insecure.entrypoints=http"
+
+      # redirect to https
+      - "traefik.http.middlewares.pushprox-https.redirectscheme.scheme=https"
+      - "traefik.http.routers.pushprox_insecure.middlewares=pushprox-https"
+
+      # for https
+      - "traefik.http.routers.pushprox.rule=Host(`push.mitwelten.org`)"
+      - "traefik.http.routers.pushprox.entrypoints=https"
+      - "traefik.http.routers.pushprox.tls.certresolver=ssl"
+
+  labelstudio:
+    container_name: labelstudio
+    image: heartexlabs/label-studio:latest
+    networks:
+      - mitwelten
+    restart: unless-stopped
+    volumes:
+      - /opt/label-studio:/label-studio/data
+    environment:
+      # DJANGO_DB: default
+      # POSTGRE_NAME: ${LS_DB_NAME}
+      # POSTGRE_USER: ${LS_DB_USERNAME}
+      # POSTGRE_PASSWORD: ${LS_DB_PASSWORD}
+      # POSTGRE_PORT: ${LS_DB_PORT}
+      # POSTGRE_HOST: ${LS_DB_HOST}
+      LABEL_STUDIO_USERNAME: ${LS_USERNAME}
+      LABEL_STUDIO_PASSWORD: ${LS_PASSWORD}
+      LABEL_STUDIO_DISABLE_SIGNUP_WITHOUT_LINK: "true"
+      S3_ENDPOINT: ${LS_S3_ENDPOINT}
+
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.services.ls.loadbalancer.server.port=8080"
+
+      # for http
+      - "traefik.http.routers.ls_insecure.rule=Host(`label.mitwelten.org`)"
+      - "traefik.http.routers.ls_insecure.entrypoints=http"
+
+      # redirect to https
+      - "traefik.http.middlewares.ls-https.redirectscheme.scheme=https"
+      - "traefik.http.routers.ls_insecure.middlewares=ls-https"
+
+      # for https
+      - "traefik.http.routers.ls.rule=Host(`label.mitwelten.org`)"
+      - "traefik.http.routers.ls.entrypoints=https"
+      - "traefik.http.routers.ls.tls.certresolver=ssl"
+
+  manager-api-v2:
+    image: mitwelten-manager:0.1
+    networks:
+      - mitwelten
+    container_name: mitwelten-manager-api-v2
+    restart: unless-stopped
+    volumes:
+      - /opt/mitwelten-db-backend/services/manager:/app
+      - /opt/mitwelten-db-backend/credentials.py:/app/credentials.py
+    labels:
+      - traefik.enable=true
+      - traefik.http.services.manager_api_v2.loadbalancer.server.port=80
+
+      # http entrypoint
+      - traefik.http.routers.manager_api_v2_http.rule=Host(`data.mitwelten.org`)&&PathPrefix(`/manager/v2/`)
+      - traefik.http.routers.manager_api_v2_http.entrypoints=http
+      # redirect to https
+      - traefik.http.middlewares.manager_api_v2_https.redirectscheme.scheme=https
+      - traefik.http.routers.manager_api_v2_http.middlewares=manager_api_v2_https
+      # https entrypoint
+      - traefik.http.routers.manager_api_v2.rule=Host(`data.mitwelten.org`)&&PathPrefix(`/manager/v2/`)
+      - traefik.http.routers.manager_api_v2.entrypoints=https
+      - traefik.http.routers.manager_api_v2.tls.certresolver=ssl
+      #  middlewares for https
+      - traefik.http.routers.manager_api_v2.middlewares=manager_api_v2_cors,manager_api_v2_stripprefix,manager_api_v2_basic-auth
+
+      # strip prefix /manager/v2
+      - traefik.http.middlewares.manager_api_v2_stripprefix.stripprefix.prefixes=/manager/v2
+
+      # basic auth
+      - traefik.http.middlewares.manager_api_v2_basic-auth.basicauth.users=${MANAGER_API_BASIC_AUTH_USER_PW}
+
+      # CORS
+      - traefik.http.middlewares.manager_api_v2_cors.headers.accesscontrolallowmethods=GET,OPTIONS,PUT,POST,PATCH,DELETE
+      - traefik.http.middlewares.manager_api_v2_cors.headers.accessControlAllowOriginList=*
+      - traefik.http.middlewares.manager_api_v2_cors.headers.accessControlAllowHeaders=*
+      - traefik.http.middlewares.manager_api_v2_cors.headers.accessControlExposeHeaders=*
+      - traefik.http.middlewares.manager_api_v2_cors.headers.accesscontrolmaxage=100
+      - traefik.http.middlewares.manager_api_v2_cors.headers.addvaryheader=true
+
   data-api:
-    image: mitwelten-data-api:3.3
+    image: cr.gitlab.fhnw.ch/mitwelten/docker-infrastructure/mitwelten-data-api:3.8
     networks:
       - mitwelten
     container_name: mitwelten-data-api-v3
@@ -106,6 +218,9 @@ services:
 
       # strip prefix /api/v3
       - traefik.http.middlewares.data_api_v3_stripprefix.stripprefix.prefixes=/api/v3
+
+      # enable compression
+      - traefik.http.middlewares.data_api_v3_compress.compress=true
 
       # CORS
       - traefik.http.middlewares.data_api_v3_cors.headers.accesscontrolallowmethods=GET,OPTIONS,PUT,POST,PATCH,DELETE
@@ -139,6 +254,33 @@ services:
       - "traefik.http.routers.deployment-frontend.rule=Host(`deploy.mitwelten.org`)"
       - "traefik.http.routers.deployment-frontend.entrypoints=https"
       - "traefik.http.routers.deployment-frontend.tls.certresolver=ssl"
+
+    restart: always
+
+  wildcam-tv:
+    image: nginx:alpine
+    networks:
+      - mitwelten
+    container_name: "wildcam-tv"
+    volumes:
+      - "/opt/wildcam-tv/public:/usr/share/nginx/html"
+      - "/opt/wildcam-tv/nginx.conf:/etc/nginx/conf.d/default.conf"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.services.wildcam-tv.loadbalancer.server.port=80"
+
+      # for https
+      - "traefik.http.routers.wildcam-tv_insecure.rule=Host(`tv.mitwelten.org`)"
+      - "traefik.http.routers.wildcam-tv_insecure.entrypoints=http"
+
+      # redirect to https
+      - "traefik.http.middlewares.wildcam-tv-https.redirectscheme.scheme=https"
+      - "traefik.http.routers.wildcam-tv_insecure.middlewares=wildcam-tv-https"
+
+      # for https
+      - "traefik.http.routers.wildcam-tv.rule=Host(`tv.mitwelten.org`)"
+      - "traefik.http.routers.wildcam-tv.entrypoints=https"
+      - "traefik.http.routers.wildcam-tv.tls.certresolver=ssl"
 
     restart: always
 
@@ -193,6 +335,37 @@ services:
       - "traefik.http.routers.pipeline-frontend.rule=Host(`detect.mitwelten.org`)"
       - "traefik.http.routers.pipeline-frontend.entrypoints=https"
       - "traefik.http.routers.pipeline-frontend.tls.certresolver=ssl"
+
+    restart: always
+
+  batdetect-gui:
+    image: cr.gitlab.fhnw.ch/mitwelten/docker-infrastructure/mitwelten-batdetect-gui:1.3
+    networks:
+      - mitwelten
+    container_name: batdetect-gui
+    volumes:
+      - /opt/batdetect/annotations:/batdetect2_gui/annotations
+      - /opt/batdetect/spectrogram:/batdetect2_gui/data
+    labels:
+      - traefik.enable=true
+      - traefik.http.services.batdetect_gui.loadbalancer.server.port=8000
+      - traefik.http.middlewares.batdetect_gui-auth.basicauth.users=${MITWELTEN_BATS_BASIC_AUTH_USER_PW}
+
+      # for http
+      - traefik.http.routers.batdetect_gui_insecure.rule=Host(`bats.mitwelten.org`)
+      - traefik.http.routers.batdetect_gui_insecure.entrypoints=http
+
+      # redirect to https
+      - traefik.http.middlewares.batdetect_gui-https.redirectscheme.scheme=https
+      - traefik.http.routers.batdetect_gui_insecure.middlewares=batdetect_gui-https
+
+      # for https
+      - traefik.http.routers.batdetect_gui.rule=Host(`bats.mitwelten.org`)
+      - traefik.http.routers.batdetect_gui.entrypoints=https
+      - traefik.http.routers.batdetect_gui.tls.certresolver=ssl
+
+      #  middlewares for https
+      - traefik.http.routers.batdetect_gui.middlewares=batdetect_gui-auth
 
     restart: always
 
@@ -491,6 +664,11 @@ services:
       - mitwelten
     restart: always
     container_name: mitwelten-discover
+    environment:
+      - KC_SERVER_URL=https://auth.mitwelten.org/auth/
+      - KC_CLIENT_ID=discover
+      - KC_REALM_NAME=mitwelten
+      - DOMAIN_NAME=https://discover.mitwelten.org
     labels:
       - "traefik.enable=true"
       - "traefik.http.services.mwdiscover.loadbalancer.server.port=80"

@@ -76,7 +76,7 @@ async def list_datasets(
     SELECT p.param_id, p.unit, p.description, s.station_id, s.station_name, s.data_src, md.last_measurement
     FROM {crd.db_cache.schema}.parameter p
     JOIN (
-    SELECT 
+    SELECT
         DISTINCT ON (param_id, station_id)
         max(ts) as last_measurement,
         param_id,
@@ -110,7 +110,7 @@ async def get_measurements(
     aggregation_str = aggregation_mapping.get(aggregation)
     if aggregation_str is None:
         raise HTTPException(status_code=422, detail=f'Invalid aggregation method: {aggregation}')
-    
+
     time_from_condition = "AND ts >= :time_from" if time_from else ""
     time_to_condition = "AND ts <= :time_to" if time_to else ""
     query = text(
@@ -152,7 +152,7 @@ async def get_measurements_tod(
     aggregation_str = aggregation_mapping.get(aggregation)
     if aggregation_str is None:
         raise HTTPException(status_code=422, detail=f'Invalid aggregation method: {aggregation}')
-    
+
     time_from_condition = "AND ts >= :time_from" if time_from else ""
     time_to_condition = "AND ts <= :time_to" if time_to else ""
     query = text(
@@ -194,7 +194,7 @@ async def get_summary(
     time_to_condition = "AND ts <= :time_to" if time_to else ""
     query = text(
     f"""
-    SELECT 
+    SELECT
     max(value) as maximum,
     min(value) as minimum,
     avg(value) as mean,
