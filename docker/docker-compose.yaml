@@ -115,7 +115,7 @@ services:
 
   labelstudio:
     container_name: labelstudio
-    image: cr.gitlab.fhnw.ch/mitwelten/docker-infrastructure/mitwelten-labelstudio:1.0
+    image: heartexlabs/label-studio:latest
     networks:
       - mitwelten
     restart: unless-stopped
