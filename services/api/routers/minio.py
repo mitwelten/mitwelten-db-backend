@@ -41,6 +41,15 @@ bucket_exists = storage_scaled.bucket_exists(crd.minio_scaled.bucket)
 if not bucket_exists:
     print(f'Bucket {crd.minio_scaled.bucket} does not exist.')
 
+storage_web = Minio(
+    crd.minio_web.host,
+    access_key=crd.minio_web.access_key,
+    secret_key=crd.minio_web.secret_key,
+)
+bucket_exists = storage_web.bucket_exists(crd.minio_web.bucket)
+if not bucket_exists:
+    print(f'Bucket {crd.minio_web.bucket} does not exist.')
+
 def stream_minio_response(response):
     try:
         while True:
@@ -82,7 +91,7 @@ async def get_walk_download(request: Request, object_name: str):
     else:
         # walk/public/... is whitelisted, and on unscaled server/bucket
         try:
-            response = storage.get_object(crd.minio.bucket, object_name)
+            response = storage_web.get_object(crd.minio_web.bucket, object_name)
             return StreamingResponse(stream_minio_response(response), headers=response.headers)
         except S3Error as e:
             if e.code == 'NoSuchKey':
@@ -110,7 +119,7 @@ async def get_discover_file(object_name: str):
     '''
     object_name = f'discover/{object_name}'
     try:
-        response = storage.get_object(crd.minio.bucket, object_name)
+        response = storage_web.get_object(crd.minio_web.bucket, object_name)
         return StreamingResponse(stream_minio_response(response), headers=response.headers)
     except S3Error as e:
         if e.code == 'NoSuchKey':
@@ -157,7 +166,7 @@ async def post_discover_upload(file: UploadFile):
     object_name = f'discover/{uuid}/{file.filename}'
     # make sure object doesn't already exist
     try:
-        stat = storage.stat_object(crd.minio.bucket, object_name)
+        stat = storage_web.stat_object(crd.minio_web.bucket, object_name)
     except S3Error as e:
         if e.code != 'NoSuchKey':
             raise e
@@ -165,7 +174,7 @@ async def post_discover_upload(file: UploadFile):
         return { 'object_name': stat.object_name, 'etag': stat.etag }
 
     # upload original size image
-    upload = storage.put_object(crd.minio.bucket, object_name, file.file, length=-1, part_size=10*1024*1024)
+    upload = storage_web.put_object(crd.minio_web.bucket, object_name, file.file, length=-1, part_size=10*1024*1024)
 
     # if file is an image, create and upload thumbnail image
     if file.content_type in supported_image_formats:
@@ -180,7 +189,7 @@ async def post_discover_upload(file: UploadFile):
             image.save(buffer, format=image_format)
             buffer.seek(0)
             thumbnail_name = get_thumbnail_name(object_name, image_format)
-            storage.put_object(crd.minio.bucket, thumbnail_name, buffer, length=-1, part_size=10*1024*1024)
+            storage_web.put_object(crd.minio_web.bucket, thumbnail_name, buffer, length=-1, part_size=10*1024*1024)
         except Exception:
             # thumbnail is optional, no action required
             pass
@@ -191,7 +200,7 @@ async def post_discover_upload(file: UploadFile):
 async def get_imagestack_from_s3(walk_id):
     object_name = f'walk/public/{walk_id}.json'
     try:
-        resp = storage.get_object(crd.minio.bucket, object_name)
+        resp = storage_web.get_object(crd.minio_web.bucket, object_name)
         return json.loads(resp.data)
     except:
         raise HTTPException(status_code=404, detail='File not found')
@@ -200,7 +209,7 @@ async def get_imagestack_from_s3(walk_id):
 async def get_imagestacks_from_s3():
     object_name = f'walk/public/'
     try:
-        resp = storage.list_objects(crd.minio.bucket, object_name)
+        resp = storage_web.list_objects(crd.minio_web.bucket, object_name)
         return list(
             map(lambda p: {'path': p.object_name, 'updated_at': p.last_modified},
                 filter(lambda o: path.splitext(o._object_name)[1] == '.json', resp)))
