@@ -1,0 +1,34 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: Mitwelten Services Backend
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Cedric
+    family-names: Spindler
+    email: cedric.spindler@fhnw.ch
+    affiliation: FHNW
+    orcid: 'https://orcid.org/0000-0001-5080-0848'
+  - given-names: Timeo
+    family-names: Wullschleger
+    email: timeo.wullschleger@fhnw.ch
+    affiliation: FHNW
+  - given-names: Andri
+    family-names: Wild
+    email: andri.wild@fhnw.ch
+    affiliation: FHNW
+  - given-names: Thomas
+    family-names: Amberg
+    email: thomas.amberg@fhnw.ch
+    affiliation: FHNW
+repository-code: 'https://github.com/mitwelten/mitwelten-db-backend'
+url: 'https://mitwelten.org'
+abstract: >-
+  Mitwelten Data Services: Services infrastructure for the Mitwelten project,
+  including REST API, database, monitoring and web services.
+license: MIT
+commit: 64e1872a6ac117e4e3b8667fa5960ee597913829
