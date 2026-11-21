@@ -3,7 +3,7 @@ from enum import Enum
 from typing import List, Literal, Optional, Tuple, Union
 
 from asyncpg.types import Range
-from pydantic import BaseModel, Field, PositiveInt, constr
+from pydantic import BaseModel, ConfigDict, Field, PositiveInt, constr, field_serializer
 from sqlalchemy.dialects.postgresql import TSTZRANGE
 
 
@@ -83,10 +83,9 @@ class ImageValidationRequest(BaseModel):
     node_label: str
     timestamp: datetime
 
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.timestamp(),
-        }
+    @field_serializer('timestamp', when_used='json')
+    def serialize_timestamp(self, v: datetime):
+        return v.timestamp()
 
 class ImageValidationResponse(BaseModel):
     hash_match: bool
@@ -110,10 +109,9 @@ class ImageRequest(BaseModel):
     file_size: int
     resolution: Tuple[PositiveInt, PositiveInt]
 
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.timestamp(),
-        }
+    @field_serializer('timestamp', when_used='json')
+    def serialize_timestamp(self, v: datetime):
+        return v.timestamp()
 
 class AudioRequest(BaseModel):
     object_name: str
@@ -136,11 +134,11 @@ class AudioRequest(BaseModel):
     temperature: float
     rec_end_status: str
 
-    class Config:
-        allow_population_by_field_name = True
-        json_encoders = {
-            datetime: lambda v: v.timestamp(),
-        }
+    model_config = ConfigDict(populate_by_name=True)
+
+    @field_serializer('timestamp', when_used='json')
+    def serialize_timestamp(self, v: datetime):
+        return v.timestamp()
 
 class Result(BaseModel):
     result_id: int
@@ -486,8 +484,7 @@ class HotSpot(BaseModel):
     hotspot_type: int = Field(None, alias='type')
     subject: Optional[str] = None
 
-    class Config:
-        allow_population_by_field_name = True
+    model_config = ConfigDict(populate_by_name=True)
 
 class HotspotImage(HotSpot):
     title: str
@@ -558,9 +555,6 @@ class HotspotDataPollinatorsResponse(BaseModel):
     datapoints: List[PollinatorDataPoint]
     summaryOptions: List[ChartSummaryOption]
     chart: str
-
-    class Config:
-        response_model_by_alias = True
 
 class PollinatorTypeEnum(str, Enum):
     fliege = 'fliege'
