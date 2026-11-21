@@ -95,7 +95,7 @@ async def get_pax_hotspots(summary: Optional[int] = Query(1, alias='summary', ex
             func.round(func.max(subquery.c.pax_avg), 1).label('pax_max')).\
         group_by(subquery.c.tag)
     return HotspotDataPaxResponse(
-        datapoints = await database.fetch_all(result),
+        datapoints = [dict(r) for r in await database.fetch_all(result)],
         summaryOptions = options,
         chart = 'bar'
     )
@@ -127,7 +127,7 @@ async def get_pollinator_hotspots(tag_id: int = Query(163, alias='tag', examples
         # having(func.count() > 100) #.\
         # order_by(birdnet_results.c.species, text('month'))
     return HotspotDataBirdsResponse(
-        datapoints = await database.fetch_all(query),
+        datapoints = [dict(r) for r in await database.fetch_all(query)],
         summaryOptions = options,
         chart = 'heatmap'
     )
@@ -158,7 +158,7 @@ async def get_pollinator_hotspots(tag_id: int = Query(136, alias='tag', examples
         group_by(pollinators.c['class'], text('month')).\
         order_by(pollinators.c['class'], text('month'))
     return HotspotDataPollinatorsResponse(
-        datapoints = await database.fetch_all(query),
+        datapoints = [dict(r) for r in await database.fetch_all(query)],
         summaryOptions = options,
         chart = 'heatmap'
     )

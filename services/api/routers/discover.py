@@ -38,7 +38,7 @@ async def get_pollinator_hotspots(
         order_by(pollinators.c['class'], text('month'))
 
     return HotspotDataPollinatorsResponse(
-        datapoints=await database.fetch_all(query),
+        datapoints=[dict(r) for r in await database.fetch_all(query)],
         summaryOptions=[],
         chart='heatmap'
     )
