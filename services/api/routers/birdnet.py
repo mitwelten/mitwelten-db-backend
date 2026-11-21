@@ -20,20 +20,20 @@ router = APIRouter(tags=['inference'])
 # todo: give endOfRecords (select +1, see if array is full)
 # todo: adjustable confidence
 @router.get('/results/', response_model=List[Result])
-async def read_results(offset: int = 0, pagesize: int = Query(1000, gte=0, lte=1000)):
+async def read_results(offset: int = 0, pagesize: int = Query(1000, ge=0, le=1000)):
     query = birdnet_results.select().where(birdnet_results.c.confidence > 0.9).\
         limit(pagesize).offset(offset)
     return await database.fetch_all(query)
 
 # todo: adjustable confidence
 @router.get('/results_full/', response_model=List[ResultFull])
-async def read_results_full(offset: int = 0, pagesize: int = Query(1000, gte=0, lte=1000)):
+async def read_results_full(offset: int = 0, pagesize: int = Query(1000, ge=0, le=1000)):
     query = birdnet_results_file_taxonomy.select().where(birdnet_results.c.confidence > 0.9).\
         limit(pagesize).offset(offset)
     return await database.fetch_all(query)
 
 @router.get('/results_full/{on_date}', response_model=List[ResultFull])
-async def read_results_full_on_date(on_date: date, offset: int = 0, pagesize: int = Query(1000, gte=0, lte=1000)):
+async def read_results_full_on_date(on_date: date, offset: int = 0, pagesize: int = Query(1000, ge=0, le=1000)):
     query = birdnet_results_file_taxonomy.select().where(and_(func.date(birdnet_results_file_taxonomy.c.object_time) == on_date, birdnet_results_file_taxonomy.c.confidence > 0.9)).\
         limit(pagesize).offset(offset)\
         .order_by(birdnet_results_file_taxonomy.c.object_time)
@@ -49,7 +49,7 @@ async def read_results_full(filter: str):
     return results
 
 @router.get('/results_full/grouped/{from_date}', response_model=List[str])
-async def read_grouped_full(from_date: date, offset: int = 0, pagesize: int = Query(1000, gte=0, lte=1000)):
+async def read_grouped_full(from_date: date, offset: int = 0, pagesize: int = Query(1000, ge=0, le=1000)):
     query = select(birdnet_results_file_taxonomy.c.object_name, func.count(birdnet_results_file_taxonomy.c.object_name))\
         .filter(and_(birdnet_results_file_taxonomy.c.confidence > 0.9, birdnet_results_file_taxonomy.c.object_time >= from_date))\
         .group_by(birdnet_results_file_taxonomy.c.object_name, birdnet_results_file_taxonomy.c.object_time)\
