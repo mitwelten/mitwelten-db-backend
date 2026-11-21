@@ -12,7 +12,7 @@ from fastapi.security import HTTPBasic, HTTPBasicCredentials, OAuth2Authorizatio
 from jwcrypto.jwk import JWK
 from jwcrypto.jwt import JWTExpired
 from keycloak import KeycloakOpenID
-from sqlalchemy import func
+from sqlalchemy import Text, cast, func, type_coerce
 from sqlalchemy.types import UserDefinedType
 
 keycloak_openid = KeycloakOpenID(
@@ -128,6 +128,8 @@ def to_inclusive_range(period: Range) -> Range:
 
 class GeometryPoint(UserDefinedType):
 
+    cache_ok = True
+
     def get_col_spec(self):
         return 'POINT'
 
@@ -135,7 +137,10 @@ class GeometryPoint(UserDefinedType):
         return func.Point(bindvalue, type_=self)
 
     def column_expression(self, col):
-        return col
+        # databases >= 0.8 skips result processors for values asyncpg already decoded (like Point),
+        # so select the point as text '(x,y)' instead
+        # and turn it into {'lat': x, 'lon': y} in result_processor below.
+        return type_coerce(cast(col, Text), self)
 
     def bind_processor(self, dialect):
         def process(value):
@@ -150,6 +155,9 @@ class GeometryPoint(UserDefinedType):
         def process(value):
             if value is None:
                 return None
+            if isinstance(value, str):
+                x, y = value.strip('()').split(',')
+                return {'lat': float(x), 'lon': float(y)}
             assert isinstance(value, PgPoint)
             return {'lat': float(value.x), 'lon': float(value.y)}
         return process
