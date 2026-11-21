@@ -20,20 +20,20 @@ router = APIRouter(tags=['inference'])
 # todo: give endOfRecords (select +1, see if array is full)
 # todo: adjustable confidence
 @router.get('/results/', response_model=List[Result])
-async def read_results(offset: int = 0, pagesize: int = Query(1000, gte=0, lte=1000)):
+async def read_results(offset: int = 0, pagesize: int = Query(1000, ge=0, le=1000)):
     query = birdnet_results.select().where(birdnet_results.c.confidence > 0.9).\
         limit(pagesize).offset(offset)
     return await database.fetch_all(query)
 
 # todo: adjustable confidence
 @router.get('/results_full/', response_model=List[ResultFull])
-async def read_results_full(offset: int = 0, pagesize: int = Query(1000, gte=0, lte=1000)):
+async def read_results_full(offset: int = 0, pagesize: int = Query(1000, ge=0, le=1000)):
     query = birdnet_results_file_taxonomy.select().where(birdnet_results.c.confidence > 0.9).\
         limit(pagesize).offset(offset)
     return await database.fetch_all(query)
 
 @router.get('/results_full/{on_date}', response_model=List[ResultFull])
-async def read_results_full_on_date(on_date: date, offset: int = 0, pagesize: int = Query(1000, gte=0, lte=1000)):
+async def read_results_full_on_date(on_date: date, offset: int = 0, pagesize: int = Query(1000, ge=0, le=1000)):
     query = birdnet_results_file_taxonomy.select().where(and_(func.date(birdnet_results_file_taxonomy.c.object_time) == on_date, birdnet_results_file_taxonomy.c.confidence > 0.9)).\
         limit(pagesize).offset(offset)\
         .order_by(birdnet_results_file_taxonomy.c.object_time)
@@ -42,14 +42,14 @@ async def read_results_full_on_date(on_date: date, offset: int = 0, pagesize: in
 
 @router.get('/results_full/single/{filter:path}', response_model=List[ResultsGrouped])
 async def read_results_full(filter: str):
-    query = select([birdnet_results_file_taxonomy.c.species, birdnet_results_file_taxonomy.c.time_start_relative, birdnet_results_file_taxonomy.c.duration, birdnet_results_file_taxonomy.c.image_url])\
+    query = select(birdnet_results_file_taxonomy.c.species, birdnet_results_file_taxonomy.c.time_start_relative, birdnet_results_file_taxonomy.c.duration, birdnet_results_file_taxonomy.c.image_url)\
             .where(and_(birdnet_results_file_taxonomy.c.confidence > 0.9, birdnet_results_file_taxonomy.c.object_name == filter))\
             .group_by(birdnet_results_file_taxonomy.c.species, birdnet_results_file_taxonomy.c.time_start_relative, birdnet_results_file_taxonomy.c.duration, birdnet_results_file_taxonomy.c.image_url)
     results = await database.fetch_all(query)
     return results
 
 @router.get('/results_full/grouped/{from_date}', response_model=List[str])
-async def read_grouped_full(from_date: date, offset: int = 0, pagesize: int = Query(1000, gte=0, lte=1000)):
+async def read_grouped_full(from_date: date, offset: int = 0, pagesize: int = Query(1000, ge=0, le=1000)):
     query = select(birdnet_results_file_taxonomy.c.object_name, func.count(birdnet_results_file_taxonomy.c.object_name))\
         .filter(and_(birdnet_results_file_taxonomy.c.confidence > 0.9, birdnet_results_file_taxonomy.c.object_time >= from_date))\
         .group_by(birdnet_results_file_taxonomy.c.object_name, birdnet_results_file_taxonomy.c.object_time)\
@@ -100,8 +100,8 @@ async def detection_dates_by_id(
     identifier: int,
     conf: float = 0.9,
     bucket_width:str = "1d",
-    time_from: Optional[datetime] = Query(None, alias='from', example='2021-09-01T00:00:00.000Z'),
-    time_to: Optional[datetime] = Query(None, alias='to', example='2022-08-31T23:59:59.999Z'),
+    time_from: Optional[datetime] = Query(None, alias='from', examples=['2021-09-01T00:00:00.000Z']),
+    time_to: Optional[datetime] = Query(None, alias='to', examples=['2022-08-31T23:59:59.999Z']),
     deployment_ids:List[int] = Query(default=None),
     distinctspecies: bool = False,
     ) -> TimeSeriesResult:
@@ -142,18 +142,17 @@ async def detection_dates_by_id(
     if deployment_ids:
         query = query.bindparams( bindparam('deployment_ids', value=deployment_ids, expanding=True))
     results = await database.fetch_all(query)
-    response = TimeSeriesResult(bucket=[],detections=[])
-    for result in results:
-        response.bucket.append(result.bucket)
-        response.detections.append(result.detections)
-    return response
+    return TimeSeriesResult(
+        bucket=[result.bucket for result in results],
+        detections=[result.detections for result in results],
+    )
 
 @router.get('/birds/{identifier}/location' , response_model=List[DetectionLocationResult])
 async def detection_locations_by_id(
     identifier: int,
     conf: float = 0.9,
-    time_from: Optional[datetime] = Query(None, alias='from', example='2021-09-01T00:00:00.000Z'),
-    time_to: Optional[datetime] = Query(None, alias='to', example='2022-08-31T23:59:59.999Z'),
+    time_from: Optional[datetime] = Query(None, alias='from', examples=['2021-09-01T00:00:00.000Z']),
+    time_to: Optional[datetime] = Query(None, alias='to', examples=['2022-08-31T23:59:59.999Z']),
     distinctspecies: bool = False,
     deployment_ids:List[int] = Query(default=None),
     ) -> List[DetectionLocationResult]:
@@ -212,8 +211,8 @@ async def detection_locations_by_id(
 async def detection_count(
     identifier: int,
     conf: float = 0.9,
-    time_from: Optional[datetime] = Query(None, alias='from', example='2021-09-01T00:00:00.000Z'),
-    time_to: Optional[datetime] = Query(None, alias='to', example='2022-08-31T23:59:59.999Z'),
+    time_from: Optional[datetime] = Query(None, alias='from', examples=['2021-09-01T00:00:00.000Z']),
+    time_to: Optional[datetime] = Query(None, alias='to', examples=['2022-08-31T23:59:59.999Z']),
     ):
     time_from_condition = "AND (f.time + interval '1 second' * r.time_start) >= :time_from" if time_from else ""
     time_to_condition = "AND (f.time + interval '1 second' * r.time_start) <= :time_to" if time_to else ""
@@ -254,8 +253,8 @@ async def detection_time_of_day(
     identifier: int,
     conf: float = 0.9,
     bucket_width_m:int = 60,
-    time_from: Optional[datetime] = Query(None, alias='from', example='2021-09-01T00:00:00.000Z'),
-    time_to: Optional[datetime] = Query(None, alias='to', example='2022-08-31T23:59:59.999Z'),
+    time_from: Optional[datetime] = Query(None, alias='from', examples=['2021-09-01T00:00:00.000Z']),
+    time_to: Optional[datetime] = Query(None, alias='to', examples=['2022-08-31T23:59:59.999Z']),
     distinctspecies: bool = False,
     deployment_ids:List[int] = Query(default=None),
 ):
@@ -382,8 +381,8 @@ async def species_count_by_parent_taxon(
 @router.get('/birds/detectionlist')
 async def get_detected_species_list(
     conf: float = 0.9,
-    time_from: Optional[datetime] = Query(None, alias='from', example='2021-09-01T00:00:00.000Z'),
-    time_to: Optional[datetime] = Query(None, alias='to', example='2022-08-31T23:59:59.999Z'),
+    time_from: Optional[datetime] = Query(None, alias='from', examples=['2021-09-01T00:00:00.000Z']),
+    time_to: Optional[datetime] = Query(None, alias='to', examples=['2022-08-31T23:59:59.999Z']),
     deployment_ids:List[int] = Query(default=None),
     limit: int = 1000,
     ):

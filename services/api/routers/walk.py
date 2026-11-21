@@ -76,8 +76,8 @@ def get_community_hotspots():
     return response.json()
 
 @router.get('/walk/data-hotspots/pax', response_model=HotspotDataPaxResponse)
-async def get_pax_hotspots(summary: Optional[int] = Query(1, alias='summary', example=1),
-                           tag_ids: Optional[List[int]] = Query([136, 137], alias='tag', example='tag=136&tag=137')):
+async def get_pax_hotspots(summary: Optional[int] = Query(1, alias='summary', examples=[1]),
+                           tag_ids: Optional[List[int]] = Query([136, 137], alias='tag', examples=['tag=136&tag=137'])):
     interval = ['2023-06-16', '2023-09-01'] if summary == 1 else ['2024-06-16', '2024-09-01']
     options = [
         {'label': 'Sommer 2023', 'value': 1},
@@ -87,7 +87,7 @@ async def get_pax_hotspots(summary: Optional[int] = Query(1, alias='summary', ex
         outerjoin(deployments).outerjoin(mm_tags_deployments).outerjoin(tags).\
         where(tags.c.tag_id.in_(tag_ids)).\
         where(between(data_pax.c.time, datetime.fromisoformat(interval[0]), datetime.fromisoformat(interval[1]))).\
-        group_by(tags.c.name, text('date(time at time zone \'UTC\')'))
+        group_by(tags.c.name, text('date(time at time zone \'UTC\')')).subquery()
     result = select(subquery.c.tag,
             func.round(func.avg(subquery.c.pax_avg), 1).label('pax_avg'),
             func.round(func.stddev(subquery.c.pax_avg), 1).label('pax_sdev'),
@@ -95,14 +95,14 @@ async def get_pax_hotspots(summary: Optional[int] = Query(1, alias='summary', ex
             func.round(func.max(subquery.c.pax_avg), 1).label('pax_max')).\
         group_by(subquery.c.tag)
     return HotspotDataPaxResponse(
-        datapoints = await database.fetch_all(result),
+        datapoints = [dict(r) for r in await database.fetch_all(result)],
         summaryOptions = options,
         chart = 'bar'
     )
 
 @router.get('/walk/data-hotspots/birds', response_model=HotspotDataBirdsResponse)
-async def get_pollinator_hotspots(tag_id: int = Query(163, alias='tag', example='tag=163'),
-                           summary: Optional[int] = Query(1, alias='summary', example=1)):
+async def get_pollinator_hotspots(tag_id: int = Query(163, alias='tag', examples=['tag=163']),
+                           summary: Optional[int] = Query(1, alias='summary', examples=[1])):
 
     options = [
         {'label': 'Auenwald', 'value': 163},
@@ -127,14 +127,14 @@ async def get_pollinator_hotspots(tag_id: int = Query(163, alias='tag', example=
         # having(func.count() > 100) #.\
         # order_by(birdnet_results.c.species, text('month'))
     return HotspotDataBirdsResponse(
-        datapoints = await database.fetch_all(query),
+        datapoints = [dict(r) for r in await database.fetch_all(query)],
         summaryOptions = options,
         chart = 'heatmap'
     )
 
 @router.get('/walk/data-hotspots/pollinators', response_model=HotspotDataPollinatorsResponse)
-async def get_pollinator_hotspots(tag_id: int = Query(136, alias='tag', example='tag=136'),
-                           summary: Optional[int] = Query(1, alias='summary', example=1)):
+async def get_pollinator_hotspots(tag_id: int = Query(136, alias='tag', examples=['tag=136']),
+                           summary: Optional[int] = Query(1, alias='summary', examples=[1])):
 
     # TODO: decide for summary options: years, or locations?
     # for now, the summary options are the locations
@@ -158,7 +158,7 @@ async def get_pollinator_hotspots(tag_id: int = Query(136, alias='tag', example=
         group_by(pollinators.c['class'], text('month')).\
         order_by(pollinators.c['class'], text('month'))
     return HotspotDataPollinatorsResponse(
-        datapoints = await database.fetch_all(query),
+        datapoints = [dict(r) for r in await database.fetch_all(query)],
         summaryOptions = options,
         chart = 'heatmap'
     )
@@ -177,10 +177,10 @@ async def get_walk():
 async def upsert_walk(body: Walk) -> None:
     if hasattr(body, 'walk_id') and body.walk_id != None:
         return await database.execute(update(walk).where(walk.c.walk_id == body.walk_id).\
-            values({**body.dict(exclude_none=True, by_alias=True), walk.c.updated_at: current_timestamp()}).\
+            values({**body.model_dump(exclude_none=True, by_alias=True), walk.c.updated_at: current_timestamp()}).\
             returning(walk.c.walk_id))
     else:
-        return await database.execute(insert(walk).values(body.dict(exclude_none=True, by_alias=True)).\
+        return await database.execute(insert(walk).values(body.model_dump(exclude_none=True, by_alias=True)).\
             returning(walk.c.walk_id))
 
 @router.delete('/walk/{walk_id}', response_model=None, dependencies=[Depends(AuthenticationChecker())])

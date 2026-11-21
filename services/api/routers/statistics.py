@@ -17,8 +17,8 @@ router = APIRouter(tags=['statistics'])
 
 @router.get('/statistics/audio/total_duration')
 async def get_total_recording_duration(
-    time_from: Optional[datetime] = Query(None, alias='from', example='2021-09-01T00:00:00.000Z'),
-    time_to: Optional[datetime] = Query(None, alias='to', example='2022-08-31T23:59:59.999Z'),
+    time_from: Optional[datetime] = Query(None, alias='from', examples=['2021-09-01T00:00:00.000Z']),
+    time_to: Optional[datetime] = Query(None, alias='to', examples=['2022-08-31T23:59:59.999Z']),
     deployment_ids:List[int] = Query(default=None),
     ):
     if not all(c is None for c in[time_from,time_to, deployment_ids]):
@@ -51,8 +51,8 @@ async def get_total_recording_duration(
 
 @router.get('/statistics/audio/daily_recordings')
 async def get_recording_duration_per_day(
-    time_from: Optional[datetime] = Query(None, alias='from', example='2021-09-01T00:00:00.000Z'),
-    time_to: Optional[datetime] = Query(None, alias='to', example='2022-08-31T23:59:59.999Z'),
+    time_from: Optional[datetime] = Query(None, alias='from', examples=['2021-09-01T00:00:00.000Z']),
+    time_to: Optional[datetime] = Query(None, alias='to', examples=['2022-08-31T23:59:59.999Z']),
     deployment_ids:List[int] = Query(default=None),
     ):
     if not all(c is None for c in[time_from,time_to, deployment_ids]):
@@ -89,8 +89,8 @@ async def get_recording_duration_per_day(
 
 @router.get('/statistics/image/count')
 async def get_total_image_count(
-    time_from: Optional[datetime] = Query(None, alias='from', example='2021-09-01T00:00:00.000Z'),
-    time_to: Optional[datetime] = Query(None, alias='to', example='2022-08-31T23:59:59.999Z'),
+    time_from: Optional[datetime] = Query(None, alias='from', examples=['2021-09-01T00:00:00.000Z']),
+    time_to: Optional[datetime] = Query(None, alias='to', examples=['2022-08-31T23:59:59.999Z']),
     deployment_ids:List[int] = Query(default=None),
     ):
     if not all(c is None for c in[time_from,time_to, deployment_ids]):
@@ -122,8 +122,8 @@ async def get_total_image_count(
 
 @router.get('/statistics/image/daily_image_count')
 async def get_image_count_per_day(
-    time_from: Optional[datetime] = Query(None, alias='from', example='2021-09-01T00:00:00.000Z'),
-    time_to: Optional[datetime] = Query(None, alias='to', example='2022-08-31T23:59:59.999Z'),
+    time_from: Optional[datetime] = Query(None, alias='from', examples=['2021-09-01T00:00:00.000Z']),
+    time_to: Optional[datetime] = Query(None, alias='to', examples=['2022-08-31T23:59:59.999Z']),
     deployment_ids:List[int] = Query(default=None),
     ):
     if not all(c is None for c in[time_from,time_to, deployment_ids]):

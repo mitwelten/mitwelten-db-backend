@@ -5,13 +5,14 @@ from typing import Optional
 
 from api.config import crd
 
-from jose.exceptions import ExpiredSignatureError
 from asyncpg.pgproto.types import Point as PgPoint
 from asyncpg.types import Range
 from fastapi import Depends, Header, HTTPException, status
 from fastapi.security import HTTPBasic, HTTPBasicCredentials, OAuth2AuthorizationCodeBearer
+from jwcrypto.jwk import JWK
+from jwcrypto.jwt import JWTExpired
 from keycloak import KeycloakOpenID
-from sqlalchemy import func
+from sqlalchemy import Text, cast, func, type_coerce
 from sqlalchemy.types import UserDefinedType
 
 keycloak_openid = KeycloakOpenID(
@@ -27,32 +28,39 @@ crd.oidc.KC_PUBLIC_KEY = (
     + '\n-----END PUBLIC KEY-----'
 )
 
+kc_public_key = JWK.from_pem(crd.oidc.KC_PUBLIC_KEY.encode())
+
 oauth2_scheme = OAuth2AuthorizationCodeBearer(
     authorizationUrl=f'{crd.oidc.KC_SERVER_URL}realms/{crd.oidc.KC_REALM_NAME}/protocol/openid-connect/auth',
     tokenUrl=f'{crd.oidc.KC_SERVER_URL}realms/{crd.oidc.KC_REALM_NAME}/protocol/openid-connect/token',
 )
 
+def decode_token(token: str) -> dict:
+    '''Verify signature and expiry (audience is not checked) and return the claims.'''
+    return keycloak_openid.decode_token(token, key=kc_public_key)
+
 def get_user(token: str = Depends(oauth2_scheme)):
     try:
-        auth = keycloak_openid.decode_token(
-            token,
-            key=crd.oidc.KC_PUBLIC_KEY,
-            options={'verify_signature': True, 'verify_aud': False, 'exp': True},
-        )
-        return auth
+        return decode_token(token)
 
-    except ExpiredSignatureError:
+    except JWTExpired:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail='Signature Expired',
         )
-    except:
+    except Exception:
         return None
 
 class AuthenticationChecker:
     def __init__(self, required_roles: list = ['public']) -> None:
         self.required_roles = required_roles
     def __call__(self, user: dict = Depends(get_user)) -> bool:
+        if user is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail='Authentication failed',
+                headers={'WWW-Authenticate': 'Bearer'},
+            )
         for r_perm in self.required_roles:
             if r_perm not in user['realm_access']['roles']:
                 raise HTTPException(
@@ -61,41 +69,25 @@ class AuthenticationChecker:
                 )
         return True
 
-async def check_oid_authentication(token: str = Depends(oauth2_scheme)):
+def _require_role(token: str, role: Optional[str]) -> dict:
     try:
-        auth = keycloak_openid.decode_token(
-            token,
-            key=crd.oidc.KC_PUBLIC_KEY,
-            options={'verify_signature': True, 'verify_aud': False, 'exp': True},
-        )
-        if 'internal' not in auth['realm_access']['roles']:
-            raise
-    except:
+        auth = decode_token(token)
+        roles = auth['realm_access']['roles']
+    except Exception:
+        roles = []
+    if role is None or role not in roles:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail='Authentication failed',
             headers={'WWW-Authenticate': 'Bearer'},
         )
-    else:
-        return auth
+    return auth
+
+async def check_oid_authentication(token: str = Depends(oauth2_scheme)):
+    return _require_role(token, 'internal')
 
 async def check_oid_m2m_authentication(role, token: str = Depends(oauth2_scheme)):
-    try:
-        auth = keycloak_openid.decode_token(
-            token,
-            key=crd.oidc.KC_PUBLIC_KEY,
-            options={'verify_signature': True, 'verify_aud': False, 'exp': True},
-        )
-        if role == None or role not in auth['realm_access']['roles']:
-            raise
-    except:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail='Authentication failed',
-            headers={'WWW-Authenticate': 'Bearer'},
-        )
-    else:
-        return auth
+    return _require_role(token, role)
 
 security = HTTPBasic()
 
@@ -136,6 +128,8 @@ def to_inclusive_range(period: Range) -> Range:
 
 class GeometryPoint(UserDefinedType):
 
+    cache_ok = True
+
     def get_col_spec(self):
         return 'POINT'
 
@@ -143,7 +137,10 @@ class GeometryPoint(UserDefinedType):
         return func.Point(bindvalue, type_=self)
 
     def column_expression(self, col):
-        return col
+        # databases >= 0.8 skips result processors for values asyncpg already decoded (like Point),
+        # so select the point as text '(x,y)' instead
+        # and turn it into {'lat': x, 'lon': y} in result_processor below.
+        return type_coerce(cast(col, Text), self)
 
     def bind_processor(self, dialect):
         def process(value):
@@ -158,6 +155,9 @@ class GeometryPoint(UserDefinedType):
         def process(value):
             if value is None:
                 return None
+            if isinstance(value, str):
+                x, y = value.strip('()').split(',')
+                return {'lat': float(x), 'lon': float(y)}
             assert isinstance(value, PgPoint)
             return {'lat': float(value.x), 'lon': float(value.y)}
         return process

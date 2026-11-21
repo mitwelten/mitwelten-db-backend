@@ -11,6 +11,10 @@ import credentials as crd
 
 router = APIRouter(tags=['explore'])
 
+def json_text(value):
+    '''The database layer decodes json columns, annotations expose them as JSON text.'''
+    return None if value is None else json.dumps(value)
+
 # ------------------------------------------------------------------------------
 # Explore routes
 # ------------------------------------------------------------------------------
@@ -91,7 +95,7 @@ async def get_annotation_list(is_allowed: bool = Depends(AuthenticationChecker()
             updated_at=r.updated_at,
             content=r.content,
             url=r.url,
-            datasets=r.datasets,
+            datasets=json_text(r.datasets),
             full_name=f'{r.first_name} {r.last_name}'
             if r.first_name is not None and r.last_name is not None
             else "Mitwelten User",
@@ -116,7 +120,7 @@ async def get_annotation_by_id(annot_id: int, is_allowed: bool = Depends(Authent
                 updated_at=result.updated_at,
                 content=result.content,
                 url=result.url,
-                datasets=result.datasets,
+                datasets=json_text(result.datasets),
                 full_name=f'{result.first_name} {result.last_name}'
                 if result.first_name is not None and result.last_name is not None
                 else "Mitwelten User",
