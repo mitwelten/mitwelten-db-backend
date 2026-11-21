@@ -207,7 +207,7 @@ class Tag(BaseModel):
     '''
 
     tag_id: Optional[int] = None
-    name: constr(regex=r'\w+')
+    name: constr(pattern=r'^\w+(?:[ :-]+\w+)*$')
 
 class TagStats(Tag):
     '''
@@ -224,7 +224,7 @@ class Node(BaseModel):
     A device deployed in the field, commondly collecting and/or processing data
     '''
     node_id: Optional[int] = None
-    node_label: constr(regex=r'\d{4}-\d{4}') = Field(
+    node_label: constr(pattern=r'^\d{4}-\d{4}$') = Field(
         ...,
         examples=['2323-4242'],
         description='Identifyer, a.k.a _Node ID_, _Node Label_, or _Label_'
@@ -310,7 +310,7 @@ class EnvDatum(BaseModel):
     '''
     type: Literal['env', 'HumiTemp', 'HumiTempMoisture', 'Moisture']
     time: Optional[datetime] = None
-    nodeLabel: Optional[constr(regex=r'\d{4}-\d{4}')] = None
+    nodeLabel: Optional[constr(pattern=r'^\d{4}-\d{4}$')] = None
     voltage: Optional[float] = Field(None, examples=[4.8])
     voltageUnit: Optional[str] = Field(None, examples=['V'])
     temperature: Optional[float] = Field(None, examples=[7.82])
@@ -326,7 +326,7 @@ class PaxDatum(BaseModel):
     '''
     type: Literal['pax', 'Pax']
     time: Optional[datetime] = None
-    nodeLabel: Optional[constr(regex=r'\d{4}-\d{4}')] = None
+    nodeLabel: Optional[constr(pattern=r'^\d{4}-\d{4}$')] = None
     voltage: Optional[float] = Field(None, examples=[4.8])
     voltageUnit: Optional[str] = Field('V', examples=['V'])
     pax: Optional[int] = Field(None, examples=[17])
@@ -343,14 +343,14 @@ class DatumResponse(BaseModel):
 
 class PaxMeasurement(BaseModel):
     time: datetime
-    nodeLabel: Optional[constr(regex=r'\d{4}-\d{4}')] = None
+    nodeLabel: Optional[constr(pattern=r'^\d{4}-\d{4}$')] = None
     deviceEui: Optional[str] = None
     pax: int
     voltage: float
 
 class EnvMeasurement(BaseModel):
     time: datetime
-    nodeLabel: Optional[constr(regex=r'\d{4}-\d{4}')] = None
+    nodeLabel: Optional[constr(pattern=r'^\d{4}-\d{4}$')] = None
     deviceEui: Optional[str] = None
     voltage: float
     temperature: float

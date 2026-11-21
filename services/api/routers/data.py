@@ -20,7 +20,7 @@ router = APIRouter(tags=['data'])
 
 @router.get('/data/{node_label}', response_model=DatumResponse)
 async def list_data(
-    node_label: constr(regex=r'\d{4}-\d{4}'),
+    node_label: constr(pattern=r'^\d{4}-\d{4}$'),
     time_from: Optional[datetime] = Query(None, alias='from', examples=['2022-06-22T18:00:00.000Z']),
     time_to: Optional[datetime] = Query(None, alias='to', examples=['2022-06-22T20:00:00.000Z']),
     limit: Optional[conint(ge=1, le=65536)] = 32768,
