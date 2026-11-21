@@ -190,7 +190,7 @@ class ResultFull(Species):
     species_en: Optional[str] = None
     genus: Optional[str] = None
     family: Optional[str] = None
-    _class: Optional[str] = Field(None, alias='class')
+    class_: Optional[str] = Field(None, alias='class')
     phylum: Optional[str] = None
     kingdom: str
 
