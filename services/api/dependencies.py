@@ -48,7 +48,7 @@ def get_user(token: str = Depends(oauth2_scheme)):
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail='Signature Expired',
         )
-    except:
+    except Exception:
         return None
 
 class AuthenticationChecker:
@@ -69,33 +69,25 @@ class AuthenticationChecker:
                 )
         return True
 
-async def check_oid_authentication(token: str = Depends(oauth2_scheme)):
+def _require_role(token: str, role: Optional[str]) -> dict:
     try:
         auth = decode_token(token)
-        if 'internal' not in auth['realm_access']['roles']:
-            raise
-    except:
+        roles = auth['realm_access']['roles']
+    except Exception:
+        roles = []
+    if role is None or role not in roles:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail='Authentication failed',
             headers={'WWW-Authenticate': 'Bearer'},
         )
-    else:
-        return auth
+    return auth
+
+async def check_oid_authentication(token: str = Depends(oauth2_scheme)):
+    return _require_role(token, 'internal')
 
 async def check_oid_m2m_authentication(role, token: str = Depends(oauth2_scheme)):
-    try:
-        auth = decode_token(token)
-        if role == None or role not in auth['realm_access']['roles']:
-            raise
-    except:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail='Authentication failed',
-            headers={'WWW-Authenticate': 'Bearer'},
-        )
-    else:
-        return auth
+    return _require_role(token, role)
 
 security = HTTPBasic()
 
