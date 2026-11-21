@@ -20,8 +20,8 @@ router = APIRouter(tags=['notes', 'discover'])
 @router.get('/notes', response_model=List[NoteResponse], response_model_exclude_none=True)
 async def list_notes(
     request: Request,
-    time_from: Optional[datetime] = Query(None, alias='from', example='2022-06-22T18:00:00.000Z'),
-    time_to: Optional[datetime] = Query(None, alias='to', example='2022-06-22T20:00:00.000Z'),
+    time_from: Optional[datetime] = Query(None, alias='from', examples=['2022-06-22T18:00:00.000Z']),
+    time_to: Optional[datetime] = Query(None, alias='to', examples=['2022-06-22T20:00:00.000Z']),
 ) -> List[NoteResponse]:
     '''
     ## List all notes

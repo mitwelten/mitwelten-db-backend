@@ -103,8 +103,8 @@ async def get_measurements(
     param_id: str,
     bucket_width:str = "1d",
     aggregation:str = "mean",
-    time_from: Optional[datetime] = Query(None, alias='from', example='2021-09-01T00:00:00.000Z'),
-    time_to: Optional[datetime] = Query(None, alias='to', example='2022-08-31T23:59:59.999Z'),
+    time_from: Optional[datetime] = Query(None, alias='from', examples=['2021-09-01T00:00:00.000Z']),
+    time_to: Optional[datetime] = Query(None, alias='to', examples=['2022-08-31T23:59:59.999Z']),
     is_allowed: bool = Depends(AuthenticationChecker())
 ) -> MeteoMeasurements:
     aggregation_str = aggregation_mapping.get(aggregation)
@@ -145,8 +145,8 @@ async def get_measurements_tod(
     param_id: str,
     bucket_width_m:int = 30,
     aggregation:str = "mean",
-    time_from: Optional[datetime] = Query(None, alias='from', example='2021-09-01T00:00:00.000Z'),
-    time_to: Optional[datetime] = Query(None, alias='to', example='2022-08-31T23:59:59.999Z'),
+    time_from: Optional[datetime] = Query(None, alias='from', examples=['2021-09-01T00:00:00.000Z']),
+    time_to: Optional[datetime] = Query(None, alias='to', examples=['2022-08-31T23:59:59.999Z']),
     is_allowed: bool = Depends(AuthenticationChecker())
 )-> MeteoMeasurementTimeOfDay:
     aggregation_str = aggregation_mapping.get(aggregation)
@@ -186,8 +186,8 @@ async def get_measurements_tod(
 async def get_summary(
     station_id: str,
     param_id: str,
-    time_from: Optional[datetime] = Query(None, alias='from', example='2021-09-01T00:00:00.000Z'),
-    time_to: Optional[datetime] = Query(None, alias='to', example='2022-08-31T23:59:59.999Z'),
+    time_from: Optional[datetime] = Query(None, alias='from', examples=['2021-09-01T00:00:00.000Z']),
+    time_to: Optional[datetime] = Query(None, alias='to', examples=['2022-08-31T23:59:59.999Z']),
     is_allowed: bool = Depends(AuthenticationChecker())
 ) -> MeteoSummary:
     time_from_condition = "AND ts >= :time_from" if time_from else ""

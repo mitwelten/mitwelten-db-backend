@@ -18,8 +18,8 @@ router = APIRouter(tags=['gbif'])
 async def gbif_detection_dates_by_id(
     identifier: int,
     bucket_width:str = "1d",
-    time_from: Optional[datetime] = Query(None, alias='from', example='2021-09-01T00:00:00.000Z'),
-    time_to: Optional[datetime] = Query(None, alias='to', example='2022-08-31T23:59:59.999Z'),
+    time_from: Optional[datetime] = Query(None, alias='from', examples=['2021-09-01T00:00:00.000Z']),
+    time_to: Optional[datetime] = Query(None, alias='to', examples=['2022-08-31T23:59:59.999Z']),
     ) -> TimeSeriesResult:
     time_from_condition = "AND eventdate >= :time_from" if time_from else ""
     time_to_condition = "AND eventdate <= :time_to" if time_to else ""
@@ -58,8 +58,8 @@ async def gbif_detection_dates_by_id(
 @router.get('/gbif/{identifier}/location' , response_model=List[DetectionsByLocation])
 async def gbif_detection_locations_by_id(
     identifier: int,
-    time_from: Optional[datetime] = Query(None, alias='from', example='2021-09-01T00:00:00.000Z'),
-    time_to: Optional[datetime] = Query(None, alias='to', example='2022-08-31T23:59:59.999Z'),
+    time_from: Optional[datetime] = Query(None, alias='from', examples=['2021-09-01T00:00:00.000Z']),
+    time_to: Optional[datetime] = Query(None, alias='to', examples=['2022-08-31T23:59:59.999Z']),
     ) -> List[DetectionsByLocation]:
     time_from_condition = "AND eventdate >= :time_from" if time_from else ""
     time_to_condition = "AND eventdate <= :time_to" if time_to else ""
@@ -104,8 +104,8 @@ async def gbif_detection_locations_by_id(
 @router.get('/gbif/{identifier}/count')
 async def gbif_detection_count(
     identifier: int,
-    time_from: Optional[datetime] = Query(None, alias='from', example='2021-09-01T00:00:00.000Z'),
-    time_to: Optional[datetime] = Query(None, alias='to', example='2022-08-31T23:59:59.999Z'),
+    time_from: Optional[datetime] = Query(None, alias='from', examples=['2021-09-01T00:00:00.000Z']),
+    time_to: Optional[datetime] = Query(None, alias='to', examples=['2022-08-31T23:59:59.999Z']),
     ):
     time_from_condition = "AND eventdate >= :time_from" if time_from else ""
     time_to_condition = "AND eventdate <= :time_to" if time_to else ""
@@ -140,8 +140,8 @@ async def gbif_detection_count(
 async def gbif_detection_time_of_day(
     identifier: int,
     bucket_width_m:int = 30,
-    time_from: Optional[datetime] = Query(None, alias='from', example='2021-09-01T00:00:00.000Z'),
-    time_to: Optional[datetime] = Query(None, alias='to', example='2022-08-31T23:59:59.999Z'),
+    time_from: Optional[datetime] = Query(None, alias='from', examples=['2021-09-01T00:00:00.000Z']),
+    time_to: Optional[datetime] = Query(None, alias='to', examples=['2022-08-31T23:59:59.999Z']),
 ):
     time_from_condition = "AND eventdate >= :time_from" if time_from else ""
     time_to_condition = "AND eventdate <= :time_to" if time_to else ""
@@ -184,8 +184,8 @@ async def gbif_detection_time_of_day(
 @router.get('/gbif/{identifier}/datasets')
 async def gbif_occurence_datasets(
     identifier: int,
-    time_from: Optional[datetime] = Query(None, alias='from', example='2021-09-01T00:00:00.000Z'),
-    time_to: Optional[datetime] = Query(None, alias='to', example='2022-08-31T23:59:59.999Z'),
+    time_from: Optional[datetime] = Query(None, alias='from', examples=['2021-09-01T00:00:00.000Z']),
+    time_to: Optional[datetime] = Query(None, alias='to', examples=['2022-08-31T23:59:59.999Z']),
     ):
     time_from_condition = "AND eventdate >= :time_from" if time_from else ""
     time_to_condition = "AND eventdate <= :time_to" if time_to else ""
@@ -228,8 +228,8 @@ async def gbif_occurence_datasets(
 @router.get('/gbif/{identifier}/occurences')
 async def gbif_occurences_by_id(
     identifier: int,
-    time_from: Optional[datetime] = Query(None, alias='from', example='2021-09-01T00:00:00.000Z'),
-    time_to: Optional[datetime] = Query(None, alias='to', example='2022-08-31T23:59:59.999Z'),
+    time_from: Optional[datetime] = Query(None, alias='from', examples=['2021-09-01T00:00:00.000Z']),
+    time_to: Optional[datetime] = Query(None, alias='to', examples=['2022-08-31T23:59:59.999Z']),
     limit:int=100,
     offset:int=0,
     with_media_only:bool = False

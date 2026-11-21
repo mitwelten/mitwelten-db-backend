@@ -37,8 +37,8 @@ end timestamp"):
 The pydantic model / type definition also converts this `tstzrange` back into
 the aforementioned format when retrieving (using as a response model).
 '''
-    start: Optional[datetime] = Field(None, example='2021-09-11T22:00:00+00:00', title='Beginning of period (inclusive)')
-    end: Optional[datetime] = Field(None, example='2021-10-14T22:00:00Z', title='End of period (non inclusive)')
+    start: Optional[datetime] = Field(None, examples=['2021-09-11T22:00:00+00:00'], title='Beginning of period (inclusive)')
+    end: Optional[datetime] = Field(None, examples=['2021-10-14T22:00:00Z'], title='End of period (non inclusive)')
 
     def __init__(self, start: datetime, end: datetime):
         self.start = start
@@ -159,8 +159,8 @@ class Point(BaseModel):
     '''
     Coordinate in WGS84 format
     '''
-    lat: float = Field(..., example=47.53484943172696, title='Latitude (WGS84)')
-    lon: float = Field(..., example=7.612519197679952, title='Longitude (WGS84)')
+    lat: float = Field(..., examples=[47.53484943172696], title='Latitude (WGS84)')
+    lon: float = Field(..., examples=[7.612519197679952], title='Longitude (WGS84)')
 
 class ResultFull(Species):
     location: Point
@@ -226,16 +226,16 @@ class Node(BaseModel):
     node_id: Optional[int] = None
     node_label: constr(regex=r'\d{4}-\d{4}') = Field(
         ...,
-        example='2323-4242',
+        examples=['2323-4242'],
         description='Identifyer, a.k.a _Node ID_, _Node Label_, or _Label_'
     )
-    node_type: str = Field(..., example='Audio', description='Desription of function', alias='type')
+    node_type: str = Field(..., examples=['Audio'], description='Desription of function', alias='type')
     serial_number: Optional[str] = None
     description: Optional[str] = Field(
         None,
-        example='Environmental sensor to record humidity, temperature and athmospheric pressure',
+        examples=['Environmental sensor to record humidity, temperature and athmospheric pressure'],
     )
-    platform: Optional[str] = Field(None, example='Audiomoth', description='Hardware platform')
+    platform: Optional[str] = Field(None, examples=['Audiomoth'], description='Hardware platform')
     connectivity: Optional[str] = None
     power: Optional[str] = None
     hardware_version: Optional[str] = None
@@ -292,7 +292,7 @@ class File(BaseModel):
     File uploaded through front end to S3, associated to a note
     '''
     id: Optional[int] = None
-    type: str = Field(title='MIME type', example='application/pdf')
+    type: str = Field(title='MIME type', examples=['application/pdf'])
     name: str = Field(title='File name')
     object_name: constr(strip_whitespace=True) = Field(
         title='Link to S3 object',
@@ -311,14 +311,14 @@ class EnvDatum(BaseModel):
     type: Literal['env', 'HumiTemp', 'HumiTempMoisture', 'Moisture']
     time: Optional[datetime] = None
     nodeLabel: Optional[constr(regex=r'\d{4}-\d{4}')] = None
-    voltage: Optional[float] = Field(None, example=4.8)
-    voltageUnit: Optional[str] = Field(None, example='V')
-    temperature: Optional[float] = Field(None, example=7.82)
-    temperatureUnit: Optional[str] = Field('°C', example='°C')
-    humidity: Optional[float] = Field(None, example=93.78)
-    humidityUnit: Optional[str] = Field('%', example='%')
-    moisture: Optional[float] = Field(None, example=2.6)
-    moistureUnit: Optional[str] = Field('g/m³', example='g/m³')
+    voltage: Optional[float] = Field(None, examples=[4.8])
+    voltageUnit: Optional[str] = Field(None, examples=['V'])
+    temperature: Optional[float] = Field(None, examples=[7.82])
+    temperatureUnit: Optional[str] = Field('°C', examples=['°C'])
+    humidity: Optional[float] = Field(None, examples=[93.78])
+    humidityUnit: Optional[str] = Field('%', examples=['%'])
+    moisture: Optional[float] = Field(None, examples=[2.6])
+    moistureUnit: Optional[str] = Field('g/m³', examples=['g/m³'])
 
 class PaxDatum(BaseModel):
     '''
@@ -327,10 +327,10 @@ class PaxDatum(BaseModel):
     type: Literal['pax', 'Pax']
     time: Optional[datetime] = None
     nodeLabel: Optional[constr(regex=r'\d{4}-\d{4}')] = None
-    voltage: Optional[float] = Field(None, example=4.8)
-    voltageUnit: Optional[str] = Field('V', example='V')
-    pax: Optional[int] = Field(None, example=17)
-    paxUnit: Optional[str] = Field(None, example='')
+    voltage: Optional[float] = Field(None, examples=[4.8])
+    voltageUnit: Optional[str] = Field('V', examples=['V'])
+    pax: Optional[int] = Field(None, examples=[17])
+    paxUnit: Optional[str] = Field(None, examples=[''])
 
 class Datum(BaseModel):
     __root__: Union[EnvDatum, PaxDatum]
@@ -371,18 +371,18 @@ class Note(BaseModel):
     A user generated note than can be pinned to the map and to which `files` and `tags` can be associated
     '''
     note_id: Optional[int] = None
-    date: Optional[datetime] = Field(None, example='2022-12-31T23:59:59.999Z', description='Date of creation')
+    date: Optional[datetime] = Field(None, examples=['2022-12-31T23:59:59.999Z'], description='Date of creation')
     title: str = Field(
-        ..., example='Interesting Observation', description='Title of this note'
+        ..., examples=['Interesting Observation'], description='Title of this note'
     )
     description: Optional[str] = Field(
         None,
-        example='I discovered an correlation between air humidity level and visitor count',
+        examples=['I discovered an correlation between air humidity level and visitor count'],
         description='Details for this note'
     )
     public: bool = True
     location: Optional[Point] = None
-    note_type: Optional[str] = Field(None, example='A walk in the park', alias='type')
+    note_type: Optional[str] = Field(None, examples=['A walk in the park'], alias='type')
     tags: Optional[List[Tag]] = None
     files: Optional[List[File]] = None
 
@@ -395,7 +395,7 @@ class PatchNote(Note):
     for patching existing records.
     '''
     title: Optional[str] = Field(
-        None, example='Interesting Observation', description='Title of this note'
+        None, examples=['Interesting Observation'], description='Title of this note'
     )
 
 # Meteo Models
@@ -458,8 +458,8 @@ class DetectionLocationResult(DetectionsByLocation):
 
 class BirdSpeciesCount(BaseModel):
     bucket: datetime
-    species: str = Field(..., example='Parus major')
-    count: int = Field(..., example=42)
+    species: str = Field(..., examples=['Parus major'])
+    count: int = Field(..., examples=[42])
 
 # Walks
 

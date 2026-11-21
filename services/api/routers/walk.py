@@ -76,8 +76,8 @@ def get_community_hotspots():
     return response.json()
 
 @router.get('/walk/data-hotspots/pax', response_model=HotspotDataPaxResponse)
-async def get_pax_hotspots(summary: Optional[int] = Query(1, alias='summary', example=1),
-                           tag_ids: Optional[List[int]] = Query([136, 137], alias='tag', example='tag=136&tag=137')):
+async def get_pax_hotspots(summary: Optional[int] = Query(1, alias='summary', examples=[1]),
+                           tag_ids: Optional[List[int]] = Query([136, 137], alias='tag', examples=['tag=136&tag=137'])):
     interval = ['2023-06-16', '2023-09-01'] if summary == 1 else ['2024-06-16', '2024-09-01']
     options = [
         {'label': 'Sommer 2023', 'value': 1},
@@ -101,8 +101,8 @@ async def get_pax_hotspots(summary: Optional[int] = Query(1, alias='summary', ex
     )
 
 @router.get('/walk/data-hotspots/birds', response_model=HotspotDataBirdsResponse)
-async def get_pollinator_hotspots(tag_id: int = Query(163, alias='tag', example='tag=163'),
-                           summary: Optional[int] = Query(1, alias='summary', example=1)):
+async def get_pollinator_hotspots(tag_id: int = Query(163, alias='tag', examples=['tag=163']),
+                           summary: Optional[int] = Query(1, alias='summary', examples=[1])):
 
     options = [
         {'label': 'Auenwald', 'value': 163},
@@ -133,8 +133,8 @@ async def get_pollinator_hotspots(tag_id: int = Query(163, alias='tag', example=
     )
 
 @router.get('/walk/data-hotspots/pollinators', response_model=HotspotDataPollinatorsResponse)
-async def get_pollinator_hotspots(tag_id: int = Query(136, alias='tag', example='tag=136'),
-                           summary: Optional[int] = Query(1, alias='summary', example=1)):
+async def get_pollinator_hotspots(tag_id: int = Query(136, alias='tag', examples=['tag=136']),
+                           summary: Optional[int] = Query(1, alias='summary', examples=[1])):
 
     # TODO: decide for summary options: years, or locations?
     # for now, the summary options are the locations

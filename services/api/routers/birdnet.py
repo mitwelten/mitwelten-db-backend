@@ -100,8 +100,8 @@ async def detection_dates_by_id(
     identifier: int,
     conf: float = 0.9,
     bucket_width:str = "1d",
-    time_from: Optional[datetime] = Query(None, alias='from', example='2021-09-01T00:00:00.000Z'),
-    time_to: Optional[datetime] = Query(None, alias='to', example='2022-08-31T23:59:59.999Z'),
+    time_from: Optional[datetime] = Query(None, alias='from', examples=['2021-09-01T00:00:00.000Z']),
+    time_to: Optional[datetime] = Query(None, alias='to', examples=['2022-08-31T23:59:59.999Z']),
     deployment_ids:List[int] = Query(default=None),
     distinctspecies: bool = False,
     ) -> TimeSeriesResult:
@@ -152,8 +152,8 @@ async def detection_dates_by_id(
 async def detection_locations_by_id(
     identifier: int,
     conf: float = 0.9,
-    time_from: Optional[datetime] = Query(None, alias='from', example='2021-09-01T00:00:00.000Z'),
-    time_to: Optional[datetime] = Query(None, alias='to', example='2022-08-31T23:59:59.999Z'),
+    time_from: Optional[datetime] = Query(None, alias='from', examples=['2021-09-01T00:00:00.000Z']),
+    time_to: Optional[datetime] = Query(None, alias='to', examples=['2022-08-31T23:59:59.999Z']),
     distinctspecies: bool = False,
     deployment_ids:List[int] = Query(default=None),
     ) -> List[DetectionLocationResult]:
@@ -212,8 +212,8 @@ async def detection_locations_by_id(
 async def detection_count(
     identifier: int,
     conf: float = 0.9,
-    time_from: Optional[datetime] = Query(None, alias='from', example='2021-09-01T00:00:00.000Z'),
-    time_to: Optional[datetime] = Query(None, alias='to', example='2022-08-31T23:59:59.999Z'),
+    time_from: Optional[datetime] = Query(None, alias='from', examples=['2021-09-01T00:00:00.000Z']),
+    time_to: Optional[datetime] = Query(None, alias='to', examples=['2022-08-31T23:59:59.999Z']),
     ):
     time_from_condition = "AND (f.time + interval '1 second' * r.time_start) >= :time_from" if time_from else ""
     time_to_condition = "AND (f.time + interval '1 second' * r.time_start) <= :time_to" if time_to else ""
@@ -254,8 +254,8 @@ async def detection_time_of_day(
     identifier: int,
     conf: float = 0.9,
     bucket_width_m:int = 60,
-    time_from: Optional[datetime] = Query(None, alias='from', example='2021-09-01T00:00:00.000Z'),
-    time_to: Optional[datetime] = Query(None, alias='to', example='2022-08-31T23:59:59.999Z'),
+    time_from: Optional[datetime] = Query(None, alias='from', examples=['2021-09-01T00:00:00.000Z']),
+    time_to: Optional[datetime] = Query(None, alias='to', examples=['2022-08-31T23:59:59.999Z']),
     distinctspecies: bool = False,
     deployment_ids:List[int] = Query(default=None),
 ):
@@ -382,8 +382,8 @@ async def species_count_by_parent_taxon(
 @router.get('/birds/detectionlist')
 async def get_detected_species_list(
     conf: float = 0.9,
-    time_from: Optional[datetime] = Query(None, alias='from', example='2021-09-01T00:00:00.000Z'),
-    time_to: Optional[datetime] = Query(None, alias='to', example='2022-08-31T23:59:59.999Z'),
+    time_from: Optional[datetime] = Query(None, alias='from', examples=['2021-09-01T00:00:00.000Z']),
+    time_to: Optional[datetime] = Query(None, alias='to', examples=['2022-08-31T23:59:59.999Z']),
     deployment_ids:List[int] = Query(default=None),
     limit: int = 1000,
     ):
