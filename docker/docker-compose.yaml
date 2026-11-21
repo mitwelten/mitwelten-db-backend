@@ -235,7 +235,7 @@ services:
       - traefik.http.middlewares.data_api_v3_cors.headers.addvaryheader=true
 
   deployment-frontend:
-    image: nginx:alpine
+    image: nginx:stable-alpine
     networks:
       - mitwelten
     container_name: "deployment-frontend"
@@ -262,7 +262,7 @@ services:
     restart: always
 
   wildcam-tv:
-    image: nginx:alpine
+    image: nginx:stable-alpine
     networks:
       - mitwelten
     container_name: "wildcam-tv"
@@ -289,7 +289,7 @@ services:
     restart: always
 
   datawalk-webapp:
-    image: nginx:alpine
+    image: nginx:stable-alpine
     networks:
       - mitwelten
     container_name: "datawalk-webapp"
@@ -316,7 +316,7 @@ services:
     restart: always
 
   pipeline-frontend:
-    image: nginx:alpine
+    image: nginx:stable-alpine
     networks:
       - mitwelten
     container_name: "pipeline-frontend"
