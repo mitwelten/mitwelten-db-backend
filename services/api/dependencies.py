@@ -55,6 +55,12 @@ class AuthenticationChecker:
     def __init__(self, required_roles: list = ['public']) -> None:
         self.required_roles = required_roles
     def __call__(self, user: dict = Depends(get_user)) -> bool:
+        if user is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail='Authentication failed',
+                headers={'WWW-Authenticate': 'Bearer'},
+            )
         for r_perm in self.required_roles:
             if r_perm not in user['realm_access']['roles']:
                 raise HTTPException(
