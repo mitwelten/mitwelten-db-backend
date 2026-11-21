@@ -49,11 +49,10 @@ async def gbif_detection_dates_by_id(
     if time_to:
         query = query.bindparams(time_to = time_to)
     results = await database_cache.fetch_all(query)
-    response = TimeSeriesResult(bucket=[],detections=[])
-    for result in results:
-        response.bucket.append(result.bucket)
-        response.detections.append(result.detections)
-    return response
+    return TimeSeriesResult(
+        bucket=[result.bucket for result in results],
+        detections=[result.detections for result in results],
+    )
 
 @router.get('/gbif/{identifier}/location' , response_model=List[DetectionsByLocation])
 async def gbif_detection_locations_by_id(

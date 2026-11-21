@@ -142,11 +142,10 @@ async def detection_dates_by_id(
     if deployment_ids:
         query = query.bindparams( bindparam('deployment_ids', value=deployment_ids, expanding=True))
     results = await database.fetch_all(query)
-    response = TimeSeriesResult(bucket=[],detections=[])
-    for result in results:
-        response.bucket.append(result.bucket)
-        response.detections.append(result.detections)
-    return response
+    return TimeSeriesResult(
+        bucket=[result.bucket for result in results],
+        detections=[result.detections for result in results],
+    )
 
 @router.get('/birds/{identifier}/location' , response_model=List[DetectionLocationResult])
 async def detection_locations_by_id(
