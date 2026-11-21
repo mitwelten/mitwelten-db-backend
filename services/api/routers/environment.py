@@ -113,17 +113,17 @@ async def read_environment_entry(entry_id: int) -> EnvironmentEntry:
 
 @router.post('/environment/entries', dependencies=[Depends(AuthenticationChecker())], response_model=EnvironmentEntry)
 async def create_environment_entry(entry: EnvironmentRawEntry) -> EnvironmentEntry:
-    entry_dict = entry.dict()
+    entry_dict = entry.model_dump()
     del entry_dict['environment_id']
     entry_dict.update({'location': text('point(:lat,:lon)')\
                        .bindparams(lat=entry.location.lat,lon=entry.location.lon)})
     query = insert(environment).values(entry_dict)
     last_record_id = await database.execute(query)
-    return {**entry.dict(), 'environment_id': last_record_id}
+    return {**entry.model_dump(), 'environment_id': last_record_id}
 
 @router.put('/environment/entries/{entry_id}', dependencies=[Depends(AuthenticationChecker())], response_model=EnvironmentEntry)
 async def update_environment_entry(entry_id: int, entry: EnvironmentEntry) -> EnvironmentEntry:
-    entry_dict = entry.dict()
+    entry_dict = entry.model_dump()
     del entry_dict['environment_id']
     del entry_dict['created_at']
     del entry_dict['distance']

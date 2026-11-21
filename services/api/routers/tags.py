@@ -47,13 +47,13 @@ async def upsert_tag(body: Tag) -> int:
     try:
         if hasattr(body, 'tag_id') and body.tag_id != None:
             result = await database.execute(update(tags).where(tags.c.tag_id == body.tag_id).\
-                values({**body.dict(exclude_none=True), tags.c.updated_at: current_timestamp()}).\
+                values({**body.model_dump(exclude_none=True), tags.c.updated_at: current_timestamp()}).\
                 returning(tags.c.tag_id))
             if result == None:
                 raise HTTPException(status_code=404, detail='Tag not found')
             return result
         else:
-            return await database.execute(insert(tags).values(body.dict(exclude_none=True)).\
+            return await database.execute(insert(tags).values(body.model_dump(exclude_none=True)).\
                 returning(tags.c.tag_id))
     except UniqueViolationError:
         raise HTTPException(status_code=409, detail='Tag with same name already exists')

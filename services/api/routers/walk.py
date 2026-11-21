@@ -177,10 +177,10 @@ async def get_walk():
 async def upsert_walk(body: Walk) -> None:
     if hasattr(body, 'walk_id') and body.walk_id != None:
         return await database.execute(update(walk).where(walk.c.walk_id == body.walk_id).\
-            values({**body.dict(exclude_none=True, by_alias=True), walk.c.updated_at: current_timestamp()}).\
+            values({**body.model_dump(exclude_none=True, by_alias=True), walk.c.updated_at: current_timestamp()}).\
             returning(walk.c.walk_id))
     else:
-        return await database.execute(insert(walk).values(body.dict(exclude_none=True, by_alias=True)).\
+        return await database.execute(insert(walk).values(body.model_dump(exclude_none=True, by_alias=True)).\
             returning(walk.c.walk_id))
 
 @router.delete('/walk/{walk_id}', response_model=None, dependencies=[Depends(AuthenticationChecker())])

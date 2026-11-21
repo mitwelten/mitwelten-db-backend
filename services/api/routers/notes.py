@@ -137,7 +137,7 @@ async def update_note(note_id: int, body: PatchNote = ..., auth = Depends(get_us
 
     Patching not implemented for `tags`, `files`
     '''
-    update_data = body.dict(exclude_unset=True)
+    update_data = body.model_dump(exclude_unset=True)
 
     # 'files' not implemented
     if 'files' in update_data:
