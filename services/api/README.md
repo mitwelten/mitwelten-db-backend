@@ -43,3 +43,24 @@ and `credentials.py` are mounted into the container at runtime (see
     python3.13 -m venv .venv && .venv/bin/pip install -r requirements.txt
     cd .. && api/.venv/bin/uvicorn api.main:app --reload
     ```
+
+3. Build and push the image (pass `--pull` to get the latest base image with its security fixes).
+   `--provenance=false --sbom=false` skips the build attestations: the GitLab container registry
+   rejects them on push with `blob unknown to registry`.
+
+    ```bash
+    TAG=1.1
+    REGISTRY=registry.example.com
+    REGPATH=mitwelten/data-api
+    docker build --pull --platform linux/amd64 --provenance=false --sbom=false -t $REGISTRY/$REGPATH:$TAG .
+    docker login $REGISTRY
+    docker push $REGISTRY/$REGPATH:$TAG
+    ```
+
+4. On the server: update the code in, set the new tag for `data-api` in `docker/docker-compose.yaml`, then recreate the container:
+
+    ```bash
+    docker compose -f docker/docker-compose.yaml pull data-api
+    docker compose -f docker/docker-compose.yaml up -d data-api
+    docker logs -f mitwelten-data-api-v3
+    ```
