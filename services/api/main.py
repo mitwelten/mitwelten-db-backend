@@ -8,7 +8,7 @@ from api.routers import (
     environment, statistics, auth, tv
 )
 
-from fastapi import Depends, FastAPI, Request, status
+from fastapi import Depends, FastAPI, Request
 from fastapi_cache import FastAPICache
 from fastapi_cache.backends.redis import RedisBackend
 from fastapi.exceptions import RequestValidationError
@@ -157,8 +157,13 @@ app.include_router(statistics.router)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     exc_str = f'{exc}'.replace('\n', ' ').replace('   ', ' ')
     print(f'{request}: {exc_str}')
-    content = {'status_code': 10422, 'message': exc_str, 'data': None}
-    return JSONResponse(content=content, status_code=status.HTTP_422_UNPROCESSABLE_ENTITY)
+    # str(exc) also names the endpoint's source file and line, keep that out of the response
+    errors = exc.errors()
+    message = f'{len(errors)} validation error{"s" if len(errors) != 1 else ""}: ' + '; '.join(
+        f"{' -> '.join(str(part) for part in e.get('loc', ()))}: {e.get('msg')}" for e in errors
+    )
+    content = {'status_code': 10422, 'message': message, 'data': None}
+    return JSONResponse(content=content, status_code=422)
 
 @app.get('/', include_in_schema=False)
 async def root():
