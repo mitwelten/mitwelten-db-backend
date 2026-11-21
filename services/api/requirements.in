@@ -1,0 +1,19 @@
+# top-level dependencies
+# compile the pinned requirements.txt from this file (see README.md).
+astral
+asyncpg
+databases[asyncpg]
+fastapi
+fastapi-cache2  # no [redis] extra: it caps redis<5
+jinja2          # imported by fastapi-cache2 via starlette.templating
+minio
+pandas
+pillow
+pydantic>=2
+python-keycloak
+python-multipart
+redis[hiredis]>=5
+requests
+simplekml
+sqlalchemy>=2
+uvicorn

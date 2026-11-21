@@ -1,3 +1,5 @@
+from contextlib import asynccontextmanager
+
 from api.database import database, database_cache
 from api.dependencies import crd
 from api.routers import (
@@ -6,13 +8,23 @@ from api.routers import (
     environment, statistics, auth, tv
 )
 
-from fastapi import Depends, FastAPI, Request, status
+from fastapi import Depends, FastAPI, Request
 from fastapi_cache import FastAPICache
 from fastapi_cache.backends.redis import RedisBackend
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from redis import asyncio as aioredis
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await database.connect()
+    await database_cache.connect()
+    redis = RedisBackend(aioredis.from_url('redis://redis_cache'))
+    FastAPICache.init(backend=redis, prefix='fastapi-cache')
+    yield
+    await database.disconnect()
+    await database_cache.disconnect()
 
 tags_metadata = [
     {
@@ -97,6 +109,7 @@ app = FastAPI(
     ],
     root_path='/api/v3',
     root_path_in_servers=False,
+    lifespan=lifespan,
     # dependencies=[Depends(check_authentication)]
 )
 
@@ -144,20 +157,13 @@ app.include_router(statistics.router)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     exc_str = f'{exc}'.replace('\n', ' ').replace('   ', ' ')
     print(f'{request}: {exc_str}')
-    content = {'status_code': 10422, 'message': exc_str, 'data': None}
-    return JSONResponse(content=content, status_code=status.HTTP_422_UNPROCESSABLE_ENTITY)
-
-@app.on_event('startup')
-async def startup():
-    await database.connect()
-    await database_cache.connect()
-    redis = RedisBackend(aioredis.from_url('redis://redis_cache'))
-    FastAPICache.init(backend=redis, prefix='fastapi-cache')
-
-@app.on_event('shutdown')
-async def shutdown():
-    await database.disconnect()
-    await database_cache.disconnect()
+    # str(exc) also names the endpoint's source file and line, keep that out of the response
+    errors = exc.errors()
+    message = f'{len(errors)} validation error{"s" if len(errors) != 1 else ""}: ' + '; '.join(
+        f"{' -> '.join(str(part) for part in e.get('loc', ()))}: {e.get('msg')}" for e in errors
+    )
+    content = {'status_code': 10422, 'message': message, 'data': None}
+    return JSONResponse(content=content, status_code=422)
 
 @app.get('/', include_in_schema=False)
 async def root():

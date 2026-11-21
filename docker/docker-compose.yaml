@@ -15,13 +15,14 @@ networks:
 
 services:
   traefik:
-    image: "traefik:v2.11.12"
+    image: "traefik:v3.7.19"
     networks:
       - mitwelten
     container_name: "traefik"
     command:
       - "--log.level=INFO"
       - "--api"
+      - "--core.defaultRuleSyntax=v2"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.http.address=:80"
@@ -58,20 +59,23 @@ services:
 
   keycloak:
     container_name: keycloak
-    image: quay.io/keycloak/keycloak:legacy
+    image: quay.io/keycloak/keycloak:26.8.2
+    command: start
     networks:
       - mitwelten
     restart: unless-stopped
     environment:
-      KEYCLOAK_USER: ${KC_USERNAME}
-      KEYCLOAK_PASSWORD: ${KC_PASSWORD}
-      DB_VENDOR: POSTGRES
-      DB_ADDR: ${KC_DB_HOST}
-      DB_DATABASE: ${KC_DATABASE}
-      DB_USER: ${KC_DB_USERNAME}
-      DB_PASSWORD: ${KC_DB_PASSWORD}
-      DB_SCHEMA: ${KC_DB_SCHEMA}
-      PROXY_ADDRESS_FORWARDING: "true"
+      KC_DB: postgres
+      KC_DB_URL_HOST: ${KC_DB_HOST}
+      KC_DB_URL_DATABASE: ${KC_DATABASE}
+      KC_DB_USERNAME: ${KC_DB_USERNAME}
+      KC_DB_PASSWORD: ${KC_DB_PASSWORD}
+      KC_DB_SCHEMA: ${KC_DB_SCHEMA}
+      KC_HOSTNAME: https://auth.mitwelten.org/auth
+      KC_PROXY_HEADERS: xforwarded
+      KC_HTTP_RELATIVE_PATH: /auth # keep the /auth/ URLs that clients use
+      KC_HTTP_ENABLED: "true"      # TLS is terminated in traefik
+      KC_HEALTH_ENABLED: "false"   # on port 9000, not routed by traefik
     labels:
       - "traefik.enable=true"
       - "traefik.http.services.kc.loadbalancer.server.port=8080"
@@ -191,7 +195,7 @@ services:
       - traefik.http.middlewares.manager_api_v2_cors.headers.addvaryheader=true
 
   data-api:
-    image: cr.gitlab.fhnw.ch/mitwelten/docker-infrastructure/mitwelten-data-api:3.8
+    image: cr.gitlab.fhnw.ch/mitwelten/docker-infrastructure/mitwelten-data-api:3.9_2026-11-21
     networks:
       - mitwelten
     container_name: mitwelten-data-api-v3

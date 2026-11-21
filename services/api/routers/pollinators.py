@@ -26,8 +26,8 @@ async def detection_dates_by_class(
     deployment_ids:List[int] = Query(default=None),
     conf: float = 0.9,
     bucket_width:str = "1d",
-    time_from: Optional[datetime] = Query(None, alias='from', example='2021-09-01T00:00:00.000Z'),
-    time_to: Optional[datetime] = Query(None, alias='to', example='2022-08-31T23:59:59.999Z'),
+    time_from: Optional[datetime] = Query(None, alias='from', examples=['2021-09-01T00:00:00.000Z']),
+    time_to: Optional[datetime] = Query(None, alias='to', examples=['2022-08-31T23:59:59.999Z']),
     ) -> TimeSeriesResult:
     time_from_condition = "AND i.time >= :time_from" if time_from else ""
     time_to_condition = "AND i.time <= :time_to" if time_to else ""
@@ -59,11 +59,10 @@ async def detection_dates_by_class(
         query = query.bindparams( bindparam('deployment_ids', value=deployment_ids, expanding=True))
 
     results = await database.fetch_all(query)
-    response = TimeSeriesResult(bucket=[],detections=[])
-    for result in results:
-        response.bucket.append(result.bucket)
-        response.detections.append(result.detections)
-    return response
+    return TimeSeriesResult(
+        bucket=[result.bucket for result in results],
+        detections=[result.detections for result in results],
+    )
 
 @router.get('/pollinators/time_of_day')
 async def detection_time_of_day(
@@ -71,8 +70,8 @@ async def detection_time_of_day(
     deployment_ids:List[int] = Query(default=None),
     conf: float = 0.9,
     bucket_width_m:int = 30,
-    time_from: Optional[datetime] = Query(None, alias='from', example='2021-09-01T00:00:00.000Z'),
-    time_to: Optional[datetime] = Query(None, alias='to', example='2022-08-31T23:59:59.999Z'),
+    time_from: Optional[datetime] = Query(None, alias='from', examples=['2021-09-01T00:00:00.000Z']),
+    time_to: Optional[datetime] = Query(None, alias='to', examples=['2022-08-31T23:59:59.999Z']),
 ):
     time_from_condition = "AND i.time >= :time_from" if time_from else ""
     time_to_condition = "AND i.time <= :time_to" if time_to else ""
@@ -119,8 +118,8 @@ async def detection_locations_by_id(
     pollinator_class:List[PollinatorTypeEnum] = Query(default=None),
     deployment_ids:List[int] = Query(default=None),
     conf: float = 0.9,
-    time_from: Optional[datetime] = Query(None, alias='from', example='2021-09-01T00:00:00.000Z'),
-    time_to: Optional[datetime] = Query(None, alias='to', example='2022-08-31T23:59:59.999Z'),
+    time_from: Optional[datetime] = Query(None, alias='from', examples=['2021-09-01T00:00:00.000Z']),
+    time_to: Optional[datetime] = Query(None, alias='to', examples=['2022-08-31T23:59:59.999Z']),
     ) -> List[DetectionLocationResult]:
     time_from_condition = "AND i.time >= :time_from" if time_from else ""
     time_to_condition = "AND i.time <= :time_to" if time_to else ""
@@ -168,8 +167,8 @@ async def detection_locations_by_id(
 @router.get('/pollinators/detectionlist')
 async def get_detected_species_list(
     conf: float = 0.9,
-    time_from: Optional[datetime] = Query(None, alias='from', example='2021-09-01T00:00:00.000Z'),
-    time_to: Optional[datetime] = Query(None, alias='to', example='2022-08-31T23:59:59.999Z'),
+    time_from: Optional[datetime] = Query(None, alias='from', examples=['2021-09-01T00:00:00.000Z']),
+    time_to: Optional[datetime] = Query(None, alias='to', examples=['2022-08-31T23:59:59.999Z']),
     deployment_ids:List[int] = Query(default=None),
     pollinator_class:List[PollinatorTypeEnum] = Query(default=None),
     limit: int = 1000,

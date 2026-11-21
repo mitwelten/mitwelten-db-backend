@@ -20,9 +20,9 @@ router = APIRouter(tags=['data'])
 
 @router.get('/data/{node_label}', response_model=DatumResponse)
 async def list_data(
-    node_label: constr(regex=r'\d{4}-\d{4}'),
-    time_from: Optional[datetime] = Query(None, alias='from', example='2022-06-22T18:00:00.000Z'),
-    time_to: Optional[datetime] = Query(None, alias='to', example='2022-06-22T20:00:00.000Z'),
+    node_label: constr(pattern=r'^\d{4}-\d{4}$'),
+    time_from: Optional[datetime] = Query(None, alias='from', examples=['2022-06-22T18:00:00.000Z']),
+    time_to: Optional[datetime] = Query(None, alias='to', examples=['2022-06-22T20:00:00.000Z']),
     limit: Optional[conint(ge=1, le=65536)] = 32768,
 ) -> DatumResponse:
     '''
@@ -69,8 +69,8 @@ async def list_data(
 @router.get('/sensordata/pax/{deployment_id}')
 async def get_pax_measurements(
     deployment_id: int,
-    time_from: Optional[datetime] = Query(None, alias='from', example='2020-06-22T18:00:00.000Z'),
-    time_to: Optional[datetime] = Query(None, alias='to', example='2022-06-22T20:00:00.000Z'),
+    time_from: Optional[datetime] = Query(None, alias='from', examples=['2020-06-22T18:00:00.000Z']),
+    time_to: Optional[datetime] = Query(None, alias='to', examples=['2022-06-22T20:00:00.000Z']),
     bucket_width:str = "1d"):
     time_from_condition = "AND time >= :time_from" if time_from else ""
     time_to_condition = "AND time <= :time_to" if time_to else ""
@@ -96,8 +96,8 @@ async def get_pax_measurements(
 @router.get('/sensordata/pax/{deployment_id}/time_of_day')
 async def get_pax_measurements_time_of_day(
     deployment_id: int,
-    time_from: Optional[datetime] = Query(None, alias='from', example='2020-06-22T18:00:00.000Z'),
-    time_to: Optional[datetime] = Query(None, alias='to', example='2022-06-22T20:00:00.000Z'),
+    time_from: Optional[datetime] = Query(None, alias='from', examples=['2020-06-22T18:00:00.000Z']),
+    time_to: Optional[datetime] = Query(None, alias='to', examples=['2022-06-22T20:00:00.000Z']),
     bucket_width_m:int = 20):
     time_from_condition = "AND time >= :time_from" if time_from else ""
     time_to_condition = "AND time <= :time_to" if time_to else ""
@@ -124,8 +124,8 @@ async def get_pax_measurements_time_of_day(
 
 @router.get('/sensordata/pax_locations')
 async def get_pax_locations(
-    time_from: Optional[datetime] = Query(None, alias='from', example='2020-06-22T18:00:00.000Z'),
-    time_to: Optional[datetime] = Query(None, alias='to', example='2022-06-22T20:00:00.000Z'),
+    time_from: Optional[datetime] = Query(None, alias='from', examples=['2020-06-22T18:00:00.000Z']),
+    time_to: Optional[datetime] = Query(None, alias='to', examples=['2022-06-22T20:00:00.000Z']),
     ):
     if time_from is not None and time_to is not None:
         time_condition = "WHERE p.time >= :time_from and p.time <= :time_to"
@@ -169,8 +169,8 @@ async def get_env_measurements(
     deployment_id: int,
     aggregation:str = "mean",
     bucket_width:str = "1d",
-    time_from: Optional[datetime] = Query(None, alias='from', example='2020-06-22T18:00:00.000Z'),
-    time_to: Optional[datetime] = Query(None, alias='to', example='2022-06-22T20:00:00.000Z'),
+    time_from: Optional[datetime] = Query(None, alias='from', examples=['2020-06-22T18:00:00.000Z']),
+    time_to: Optional[datetime] = Query(None, alias='to', examples=['2022-06-22T20:00:00.000Z']),
     ):
     time_from_condition = "AND time >= :time_from" if time_from else ""
     time_to_condition = "AND time <= :time_to" if time_to else ""
@@ -202,8 +202,8 @@ async def get_env_measurement_time_of_day(
     deployment_id: int,
     aggregation:str = "mean",
     bucket_width_m:int = 30,
-    time_from: Optional[datetime] = Query(None, alias='from', example='2020-06-22T18:00:00.000Z'),
-    time_to: Optional[datetime] = Query(None, alias='to', example='2022-06-22T20:00:00.000Z'),
+    time_from: Optional[datetime] = Query(None, alias='from', examples=['2020-06-22T18:00:00.000Z']),
+    time_to: Optional[datetime] = Query(None, alias='to', examples=['2022-06-22T20:00:00.000Z']),
     ):
     time_from_condition = "AND time >= :time_from" if time_from else ""
     time_to_condition = "AND time <= :time_to" if time_to else ""

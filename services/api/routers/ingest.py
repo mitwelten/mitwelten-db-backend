@@ -51,7 +51,7 @@ async def ingest_audio(body: AudioRequest) -> None:
     transaction = await database.transaction()
 
     try:
-        await database.execute(insert(files_audio).values(body.dict(exclude_none=True, by_alias=True)))
+        await database.execute(insert(files_audio).values(body.model_dump(exclude_none=True, by_alias=True)))
 
     except Exception as e:
         await transaction.rollback()

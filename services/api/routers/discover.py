@@ -19,8 +19,8 @@ router = APIRouter(tags=['discover'])
 async def get_pollinator_hotspots(
     deployment_id: int,
     conf: float = 0.75,
-    time_from: Optional[datetime] = Query(None, alias='from', example='2020-06-22T18:00:00.000Z'),
-    time_to: Optional[datetime] = Query(None, alias='to', example='2022-06-22T20:00:00.000Z')
+    time_from: Optional[datetime] = Query(None, alias='from', examples=['2020-06-22T18:00:00.000Z']),
+    time_to: Optional[datetime] = Query(None, alias='to', examples=['2022-06-22T20:00:00.000Z'])
 ):
     query = select(
         pollinators.c['class'],
@@ -38,7 +38,7 @@ async def get_pollinator_hotspots(
         order_by(pollinators.c['class'], text('month'))
 
     return HotspotDataPollinatorsResponse(
-        datapoints=await database.fetch_all(query),
+        datapoints=[dict(r) for r in await database.fetch_all(query)],
         summaryOptions=[],
         chart='heatmap'
     )
@@ -47,8 +47,8 @@ async def get_pollinator_hotspots(
 @router.get('/discover/birds/top/{deployment_id}')
 async def get_stacked_bar(
     deployment_id: int,
-    time_from: Optional[datetime] = Query(None, alias='from', example='2020-06-22T18:00:00.000Z'),
-    time_to: Optional[datetime] = Query(None, alias='to', example='2024-04-22T20:00:00.000Z'),
+    time_from: Optional[datetime] = Query(None, alias='from', examples=['2020-06-22T18:00:00.000Z']),
+    time_to: Optional[datetime] = Query(None, alias='to', examples=['2024-04-22T20:00:00.000Z']),
     bucket_width: str = "1d",
     confidence: float = 0.9,
     limit_per_day: int = 3) -> list[BirdSpeciesCount]:

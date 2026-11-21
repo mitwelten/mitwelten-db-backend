@@ -103,8 +103,8 @@ async def get_measurements(
     param_id: str,
     bucket_width:str = "1d",
     aggregation:str = "mean",
-    time_from: Optional[datetime] = Query(None, alias='from', example='2021-09-01T00:00:00.000Z'),
-    time_to: Optional[datetime] = Query(None, alias='to', example='2022-08-31T23:59:59.999Z'),
+    time_from: Optional[datetime] = Query(None, alias='from', examples=['2021-09-01T00:00:00.000Z']),
+    time_to: Optional[datetime] = Query(None, alias='to', examples=['2022-08-31T23:59:59.999Z']),
     is_allowed: bool = Depends(AuthenticationChecker())
 ) -> MeteoMeasurements:
     aggregation_str = aggregation_mapping.get(aggregation)
@@ -132,11 +132,10 @@ async def get_measurements(
 
     results = await database_cache.fetch_all(query)
 
-    response = MeteoMeasurements(time=[],value=[])
-    for result in results:
-        response.time.append(result.time)
-        response.value.append(result.value)
-    return response
+    return MeteoMeasurements(
+        time=[result.time for result in results],
+        value=[result.value for result in results],
+    )
 
 
 @router.get("/meteo/measurements_time_of_day/{station_id}/{param_id}", response_model=MeteoMeasurementTimeOfDay)
@@ -145,8 +144,8 @@ async def get_measurements_tod(
     param_id: str,
     bucket_width_m:int = 30,
     aggregation:str = "mean",
-    time_from: Optional[datetime] = Query(None, alias='from', example='2021-09-01T00:00:00.000Z'),
-    time_to: Optional[datetime] = Query(None, alias='to', example='2022-08-31T23:59:59.999Z'),
+    time_from: Optional[datetime] = Query(None, alias='from', examples=['2021-09-01T00:00:00.000Z']),
+    time_to: Optional[datetime] = Query(None, alias='to', examples=['2022-08-31T23:59:59.999Z']),
     is_allowed: bool = Depends(AuthenticationChecker())
 )-> MeteoMeasurementTimeOfDay:
     aggregation_str = aggregation_mapping.get(aggregation)
@@ -174,11 +173,10 @@ async def get_measurements_tod(
         query = query.bindparams(time_to = time_to)
 
     results = await database_cache.fetch_all(query)
-    response = MeteoMeasurementTimeOfDay(minute_of_day=[],value=[])
-    for result in results:
-        response.minute_of_day.append(result.minute_of_day)
-        response.value.append(result.value)
-    return response
+    return MeteoMeasurementTimeOfDay(
+        minute_of_day=[result.minute_of_day for result in results],
+        value=[result.value for result in results],
+    )
 
 
 
@@ -186,8 +184,8 @@ async def get_measurements_tod(
 async def get_summary(
     station_id: str,
     param_id: str,
-    time_from: Optional[datetime] = Query(None, alias='from', example='2021-09-01T00:00:00.000Z'),
-    time_to: Optional[datetime] = Query(None, alias='to', example='2022-08-31T23:59:59.999Z'),
+    time_from: Optional[datetime] = Query(None, alias='from', examples=['2021-09-01T00:00:00.000Z']),
+    time_to: Optional[datetime] = Query(None, alias='to', examples=['2022-08-31T23:59:59.999Z']),
     is_allowed: bool = Depends(AuthenticationChecker())
 ) -> MeteoSummary:
     time_from_condition = "AND ts >= :time_from" if time_from else ""
