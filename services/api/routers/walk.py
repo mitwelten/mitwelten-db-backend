@@ -87,7 +87,7 @@ async def get_pax_hotspots(summary: Optional[int] = Query(1, alias='summary', ex
         outerjoin(deployments).outerjoin(mm_tags_deployments).outerjoin(tags).\
         where(tags.c.tag_id.in_(tag_ids)).\
         where(between(data_pax.c.time, datetime.fromisoformat(interval[0]), datetime.fromisoformat(interval[1]))).\
-        group_by(tags.c.name, text('date(time at time zone \'UTC\')'))
+        group_by(tags.c.name, text('date(time at time zone \'UTC\')')).subquery()
     result = select(subquery.c.tag,
             func.round(func.avg(subquery.c.pax_avg), 1).label('pax_avg'),
             func.round(func.stddev(subquery.c.pax_avg), 1).label('pax_sdev'),

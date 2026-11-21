@@ -42,7 +42,7 @@ async def read_results_full_on_date(on_date: date, offset: int = 0, pagesize: in
 
 @router.get('/results_full/single/{filter:path}', response_model=List[ResultsGrouped])
 async def read_results_full(filter: str):
-    query = select([birdnet_results_file_taxonomy.c.species, birdnet_results_file_taxonomy.c.time_start_relative, birdnet_results_file_taxonomy.c.duration, birdnet_results_file_taxonomy.c.image_url])\
+    query = select(birdnet_results_file_taxonomy.c.species, birdnet_results_file_taxonomy.c.time_start_relative, birdnet_results_file_taxonomy.c.duration, birdnet_results_file_taxonomy.c.image_url)\
             .where(and_(birdnet_results_file_taxonomy.c.confidence > 0.9, birdnet_results_file_taxonomy.c.object_name == filter))\
             .group_by(birdnet_results_file_taxonomy.c.species, birdnet_results_file_taxonomy.c.time_start_relative, birdnet_results_file_taxonomy.c.duration, birdnet_results_file_taxonomy.c.image_url)
     results = await database.fetch_all(query)
