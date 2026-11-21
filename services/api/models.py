@@ -3,8 +3,8 @@ from enum import Enum
 from typing import List, Literal, Optional, Tuple, Union
 
 from asyncpg.types import Range
-from pydantic import BaseModel, ConfigDict, Field, PositiveInt, RootModel, constr, field_serializer
-from sqlalchemy.dialects.postgresql import TSTZRANGE
+from pydantic import BaseModel, ConfigDict, Field, GetCoreSchemaHandler, PositiveInt, RootModel, constr, field_serializer
+from pydantic_core import core_schema
 
 
 class TimeStampRange(BaseModel):
@@ -40,32 +40,51 @@ the aforementioned format when retrieving (using as a response model).
     start: Optional[datetime] = Field(None, examples=['2021-09-11T22:00:00+00:00'], title='Beginning of period (inclusive)')
     end: Optional[datetime] = Field(None, examples=['2021-10-14T22:00:00Z'], title='End of period (non inclusive)')
 
-    def __init__(self, start: datetime, end: datetime):
-        self.start = start
-        self.end = end
-
-    def stripz(ts):
-        assert isinstance(ts, str)
-        return ts[0:len(ts)-1]+'+00:00' if ts[-1] == 'Z' else ts
+    # The fields above only describe the OpenAPI schema. Validation is custom:
+    # an incoming {start, end} object becomes an asyncpg Range (for queries),
+    # a Range read from the database becomes {start, end} (for responses).
 
     @classmethod
-    def __get_validators__(cls):
-        yield cls.validate_type
+    def __get_pydantic_core_schema__(cls, source, handler: GetCoreSchemaHandler):
+        model_schema = handler(source)
+        return core_schema.no_info_plain_validator_function(
+            cls.validate_type,
+            json_schema_input_schema=model_schema,
+            serialization=core_schema.plain_serializer_function_ser_schema(
+                cls.serialize_type,
+                return_schema=model_schema,
+            ),
+        )
+
+    @staticmethod
+    def stripz(ts):
+        if isinstance(ts, datetime):
+            return ts
+        if not isinstance(ts, str):
+            raise ValueError('timestamp must be an ISO 8601 string')
+        return datetime.fromisoformat(ts[0:len(ts)-1]+'+00:00' if ts[-1] == 'Z' else ts)
 
     @classmethod
     def validate_type(cls, val):
         if isinstance(val, Range):
             return {'start': val.lower, 'end': val.upper}
+        if not isinstance(val, dict):
+            raise ValueError('period must be an object with the keys "start" and "end"')
         lower = None
         upper = None
         if val.get('start'):
-            lower = datetime.fromisoformat(cls.stripz(val['start']))
+            lower = cls.stripz(val['start'])
         if val.get('end'):
-            upper = datetime.fromisoformat(cls.stripz(val['end']))
+            upper = cls.stripz(val['end'])
         return Range(lower=lower, upper=upper)
 
-    def __repr__(self):
-        return f'TimeStampRange({super().__repr__()})'
+    @classmethod
+    def serialize_type(cls, val):
+        if isinstance(val, Range):
+            val = {'start': val.lower, 'end': val.upper}
+        if isinstance(val, dict):
+            return cls.model_construct(start=val.get('start'), end=val.get('end'))
+        return val
 
 class DeleteResponse(BaseModel):
     status: str
