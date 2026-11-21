@@ -1,3 +1,5 @@
+from contextlib import asynccontextmanager
+
 from api.database import database, database_cache
 from api.dependencies import crd
 from api.routers import (
@@ -13,6 +15,16 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from redis import asyncio as aioredis
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await database.connect()
+    await database_cache.connect()
+    redis = RedisBackend(aioredis.from_url('redis://redis_cache'))
+    FastAPICache.init(backend=redis, prefix='fastapi-cache')
+    yield
+    await database.disconnect()
+    await database_cache.disconnect()
 
 tags_metadata = [
     {
@@ -97,6 +109,7 @@ app = FastAPI(
     ],
     root_path='/api/v3',
     root_path_in_servers=False,
+    lifespan=lifespan,
     # dependencies=[Depends(check_authentication)]
 )
 
@@ -146,18 +159,6 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     print(f'{request}: {exc_str}')
     content = {'status_code': 10422, 'message': exc_str, 'data': None}
     return JSONResponse(content=content, status_code=status.HTTP_422_UNPROCESSABLE_ENTITY)
-
-@app.on_event('startup')
-async def startup():
-    await database.connect()
-    await database_cache.connect()
-    redis = RedisBackend(aioredis.from_url('redis://redis_cache'))
-    FastAPICache.init(backend=redis, prefix='fastapi-cache')
-
-@app.on_event('shutdown')
-async def shutdown():
-    await database.disconnect()
-    await database_cache.disconnect()
 
 @app.get('/', include_in_schema=False)
 async def root():
