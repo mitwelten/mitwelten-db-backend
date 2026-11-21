@@ -5,11 +5,12 @@ from typing import Optional
 
 from api.config import crd
 
-from jose.exceptions import ExpiredSignatureError
 from asyncpg.pgproto.types import Point as PgPoint
 from asyncpg.types import Range
 from fastapi import Depends, Header, HTTPException, status
 from fastapi.security import HTTPBasic, HTTPBasicCredentials, OAuth2AuthorizationCodeBearer
+from jwcrypto.jwk import JWK
+from jwcrypto.jwt import JWTExpired
 from keycloak import KeycloakOpenID
 from sqlalchemy import func
 from sqlalchemy.types import UserDefinedType
@@ -27,21 +28,22 @@ crd.oidc.KC_PUBLIC_KEY = (
     + '\n-----END PUBLIC KEY-----'
 )
 
+kc_public_key = JWK.from_pem(crd.oidc.KC_PUBLIC_KEY.encode())
+
 oauth2_scheme = OAuth2AuthorizationCodeBearer(
     authorizationUrl=f'{crd.oidc.KC_SERVER_URL}realms/{crd.oidc.KC_REALM_NAME}/protocol/openid-connect/auth',
     tokenUrl=f'{crd.oidc.KC_SERVER_URL}realms/{crd.oidc.KC_REALM_NAME}/protocol/openid-connect/token',
 )
 
+def decode_token(token: str) -> dict:
+    '''Verify signature and expiry (audience is not checked) and return the claims.'''
+    return keycloak_openid.decode_token(token, key=kc_public_key)
+
 def get_user(token: str = Depends(oauth2_scheme)):
     try:
-        auth = keycloak_openid.decode_token(
-            token,
-            key=crd.oidc.KC_PUBLIC_KEY,
-            options={'verify_signature': True, 'verify_aud': False, 'exp': True},
-        )
-        return auth
+        return decode_token(token)
 
-    except ExpiredSignatureError:
+    except JWTExpired:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail='Signature Expired',
@@ -63,11 +65,7 @@ class AuthenticationChecker:
 
 async def check_oid_authentication(token: str = Depends(oauth2_scheme)):
     try:
-        auth = keycloak_openid.decode_token(
-            token,
-            key=crd.oidc.KC_PUBLIC_KEY,
-            options={'verify_signature': True, 'verify_aud': False, 'exp': True},
-        )
+        auth = decode_token(token)
         if 'internal' not in auth['realm_access']['roles']:
             raise
     except:
@@ -81,11 +79,7 @@ async def check_oid_authentication(token: str = Depends(oauth2_scheme)):
 
 async def check_oid_m2m_authentication(role, token: str = Depends(oauth2_scheme)):
     try:
-        auth = keycloak_openid.decode_token(
-            token,
-            key=crd.oidc.KC_PUBLIC_KEY,
-            options={'verify_signature': True, 'verify_aud': False, 'exp': True},
-        )
+        auth = decode_token(token)
         if role == None or role not in auth['realm_access']['roles']:
             raise
     except:
