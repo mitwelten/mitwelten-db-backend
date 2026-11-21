@@ -3,7 +3,7 @@ from enum import Enum
 from typing import List, Literal, Optional, Tuple, Union
 
 from asyncpg.types import Range
-from pydantic import BaseModel, ConfigDict, Field, PositiveInt, constr, field_serializer
+from pydantic import BaseModel, ConfigDict, Field, PositiveInt, RootModel, constr, field_serializer
 from sqlalchemy.dialects.postgresql import TSTZRANGE
 
 
@@ -71,8 +71,8 @@ class DeleteResponse(BaseModel):
     status: str
     id: int
 
-class ValidationResult(BaseModel):
-    __root__: bool
+class ValidationResult(RootModel[bool]):
+    ...
 
 class NodeValidationRequest(BaseModel):
     node_id: Optional[int] = None
@@ -330,14 +330,13 @@ class PaxDatum(BaseModel):
     pax: Optional[int] = Field(None, examples=[17])
     paxUnit: Optional[str] = Field(None, examples=[''])
 
-class Datum(BaseModel):
-    __root__: Union[EnvDatum, PaxDatum]
+class Datum(RootModel[Union[EnvDatum, PaxDatum]]):
+    root: Union[EnvDatum, PaxDatum] = Field(..., discriminator='type')
 
-class DatumResponse(BaseModel):
+class DatumResponse(RootModel[Union[List[PaxDatum], List[EnvDatum]]]):
     '''
     Response containing one of a selection of sensor data types
     '''
-    __root__: Union[List[PaxDatum], List[EnvDatum]] = Field(..., discriminator='type')
 
 class PaxMeasurement(BaseModel):
     time: datetime
