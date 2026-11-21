@@ -15,13 +15,14 @@ networks:
 
 services:
   traefik:
-    image: "traefik:v2.11.12"
+    image: "traefik:v3.7.19"
     networks:
       - mitwelten
     container_name: "traefik"
     command:
       - "--log.level=INFO"
       - "--api"
+      - "--core.defaultRuleSyntax=v2"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.http.address=:80"
