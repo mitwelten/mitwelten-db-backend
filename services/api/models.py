@@ -75,7 +75,7 @@ class ValidationResult(BaseModel):
     __root__: bool
 
 class NodeValidationRequest(BaseModel):
-    node_id: Optional[int]
+    node_id: Optional[int] = None
     node_label: str
 
 class ImageValidationRequest(BaseModel):
@@ -130,8 +130,8 @@ class AudioRequest(BaseModel):
     source: str
     gain: str
     filter_: str = Field(..., alias='filter')
-    amp_thresh: Optional[str]
-    amp_trig: Optional[str]
+    amp_thresh: Optional[str] = None
+    amp_trig: Optional[str] = None
     battery: float
     temperature: float
     rec_end_status: str
@@ -168,7 +168,7 @@ class ResultFull(Species):
     object_time: datetime
     time_start_relative: float
     duration: float
-    image_url: Optional[str]
+    image_url: Optional[str] = None
     species_de: Optional[str] = None
     species_en: Optional[str] = None
     genus: Optional[str] = None
@@ -181,7 +181,7 @@ class ResultsGrouped(BaseModel):
     species: str
     time_start_relative: float
     duration: float
-    image_url: Optional[str]
+    image_url: Optional[str] = None
 
 class RankEnum(str, Enum):
     kingdom = 'KINGDOM'
@@ -196,9 +196,9 @@ class RankEnum(str, Enum):
 class Taxon(BaseModel):
     datum_id: int
     label_sci: str
-    label_de: Optional[str]
-    label_en: Optional[str]
-    image_url: Optional[str]
+    label_de: Optional[str] = None
+    label_en: Optional[str] = None
+    image_url: Optional[str] = None
     rank: RankEnum
 
 class Tag(BaseModel):
@@ -206,7 +206,7 @@ class Tag(BaseModel):
     Annotation
     '''
 
-    tag_id: Optional[int]
+    tag_id: Optional[int] = None
     name: constr(regex=r'\w+')
 
 class TagStats(Tag):
@@ -230,17 +230,17 @@ class Node(BaseModel):
         description='Identifyer, a.k.a _Node ID_, _Node Label_, or _Label_'
     )
     node_type: str = Field(..., example='Audio', description='Desription of function', alias='type')
-    serial_number: Optional[str]
+    serial_number: Optional[str] = None
     description: Optional[str] = Field(
         None,
         example='Environmental sensor to record humidity, temperature and athmospheric pressure',
     )
     platform: Optional[str] = Field(None, example='Audiomoth', description='Hardware platform')
-    connectivity: Optional[str]
-    power: Optional[str]
-    hardware_version: Optional[str]
-    software_version: Optional[str]
-    firmware_version: Optional[str]
+    connectivity: Optional[str] = None
+    power: Optional[str] = None
+    hardware_version: Optional[str] = None
+    software_version: Optional[str] = None
+    firmware_version: Optional[str] = None
 
 class Deployment(BaseModel):
     '''
@@ -277,7 +277,7 @@ class DeploymentRequest(BaseModel):
 class TVStackSelectionRequest(BaseModel):
     deployment_id: int
     period: TimeStampRange
-    interval: Optional[int]
+    interval: Optional[int] = None
     phase: Optional[str] = None
 
 class QueueInputDefinition(BaseModel):
@@ -381,7 +381,7 @@ class Note(BaseModel):
         description='Details for this note'
     )
     public: bool = True
-    location: Optional[Point]
+    location: Optional[Point] = None
     note_type: Optional[str] = Field(None, example='A walk in the park', alias='type')
     tags: Optional[List[Tag]] = None
     files: Optional[List[File]] = None
@@ -419,7 +419,7 @@ class MeteoDataset(BaseModel):
     station_id: str
     station_name: str
     data_src: str
-    last_measurement: Optional[datetime]
+    last_measurement: Optional[datetime] = None
 
 class MeteoMeasurements(BaseModel):
     time: List[datetime]
@@ -464,27 +464,27 @@ class BirdSpeciesCount(BaseModel):
 # Walks
 
 class Walk(BaseModel):
-    walk_id: Optional[int]
-    title: Optional[str]
-    description: Optional[str]
-    path: Optional[List[Tuple[float, float]]]
-    created_at: Optional[datetime]
-    updated_at: Optional[datetime]
+    walk_id: Optional[int] = None
+    title: Optional[str] = None
+    description: Optional[str] = None
+    path: Optional[List[Tuple[float, float]]] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
 
 class SectionText(BaseModel):
     text_id: int
     walk_id: int
     percent_in: int
     percent_out: int
-    title: Optional[str]
-    text: Optional[str]
+    title: Optional[str] = None
+    text: Optional[str] = None
 
 class HotSpot(BaseModel):
     hotspot_id: int = Field(None, alias='id')
     walk_id: int
     location: Point
     hotspot_type: int = Field(None, alias='type')
-    subject: Optional[str]
+    subject: Optional[str] = None
 
     class Config:
         allow_population_by_field_name = True
@@ -508,9 +508,9 @@ class HotspotAudioText(HotSpot):
     hotspot_type: int = Field(4, alias='type')
     portraitUrl: str
     audioUrl: str
-    speakerName: Optional[str]
-    speakerFunction: Optional[str]
-    contentSubject: Optional[str]
+    speakerName: Optional[str] = None
+    speakerFunction: Optional[str] = None
+    contentSubject: Optional[str] = None
 
 class HotspotInfotext(HotSpot):
     hotspot_type: int = Field(3, alias='type')
@@ -579,7 +579,7 @@ class AnnotationContent(BaseModel):
     updated_at: datetime
     content: str
     url: str
-    datasets: Optional[str]
+    datasets: Optional[str] = None
 
 class Annotation(AnnotationContent):
     id: int
@@ -587,22 +587,22 @@ class Annotation(AnnotationContent):
     full_name: str
 
 class EnvironmentRawEntry(BaseModel):
-    environment_id: Optional[int]
+    environment_id: Optional[int] = None
     location: Point
     timestamp: datetime
-    attribute_01: Optional[int]
-    attribute_02: Optional[int]
-    attribute_03: Optional[int]
-    attribute_04: Optional[int]
-    attribute_05: Optional[int]
-    attribute_06: Optional[int]
-    attribute_07: Optional[int]
-    attribute_08: Optional[int]
-    attribute_09: Optional[int]
-    attribute_10: Optional[int]
+    attribute_01: Optional[int] = None
+    attribute_02: Optional[int] = None
+    attribute_03: Optional[int] = None
+    attribute_04: Optional[int] = None
+    attribute_05: Optional[int] = None
+    attribute_06: Optional[int] = None
+    attribute_07: Optional[int] = None
+    attribute_08: Optional[int] = None
+    attribute_09: Optional[int] = None
+    attribute_10: Optional[int] = None
 
 class EnvironmentEntry(EnvironmentRawEntry):
     environment_id: int
-    created_at: Optional[datetime]
-    updated_at: Optional[datetime]
-    distance: Optional[float]
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+    distance: Optional[float] = None
