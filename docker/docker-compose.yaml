@@ -192,7 +192,7 @@ services:
       - traefik.http.middlewares.manager_api_v2_cors.headers.addvaryheader=true
 
   data-api:
-    image: cr.gitlab.fhnw.ch/mitwelten/docker-infrastructure/mitwelten-data-api:3.9_2026-11-21
+    image: cr.gitlab.fhnw.ch/mitwelten/docker-infrastructure/mitwelten-data-api:latest
     networks:
       - mitwelten
     container_name: mitwelten-data-api-v3
