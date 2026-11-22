@@ -11,7 +11,6 @@ volumes:
 
 networks:
   mitwelten:
-    external: false
     ipam:
       config:
         - subnet: 192.168.0.0/16
@@ -54,10 +53,10 @@ services:
 
     volumes:
       - "/etc/letsencrypt:/letsencrypt"
-      - "/opt/mitwelten-db-backend/docker/traefik_tls.yml:/configs/traefik_tls.yml"
+      - "./traefik_tls.yml:/configs/traefik_tls.yml:ro"
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
 
-    restart: always
+    restart: unless-stopped
 
   keycloak:
     logging: *logging
@@ -95,8 +94,8 @@ services:
     container_name: mitwelten-data-api-v3
     restart: unless-stopped
     volumes:
-      - /opt/mitwelten-db-backend/services/api:/service/api
-      - /opt/mitwelten-db-backend/credentials.py:/service/credentials.py
+      - ../services/api:/service/api:ro
+      - ../credentials.py:/service/credentials.py:ro
     labels:
       - traefik.enable=true
       - traefik.http.services.data_api_v3.loadbalancer.server.port=80
@@ -128,8 +127,8 @@ services:
       - mitwelten
     container_name: "deployment-frontend"
     volumes:
-      - "/opt/deployment-frontend/public:/usr/share/nginx/html"
-      - "/opt/deployment-frontend/nginx.conf:/etc/nginx/conf.d/default.conf"
+      - "/opt/deployment-frontend/public:/usr/share/nginx/html:ro"
+      - "/opt/deployment-frontend/nginx.conf:/etc/nginx/conf.d/default.conf:ro"
     labels:
       - "traefik.enable=true"
       - "traefik.http.services.deployment-frontend.loadbalancer.server.port=80"
@@ -138,7 +137,7 @@ services:
       - "traefik.http.routers.deployment-frontend.rule=Host(`deploy.mitwelten.org`)"
       - "traefik.http.routers.deployment-frontend.entrypoints=https"
 
-    restart: always
+    restart: unless-stopped
 
   wildcam-tv:
     logging: *logging
@@ -147,8 +146,8 @@ services:
       - mitwelten
     container_name: "wildcam-tv"
     volumes:
-      - "/opt/wildcam-tv/public:/usr/share/nginx/html"
-      - "/opt/wildcam-tv/nginx.conf:/etc/nginx/conf.d/default.conf"
+      - "/opt/wildcam-tv/public:/usr/share/nginx/html:ro"
+      - "/opt/wildcam-tv/nginx.conf:/etc/nginx/conf.d/default.conf:ro"
     labels:
       - "traefik.enable=true"
       - "traefik.http.services.wildcam-tv.loadbalancer.server.port=80"
@@ -157,7 +156,7 @@ services:
       - "traefik.http.routers.wildcam-tv.rule=Host(`tv.mitwelten.org`)"
       - "traefik.http.routers.wildcam-tv.entrypoints=https"
 
-    restart: always
+    restart: unless-stopped
 
   datawalk-webapp:
     logging: *logging
@@ -166,8 +165,8 @@ services:
       - mitwelten
     container_name: "datawalk-webapp"
     volumes:
-      - "/opt/datawalk-webapp/public:/usr/share/nginx/html"
-      - "/opt/datawalk-webapp/nginx.conf:/etc/nginx/conf.d/default.conf"
+      - "/opt/datawalk-webapp/public:/usr/share/nginx/html:ro"
+      - "/opt/datawalk-webapp/nginx.conf:/etc/nginx/conf.d/default.conf:ro"
     labels:
       - "traefik.enable=true"
       - "traefik.http.services.datawalk-webapp.loadbalancer.server.port=80"
@@ -176,7 +175,7 @@ services:
       - "traefik.http.routers.datawalk-webapp.rule=Host(`walk.mitwelten.org`)"
       - "traefik.http.routers.datawalk-webapp.entrypoints=https"
 
-    restart: always
+    restart: unless-stopped
 
   prometheus:
     logging: *logging
@@ -186,10 +185,10 @@ services:
     hostname: prometheus
     container_name: prometheus
     volumes:
-      - ../monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-      - ../monitoring/prometheus/alert.rules.yml:/etc/prometheus/alert.rules.yml
-      - ../monitoring/prometheus/alerts:/etc/prometheus/alerts
-      - ../monitoring/prometheus/sd:/etc/prometheus/sd
+      - ../monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ../monitoring/prometheus/alert.rules.yml:/etc/prometheus/alert.rules.yml:ro
+      - ../monitoring/prometheus/alerts:/etc/prometheus/alerts:ro
+      - ../monitoring/prometheus/sd:/etc/prometheus/sd:ro
       - prometheus_data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
@@ -209,9 +208,9 @@ services:
     networks:
       - mitwelten
     volumes:
-      - ../monitoring/grafana/grafana.ini:/etc/grafana/grafana.ini
-      - ../monitoring/grafana/provisioning/datasources/datasource.yml:/etc/grafana/provisioning/datasources/datasource.yml
-      - ../monitoring/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
+      - ../monitoring/grafana/grafana.ini:/etc/grafana/grafana.ini:ro
+      - ../monitoring/grafana/provisioning/datasources/datasource.yml:/etc/grafana/provisioning/datasources/datasource.yml:ro
+      - ../monitoring/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
       - grafana_data:/var/lib/grafana
     depends_on:
       - prometheus
@@ -228,19 +227,22 @@ services:
     logging: *logging
     image: cr.gitlab.fhnw.ch/mitwelten/docker-infrastructure/mitwelten-mqtt-relay:latest
     container_name: mqtt-relay
-    restart: always
+    restart: unless-stopped
     networks:
       - mitwelten
     volumes:
-      - /opt/mitwelten-db-backend/docker/mqtt_relay_configuration.yaml:/app/configuration.yaml
+      - ./mqtt_relay_configuration.yaml:/app/configuration.yaml:ro
 
   mitwelten-explore:
     logging: *logging
     image: cr.gitlab.fhnw.ch/mitwelten/docker-infrastructure/mitwelten-explore:latest
     networks:
       - mitwelten
-    restart: always
+    restart: unless-stopped
     container_name: mitwelten-explore
+    depends_on:
+      redis_cache:
+        condition: service_healthy
     environment:
       - KC_SERVER_URL=https://auth.mitwelten.org/auth/
       - KC_CLIENT_ID=explore
@@ -260,7 +262,12 @@ services:
     logging: *logging
     image: redis:latest
     container_name: redis_cache
-    restart: always
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
     networks:
       - mitwelten
 
@@ -269,7 +276,7 @@ services:
     image: cr.gitlab.fhnw.ch/mitwelten/docker-infrastructure/mitwelten-discover_app:latest
     networks:
       - mitwelten
-    restart: always
+    restart: unless-stopped
     container_name: mitwelten-discover
     environment:
       - KC_SERVER_URL=https://auth.mitwelten.org/auth/
