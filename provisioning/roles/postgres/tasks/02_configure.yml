@@ -2,6 +2,29 @@
 # tasks file for postgresql
 # configure postgresql and superuser
 
+# All tasks below connect on the default port (5432) but edit the config of
+# {{ postgres_version }}/main. After installing a new major version, the new
+# (empty) cluster runs on 5433 until the old one is migrated, see README.
+- name: safety check | list clusters
+  command: pg_lsclusters --no-header
+  register: pg_clusters
+  changed_when: false
+  check_mode: false
+  tags: configure
+
+- name: safety check | cluster {{ postgres_version }}/main serves port 5432
+  assert:
+    that: >-
+      pg_clusters.stdout_lines
+      | select('match', '^' ~ postgres_version ~ '\s+main\s+5432\s')
+      | list | length == 1
+    fail_msg: >-
+      Cluster {{ postgres_version }}/main is not the one on port 5432
+      (found: {{ pg_clusters.stdout_lines }}). Migrate the old cluster first,
+      see provisioning/README.md#postgresql-major-upgrade.
+    quiet: true
+  tags: configure
+
 - name: network access | configure listening address to public
   lineinfile:
     path: /etc/postgresql/{{postgres_version}}/main/postgresql.conf

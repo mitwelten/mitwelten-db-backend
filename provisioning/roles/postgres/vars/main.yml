@@ -2,9 +2,9 @@
 # vars file for postgresql
 
 debian_dependencies:
-  - apt-transport-https
-  - python3-pip
+  - ca-certificates
   - gpg
+  - python3-psycopg2
 
 postgres_dependencies:
   - postgresql-{{postgres_version}}

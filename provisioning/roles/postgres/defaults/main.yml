@@ -1,7 +1,13 @@
 ---
 # defaults file for postgres
 
-postgres_version: 14
+postgres_version: 17
+
+# apt suites, following the host's Debian release (e.g. trixie)
+postgres_apt_suite: "{{ ansible_facts['distribution_release'] }}-pgdg"
+timescaledb_apt_suite: "{{ ansible_facts['distribution_release'] }}"
+
+apt_keyring_dir: /etc/apt/keyrings
 
 backup_script_path: /usr/local/bin/database-backup
 backup_dir: /var/local/backups
