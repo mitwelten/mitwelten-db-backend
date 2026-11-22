@@ -35,7 +35,6 @@ services:
     labels:
       # Dashboard
       - "traefik.enable=true"
-      - "traefik.http.services.admin.loadbalancer.server.port=443"
       - "traefik.http.routers.traefik.rule=Host(`v000744.fhnw.ch`)"
       - "traefik.http.routers.traefik.service=api@internal"
       - "traefik.http.routers.traefik.middlewares=admin"
@@ -92,7 +91,7 @@ services:
       - "traefik.http.routers.kc.tls.certresolver=ssl"
 
   data-api:
-    image: cr.gitlab.fhnw.ch/mitwelten/docker-infrastructure/mitwelten-data-api:3.9_2026-11-21
+    image: cr.gitlab.fhnw.ch/mitwelten/docker-infrastructure/mitwelten-data-api:latest
     networks:
       - mitwelten
     container_name: mitwelten-data-api-v3
@@ -115,7 +114,7 @@ services:
       - traefik.http.routers.data_api_v3.entrypoints=https
       - traefik.http.routers.data_api_v3.tls.certresolver=ssl
       #  middlewares for https
-      - traefik.http.routers.data_api_v3.middlewares=data_api_v3_cors,data_api_v3_stripprefix
+      - traefik.http.routers.data_api_v3.middlewares=data_api_v3_cors,data_api_v3_stripprefix,data_api_v3_compress
 
       # strip prefix /api/v3
       - traefik.http.middlewares.data_api_v3_stripprefix.stripprefix.prefixes=/api/v3
@@ -132,7 +131,7 @@ services:
       - traefik.http.middlewares.data_api_v3_cors.headers.addvaryheader=true
 
   deployment-frontend:
-    image: nginx:alpine
+    image: nginx:stable-alpine
     networks:
       - mitwelten
     container_name: "deployment-frontend"
@@ -159,7 +158,7 @@ services:
     restart: always
 
   wildcam-tv:
-    image: nginx:alpine
+    image: nginx:stable-alpine
     networks:
       - mitwelten
     container_name: "wildcam-tv"
@@ -186,7 +185,7 @@ services:
     restart: always
 
   datawalk-webapp:
-    image: nginx:alpine
+    image: nginx:stable-alpine
     networks:
       - mitwelten
     container_name: "datawalk-webapp"
@@ -312,7 +311,7 @@ services:
 
 
   redis_cache:
-    image: redis
+    image: redis:latest
     container_name: redis_cache
     restart: always
     networks:
