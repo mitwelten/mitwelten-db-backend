@@ -518,8 +518,8 @@ services:
     restart: unless-stopped
     environment:
       PROM2TEAMS_CONNECTOR: ${TEAMS_WEBHOOK_URL}
-    ports:
-      - 8089:8089
+    expose:
+      - 8089
 
   vernemq:
     image: erlio/docker-vernemq:1.10.0-alpine
