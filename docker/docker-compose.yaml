@@ -229,8 +229,6 @@ services:
       - '--web.console.libraries=/etc/prometheus/console_libraries'
       - '--web.console.templates=/etc/prometheus/consoles'
       - '--web.enable-lifecycle' # reload configuration with curl -X POST http://localhost:9090/-/reload
-    ports:
-      - 9090:9090
     expose:
       - 9090
     restart: unless-stopped
@@ -246,10 +244,6 @@ services:
       - ../monitoring/grafana/provisioning/datasources/datasource.yml:/etc/grafana/provisioning/datasources/datasource.yml
       - ../monitoring/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
       - grafana_data:/var/lib/grafana
-    ports:
-      - 3000:3000
-    links:
-      - prometheus:prometheus
     depends_on:
       - prometheus
     restart: unless-stopped
