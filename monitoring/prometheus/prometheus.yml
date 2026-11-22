@@ -3,11 +3,8 @@ global:
   scrape_timeout:      10s # The default is every 10 seconds.
   evaluation_interval: 10s # Evaluate rules every 10 seconds. The default is every 1 minute.
 
-alerting:
-  alertmanagers:
-  - static_configs:
-    - targets:
-      - 172.17.0.1:9093
+# alerting: alertmanager is not running on this deployment (wind-down),
+# so no alertmanagers are configured. Rules are still evaluated and visible in the UI.
 
 # Load rules once and periodically evaluate them according to the global 'evaluation_interval'.
 rule_files:
@@ -36,17 +33,6 @@ scrape_configs:
   - files:
     - /etc/prometheus/sd/mitwelten_capture-nodes.json
     refresh_interval: 5m
-
-- job_name: node_proxy
-  proxy_url: http://pushprox:8082/
-  scheme: http
-  static_configs:
-    - targets: ['ba14ns21425.adm.ds.fhnw.ch:9100']
-  relabel_configs:
-    - source_labels: [__address__]
-      target_label: instance
-    - target_label: job
-      replacement: node
 
 - job_name: node_local
   static_configs:
