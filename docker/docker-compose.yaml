@@ -397,10 +397,9 @@ services:
       - "traefik.http.middlewares.geo-redirect.redirectregex.regex=^https://data.mitwelten.org/geo/v1/(.*)"
       - "traefik.http.middlewares.geo-redirect.redirectregex.replacement=https://data.mitwelten.org/geo/v2/$${1}"
       - "traefik.http.middlewares.geo-redirect.redirectregex.permanent=true"
-      - "traefik.http.routers.geo.middlewares=geo-redirect"
 
       #  middlewares for https
-      - "traefik.http.routers.geo.middlewares=geo-cors,geo-stripprefix"
+      - "traefik.http.routers.geo.middlewares=geo-redirect,geo-cors,geo-stripprefix"
 
       # strip prefix /geo/v2
       - "traefik.http.middlewares.geo-stripprefix.stripprefix.prefixes=/geo/v2"
