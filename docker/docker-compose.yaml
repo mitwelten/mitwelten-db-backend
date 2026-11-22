@@ -499,6 +499,9 @@ services:
       - mitwelten
     restart: unless-stopped
     container_name: mitwelten-explore
+    depends_on:
+      redis_cache:
+        condition: service_healthy
     environment:
       - KC_SERVER_URL=https://auth.mitwelten.org/auth/
       - KC_CLIENT_ID=explore
@@ -539,6 +542,11 @@ services:
     image: redis:latest
     container_name: redis_cache
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
     networks:
       - mitwelten
 
