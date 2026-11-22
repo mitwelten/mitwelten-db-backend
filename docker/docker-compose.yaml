@@ -33,7 +33,6 @@ services:
       - "--entrypoints.http.http.redirections.entrypoint.to=https"
       - "--entrypoints.http.http.redirections.entrypoint.scheme=https"
       - "--entrypoints.https.http.tls.certresolver=ssl"
-      - "--entrypoints.mqtts.address=:8883"
       - "--certificatesresolvers.ssl.acme.tlschallenge=true"
       - "--certificatesresolvers.ssl.acme.email=mitwelten.technik@fhnw.ch"
       - "--certificatesresolvers.ssl.acme.storage=/letsencrypt/acme.json"
@@ -52,7 +51,6 @@ services:
     ports:
       - "80:80"
       - "443:443"
-      - "8883:8883"
 
     volumes:
       - "/etc/letsencrypt:/letsencrypt"
