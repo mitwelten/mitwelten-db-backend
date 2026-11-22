@@ -62,7 +62,7 @@ services:
       - "/opt/mitwelten-db-backend/docker/traefik_tls.yml:/configs/traefik_tls.yml"
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
 
-    restart: always
+    restart: unless-stopped
 
   keycloak:
     logging: *logging
@@ -222,7 +222,7 @@ services:
       - "traefik.http.routers.deployment-frontend.rule=Host(`deploy.mitwelten.org`)"
       - "traefik.http.routers.deployment-frontend.entrypoints=https"
 
-    restart: always
+    restart: unless-stopped
 
   wildcam-tv:
     logging: *logging
@@ -241,7 +241,7 @@ services:
       - "traefik.http.routers.wildcam-tv.rule=Host(`tv.mitwelten.org`)"
       - "traefik.http.routers.wildcam-tv.entrypoints=https"
 
-    restart: always
+    restart: unless-stopped
 
   datawalk-webapp:
     logging: *logging
@@ -260,7 +260,7 @@ services:
       - "traefik.http.routers.datawalk-webapp.rule=Host(`walk.mitwelten.org`)"
       - "traefik.http.routers.datawalk-webapp.entrypoints=https"
 
-    restart: always
+    restart: unless-stopped
 
   pipeline-frontend:
     logging: *logging
@@ -279,7 +279,7 @@ services:
       - "traefik.http.routers.pipeline-frontend.rule=Host(`detect.mitwelten.org`)"
       - "traefik.http.routers.pipeline-frontend.entrypoints=https"
 
-    restart: always
+    restart: unless-stopped
 
   batdetect-gui:
     logging: *logging
@@ -302,7 +302,7 @@ services:
       #  middlewares for https
       - traefik.http.routers.batdetect_gui.middlewares=batdetect_gui-auth
 
-    restart: always
+    restart: unless-stopped
 
   geo:
     logging: *logging
@@ -338,7 +338,7 @@ services:
       - "traefik.http.middlewares.geo-cors.headers.accesscontrolmaxage=100"
       - "traefik.http.middlewares.geo-cors.headers.addvaryheader=true"
 
-    restart: always
+    restart: unless-stopped
 
   prometheus:
     logging: *logging
@@ -435,7 +435,7 @@ services:
     networks:
       - mitwelten
     container_name: vernemq
-    restart: always
+    restart: unless-stopped
     volumes:
       - "../services/mqtt/vernemq.conf.local:/vernemq/etc/vernemq.conf.local"
     environment:
@@ -455,7 +455,7 @@ services:
     networks:
       - mitwelten
     container_name: verneauth
-    restart: always
+    restart: unless-stopped
     volumes:
       - verneauth_data:/opt/verneauth/data
 
@@ -465,7 +465,7 @@ services:
     networks:
       - mitwelten
     container_name: verneauth-ui
-    restart: always
+    restart: unless-stopped
     depends_on:
      - verneauth
     #ports:
@@ -486,7 +486,7 @@ services:
     logging: *logging
     image: cr.gitlab.fhnw.ch/mitwelten/docker-infrastructure/mitwelten-mqtt-relay:latest
     container_name: mqtt-relay
-    restart: always
+    restart: unless-stopped
     networks:
       - mitwelten
     volumes:
@@ -497,7 +497,7 @@ services:
     image: cr.gitlab.fhnw.ch/mitwelten/docker-infrastructure/mitwelten-explore:latest
     networks:
       - mitwelten
-    restart: always
+    restart: unless-stopped
     container_name: mitwelten-explore
     environment:
       - KC_SERVER_URL=https://auth.mitwelten.org/auth/
@@ -519,7 +519,7 @@ services:
     image: cr.gitlab.fhnw.ch/mitwelten/docker-infrastructure/mitwelten-cams-dashboard:latest
     networks:
       - mitwelten
-    restart: always
+    restart: unless-stopped
     container_name: mitwelten-cams
     environment:
       - KC_SERVER_URL=https://auth.mitwelten.org/auth/
@@ -538,7 +538,7 @@ services:
     logging: *logging
     image: redis:latest
     container_name: redis_cache
-    restart: always
+    restart: unless-stopped
     networks:
       - mitwelten
 
@@ -547,7 +547,7 @@ services:
     image: cr.gitlab.fhnw.ch/mitwelten/docker-infrastructure/mitwelten-discover_app:latest
     networks:
       - mitwelten
-    restart: always
+    restart: unless-stopped
     container_name: mitwelten-discover
     environment:
       - KC_SERVER_URL=https://auth.mitwelten.org/auth/
