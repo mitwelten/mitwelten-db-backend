@@ -1,14 +1,28 @@
 ---
 # vars file for docker
 
-debian_dependencies:
-  - apt-transport-https
+docker_os_dependencies:
   - ca-certificates
   - lsb-release
-  - gnupg
+  - gpg
+  - python3-debian # required by deb822_repository
 
+# docker engine from the official docker.com repository
 docker_dependencies:
-  - docker
-  - docker.io
-  - docker-compose
-  - docker-registry
+  - docker-ce
+  - docker-ce-cli
+  - containerd.io
+  - docker-compose-plugin
+
+docker_apt_keyring: /etc/apt/keyrings/docker.asc
+docker_apt_uri: "https://download.docker.com/linux/{{ ansible_facts['distribution'] | lower }}"
+docker_apt_suite: "{{ ansible_facts['distribution_release'] }}"
+
+# ansible reports the kernel architecture (x86_64), apt expects dpkg names (amd64)
+docker_apt_arch_map:
+  x86_64: amd64
+  aarch64: arm64
+docker_apt_arch: "{{ docker_apt_arch_map[ansible_facts['architecture']] | default(ansible_facts['architecture']) }}"
+
+# docker release key previously added with apt_key to the legacy global keyring
+docker_legacy_key_fingerprint: 9DC858229FC7DD38854AE2D88D81803C0EBFCD88

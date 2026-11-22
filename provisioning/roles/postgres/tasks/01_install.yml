@@ -7,20 +7,29 @@
     state: present
   tags: install
 
-- name: add GPG signing key
+- name: ensure apt keyring directory exists
   become: true
-  apt_key:
-    url: "https://www.postgresql.org/media/keys/ACCC4CF8.asc"
-    state: present
-    validate_certs: true
+  file:
+    path: "{{ apt_keyring_dir }}"
+    state: directory
+    mode: '0755'
   tags: install
 
+- name: add GPG signing key
+  become: true
+  get_url:
+    url: "https://www.postgresql.org/media/keys/ACCC4CF8.asc"
+    dest: "{{ apt_keyring_dir }}/postgresql.asc"
+    mode: '0644'
+  tags: install
+
+# copy (not apt_repository): replace lines of older debian releases
 - name: add official repository
   become: true
-  apt_repository:
-    repo: "deb http://apt.postgresql.org/pub/repos/apt/ bullseye-pgdg main"
-    state: present
-    filename: pgdg
+  copy:
+    dest: /etc/apt/sources.list.d/pgdg.list
+    content: "deb [signed-by={{ apt_keyring_dir }}/postgresql.asc] https://apt.postgresql.org/pub/repos/apt/ {{ postgres_apt_suite }} main\n"
+    mode: '0644'
   register: postgresql_repo
   tags: install
 
@@ -41,19 +50,30 @@
 
 - name: add timescale GPG signing key
   become: true
-  apt_key:
+  get_url:
     url: "https://packagecloud.io/timescale/timescaledb/gpgkey"
-    state: present
-    validate_certs: true
+    dest: "{{ apt_keyring_dir }}/timescaledb.asc"
+    mode: '0644'
   tags: install
 
 - name: add timescale repository
   become: true
-  apt_repository:
-    repo: "deb https://packagecloud.io/timescale/timescaledb/debian/ bullseye main"
-    state: present
-    filename: timescaledb
+  copy:
+    dest: /etc/apt/sources.list.d/timescaledb.list
+    content: "deb [signed-by={{ apt_keyring_dir }}/timescaledb.asc] https://packagecloud.io/timescale/timescaledb/debian/ {{ timescaledb_apt_suite }} main\n"
+    mode: '0644'
   register: timescale_repo
+  tags: install
+
+- name: remove timescale key from legacy global apt keyring
+  become: true
+  shell: |
+    test -f /etc/apt/trusted.gpg || exit 0
+    gpg --no-default-keyring --keyring /etc/apt/trusted.gpg --list-keys {{ timescaledb_legacy_key_fingerprint }} >/dev/null 2>&1 || exit 0
+    gpg --no-default-keyring --keyring /etc/apt/trusted.gpg --batch --yes --delete-keys {{ timescaledb_legacy_key_fingerprint }}
+    echo removed
+  register: timescale_legacy_key
+  changed_when: "'removed' in timescale_legacy_key.stdout"
   tags: install
 
 - name: udpate apt cache
@@ -79,9 +99,3 @@
   tags:
     - install
     - configure
-
-- name: install psycopg2
-  pip:
-    name: psycopg2-binary
-    executable: pip3
-  tags: install

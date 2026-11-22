@@ -9,6 +9,7 @@
   loop: "{{ mitwelten_databases }}"
   loop_control:
     loop_var: db
+    label: "{{ db.postgres_database_name }}"
   include_tasks: 03_database.yml
   tags: configure
 

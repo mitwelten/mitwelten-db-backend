@@ -31,13 +31,13 @@
 
     - name: list packages to upgrade (2/2)
       debug: msg="{{ updates.stdout_lines | count }} packages to upgrade ({{ updates.stdout_lines | join(', ') }})"
-      when: (updates.stdout_lines)
+      when: updates.stdout_lines | length > 0
       check_mode: no
       tags: maintenance
 
     - name: upgrade packages
       apt: upgrade=safe
-      when: (updates.stdout_lines)
+      when: updates.stdout_lines | length > 0
       tags: maintenance
 
     - name: check what the new version is
