@@ -447,8 +447,6 @@ services:
       - ../monitoring/grafana/provisioning/datasources/datasource.yml:/etc/grafana/provisioning/datasources/datasource.yml
       - ../monitoring/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
       - grafana_data:/var/lib/grafana
-    links:
-      - prometheus:prometheus
     depends_on:
       - prometheus
     restart: unless-stopped
