@@ -29,11 +29,13 @@ services:
     command:
       - "--log.level=INFO"
       - "--api"
-      - "--core.defaultRuleSyntax=v2"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.http.address=:80"
       - "--entrypoints.https.address=:443"
+      - "--entrypoints.http.http.redirections.entrypoint.to=https"
+      - "--entrypoints.http.http.redirections.entrypoint.scheme=https"
+      - "--entrypoints.https.http.tls.certresolver=ssl"
       - "--entrypoints.mqtts.address=:8883"
       - "--certificatesresolvers.ssl.acme.tlschallenge=true"
       - "--certificatesresolvers.ssl.acme.email=mitwelten.technik@fhnw.ch"
@@ -47,7 +49,6 @@ services:
       - "traefik.http.routers.traefik.rule=Host(`v000744.fhnw.ch`)"
       - "traefik.http.routers.traefik.service=api@internal"
       - "traefik.http.routers.traefik.middlewares=admin"
-      - "traefik.http.routers.traefik.tls.certresolver=ssl"
       - "traefik.http.routers.traefik.entrypoints=https"
       - "traefik.http.middlewares.admin.basicauth.users=${MANAGER_API_BASIC_AUTH_USER_PW}"
 
@@ -87,18 +88,9 @@ services:
       - "traefik.enable=true"
       - "traefik.http.services.kc.loadbalancer.server.port=8080"
 
-      # for http
-      - "traefik.http.routers.kc_insecure.rule=Host(`auth.mitwelten.org`)"
-      - "traefik.http.routers.kc_insecure.entrypoints=http"
-
-      # redirect to https
-      - "traefik.http.middlewares.kc-https.redirectscheme.scheme=https"
-      - "traefik.http.routers.kc_insecure.middlewares=kc-https"
-
       # for https
       - "traefik.http.routers.kc.rule=Host(`auth.mitwelten.org`)"
       - "traefik.http.routers.kc.entrypoints=https"
-      - "traefik.http.routers.kc.tls.certresolver=ssl"
 
   pushprox:
     logging: *logging
@@ -112,18 +104,9 @@ services:
       - "traefik.enable=true"
       - "traefik.http.services.pushprox.loadbalancer.server.port=8082"
 
-      # for http
-      - "traefik.http.routers.pushprox_insecure.rule=Host(`push.mitwelten.org`)"
-      - "traefik.http.routers.pushprox_insecure.entrypoints=http"
-
-      # redirect to https
-      - "traefik.http.middlewares.pushprox-https.redirectscheme.scheme=https"
-      - "traefik.http.routers.pushprox_insecure.middlewares=pushprox-https"
-
       # for https
       - "traefik.http.routers.pushprox.rule=Host(`push.mitwelten.org`)"
       - "traefik.http.routers.pushprox.entrypoints=https"
-      - "traefik.http.routers.pushprox.tls.certresolver=ssl"
 
   labelstudio:
     logging: *logging
@@ -150,18 +133,9 @@ services:
       - "traefik.enable=true"
       - "traefik.http.services.ls.loadbalancer.server.port=8080"
 
-      # for http
-      - "traefik.http.routers.ls_insecure.rule=Host(`label.mitwelten.org`)"
-      - "traefik.http.routers.ls_insecure.entrypoints=http"
-
-      # redirect to https
-      - "traefik.http.middlewares.ls-https.redirectscheme.scheme=https"
-      - "traefik.http.routers.ls_insecure.middlewares=ls-https"
-
       # for https
       - "traefik.http.routers.ls.rule=Host(`label.mitwelten.org`)"
       - "traefik.http.routers.ls.entrypoints=https"
-      - "traefik.http.routers.ls.tls.certresolver=ssl"
 
   manager-api-v2:
     logging: *logging
@@ -177,16 +151,9 @@ services:
       - traefik.enable=true
       - traefik.http.services.manager_api_v2.loadbalancer.server.port=80
 
-      # http entrypoint
-      - traefik.http.routers.manager_api_v2_http.rule=Host(`data.mitwelten.org`)&&PathPrefix(`/manager/v2/`)
-      - traefik.http.routers.manager_api_v2_http.entrypoints=http
-      # redirect to https
-      - traefik.http.middlewares.manager_api_v2_https.redirectscheme.scheme=https
-      - traefik.http.routers.manager_api_v2_http.middlewares=manager_api_v2_https
       # https entrypoint
       - traefik.http.routers.manager_api_v2.rule=Host(`data.mitwelten.org`)&&PathPrefix(`/manager/v2/`)
       - traefik.http.routers.manager_api_v2.entrypoints=https
-      - traefik.http.routers.manager_api_v2.tls.certresolver=ssl
       #  middlewares for https
       - traefik.http.routers.manager_api_v2.middlewares=manager_api_v2_cors,manager_api_v2_stripprefix,manager_api_v2_basic-auth
 
@@ -218,16 +185,9 @@ services:
       - traefik.enable=true
       - traefik.http.services.data_api_v3.loadbalancer.server.port=80
 
-      # http entrypoint
-      - traefik.http.routers.data_api_v3_http.rule=Host(`data.mitwelten.org`)&&PathPrefix(`/api/v3/`)
-      - traefik.http.routers.data_api_v3_http.entrypoints=http
-      # redirect to https
-      - traefik.http.middlewares.data_api_v3_https.redirectscheme.scheme=https
-      - traefik.http.routers.data_api_v3_http.middlewares=data_api_v3_https
       # https entrypoint
       - traefik.http.routers.data_api_v3.rule=Host(`data.mitwelten.org`)&&PathPrefix(`/api/v3/`)
       - traefik.http.routers.data_api_v3.entrypoints=https
-      - traefik.http.routers.data_api_v3.tls.certresolver=ssl
       #  middlewares for https
       - traefik.http.routers.data_api_v3.middlewares=data_api_v3_cors,data_api_v3_stripprefix,data_api_v3_compress
 
@@ -259,17 +219,8 @@ services:
       - "traefik.http.services.deployment-frontend.loadbalancer.server.port=80"
 
       # for https
-      - "traefik.http.routers.deployment-frontend_insecure.rule=Host(`deploy.mitwelten.org`)"
-      - "traefik.http.routers.deployment-frontend_insecure.entrypoints=http"
-
-      # redirect to https
-      - "traefik.http.middlewares.deployment-frontend-https.redirectscheme.scheme=https"
-      - "traefik.http.routers.deployment-frontend_insecure.middlewares=deployment-frontend-https"
-
-      # for https
       - "traefik.http.routers.deployment-frontend.rule=Host(`deploy.mitwelten.org`)"
       - "traefik.http.routers.deployment-frontend.entrypoints=https"
-      - "traefik.http.routers.deployment-frontend.tls.certresolver=ssl"
 
     restart: always
 
@@ -287,17 +238,8 @@ services:
       - "traefik.http.services.wildcam-tv.loadbalancer.server.port=80"
 
       # for https
-      - "traefik.http.routers.wildcam-tv_insecure.rule=Host(`tv.mitwelten.org`)"
-      - "traefik.http.routers.wildcam-tv_insecure.entrypoints=http"
-
-      # redirect to https
-      - "traefik.http.middlewares.wildcam-tv-https.redirectscheme.scheme=https"
-      - "traefik.http.routers.wildcam-tv_insecure.middlewares=wildcam-tv-https"
-
-      # for https
       - "traefik.http.routers.wildcam-tv.rule=Host(`tv.mitwelten.org`)"
       - "traefik.http.routers.wildcam-tv.entrypoints=https"
-      - "traefik.http.routers.wildcam-tv.tls.certresolver=ssl"
 
     restart: always
 
@@ -315,17 +257,8 @@ services:
       - "traefik.http.services.datawalk-webapp.loadbalancer.server.port=80"
 
       # for https
-      - "traefik.http.routers.datawalk-webapp_insecure.rule=Host(`walk.mitwelten.org`)"
-      - "traefik.http.routers.datawalk-webapp_insecure.entrypoints=http"
-
-      # redirect to https
-      - "traefik.http.middlewares.datawalk-webapp-https.redirectscheme.scheme=https"
-      - "traefik.http.routers.datawalk-webapp_insecure.middlewares=datawalk-webapp-https"
-
-      # for https
       - "traefik.http.routers.datawalk-webapp.rule=Host(`walk.mitwelten.org`)"
       - "traefik.http.routers.datawalk-webapp.entrypoints=https"
-      - "traefik.http.routers.datawalk-webapp.tls.certresolver=ssl"
 
     restart: always
 
@@ -343,17 +276,8 @@ services:
       - "traefik.http.services.pipeline-frontend.loadbalancer.server.port=80"
 
       # for https
-      - "traefik.http.routers.pipeline-frontend_insecure.rule=Host(`detect.mitwelten.org`)"
-      - "traefik.http.routers.pipeline-frontend_insecure.entrypoints=http"
-
-      # redirect to https
-      - "traefik.http.middlewares.pipeline-frontend-https.redirectscheme.scheme=https"
-      - "traefik.http.routers.pipeline-frontend_insecure.middlewares=pipeline-frontend-https"
-
-      # for https
       - "traefik.http.routers.pipeline-frontend.rule=Host(`detect.mitwelten.org`)"
       - "traefik.http.routers.pipeline-frontend.entrypoints=https"
-      - "traefik.http.routers.pipeline-frontend.tls.certresolver=ssl"
 
     restart: always
 
@@ -371,18 +295,9 @@ services:
       - traefik.http.services.batdetect_gui.loadbalancer.server.port=8000
       - traefik.http.middlewares.batdetect_gui-auth.basicauth.users=${MITWELTEN_BATS_BASIC_AUTH_USER_PW}
 
-      # for http
-      - traefik.http.routers.batdetect_gui_insecure.rule=Host(`bats.mitwelten.org`)
-      - traefik.http.routers.batdetect_gui_insecure.entrypoints=http
-
-      # redirect to https
-      - traefik.http.middlewares.batdetect_gui-https.redirectscheme.scheme=https
-      - traefik.http.routers.batdetect_gui_insecure.middlewares=batdetect_gui-https
-
       # for https
       - traefik.http.routers.batdetect_gui.rule=Host(`bats.mitwelten.org`)
       - traefik.http.routers.batdetect_gui.entrypoints=https
-      - traefik.http.routers.batdetect_gui.tls.certresolver=ssl
 
       #  middlewares for https
       - traefik.http.routers.batdetect_gui.middlewares=batdetect_gui-auth
@@ -402,18 +317,9 @@ services:
       - "traefik.enable=true"
       - "traefik.http.services.geo.loadbalancer.server.port=80"
 
-      # for http
-      - "traefik.http.routers.geo_insecure.rule=Host(`data.mitwelten.org`)&&(PathPrefix(`/geo/v1/`) || PathPrefix(`/geo/v2/`))"
-      - "traefik.http.routers.geo_insecure.entrypoints=http"
-
-      # redirect to https
-      - "traefik.http.middlewares.geo-https.redirectscheme.scheme=https"
-      - "traefik.http.routers.geo_insecure.middlewares=geo-https"
-
       # for https
       - "traefik.http.routers.geo.rule=Host(`data.mitwelten.org`)&&(PathPrefix(`/geo/v1/`) || PathPrefix(`/geo/v2/`))"
       - "traefik.http.routers.geo.entrypoints=https"
-      - "traefik.http.routers.geo.tls.certresolver=ssl"
       - "traefik.http.middlewares.geo-redirect.redirectregex.regex=^https://data.mitwelten.org/geo/v1/(.*)"
       - "traefik.http.middlewares.geo-redirect.redirectregex.replacement=https://data.mitwelten.org/geo/v2/$${1}"
       - "traefik.http.middlewares.geo-redirect.redirectregex.permanent=true"
@@ -476,18 +382,9 @@ services:
       - traefik.enable=true
       - traefik.http.services.grafana.loadbalancer.server.port=3000
 
-      # for http
-      - 'traefik.http.routers.grafana_insecure.rule=Host(`status.mitwelten.org`)'
-      - traefik.http.routers.grafana_insecure.entrypoints=http
-
-      # redirect to https
-      - traefik.http.middlewares.grafana-https.redirectscheme.scheme=https
-      - traefik.http.routers.grafana_insecure.middlewares=grafana-https
-
       # for https
       - 'traefik.http.routers.grafana.rule=Host(`status.mitwelten.org`)'
       - traefik.http.routers.grafana.entrypoints=https
-      - traefik.http.routers.grafana.tls.certresolver=ssl
 
   alertmanager:
     logging: *logging
@@ -509,18 +406,9 @@ services:
       - traefik.enable=true
       - traefik.http.services.am.loadbalancer.server.port=9093
 
-      # for http
-      - 'traefik.http.routers.am-http.rule=Host(`status.mitwelten.org`) && PathPrefix(`/alertmanager`)'
-      - traefik.http.routers.am-http.entrypoints=http
-
-      # redirect to https
-      - traefik.http.middlewares.am-https.redirectscheme.scheme=https
-      - traefik.http.routers.am-http.middlewares=am-https
-
       # for https
       - 'traefik.http.routers.am.rule=Host(`status.mitwelten.org`) && PathPrefix(`/alertmanager`)'
       - traefik.http.routers.am.entrypoints=https
-      - traefik.http.routers.am.tls.certresolver=ssl
 
       #  middlewares for https (basic auth: reuses the traefik dashboard credentials)
       - traefik.http.routers.am.middlewares=admin,am-stripprefix
@@ -590,18 +478,9 @@ services:
       - "traefik.enable=true"
       - "traefik.http.services.vaui.loadbalancer.server.port=5000"
 
-      # for http
-      - "traefik.http.routers.vaui_insecure.rule=Host(`mqtt-console.mitwelten.org`)"
-      - "traefik.http.routers.vaui_insecure.entrypoints=http"
-
-      # redirect to https
-      - "traefik.http.middlewares.vaui-https.redirectscheme.scheme=https"
-      - "traefik.http.routers.vaui_insecure.middlewares=vaui-https"
-
       # for https
       - "traefik.http.routers.vaui.rule=Host(`mqtt-console.mitwelten.org`)"
       - "traefik.http.routers.vaui.entrypoints=https"
-      - "traefik.http.routers.vaui.tls.certresolver=ssl"
 
   mqtt-relay:
     logging: *logging
@@ -631,18 +510,9 @@ services:
       - "traefik.enable=true"
       - "traefik.http.services.mwexplore.loadbalancer.server.port=80"
 
-      # for http
-      - "traefik.http.routers.mwexplore_insecure.rule=Host(`explore.mitwelten.org`)"
-      - "traefik.http.routers.mwexplore_insecure.entrypoints=http"
-
-      # redirect to https
-      - "traefik.http.middlewares.mwexplore-https.redirectscheme.scheme=https"
-      - "traefik.http.routers.mwexplore_insecure.middlewares=mwexplore-https"
-
       # for https
       - "traefik.http.routers.mwexplore.rule=Host(`explore.mitwelten.org`)"
       - "traefik.http.routers.mwexplore.entrypoints=https"
-      - "traefik.http.routers.mwexplore.tls.certresolver=ssl"
 
   mitwelten-cams:
     logging: *logging
@@ -660,18 +530,9 @@ services:
       - "traefik.enable=true"
       - "traefik.http.services.mwcams.loadbalancer.server.port=80"
 
-      # for http
-      - "traefik.http.routers.mwcams_insecure.rule=Host(`cams.mitwelten.org`)"
-      - "traefik.http.routers.mwcams_insecure.entrypoints=http"
-
-      # redirect to https
-      - "traefik.http.middlewares.mwcams-https.redirectscheme.scheme=https"
-      - "traefik.http.routers.mwcams_insecure.middlewares=mwcams-https"
-
       # for https
       - "traefik.http.routers.mwcams.rule=Host(`cams.mitwelten.org`)"
       - "traefik.http.routers.mwcams.entrypoints=https"
-      - "traefik.http.routers.mwcams.tls.certresolver=ssl"
 
   redis_cache:
     logging: *logging
@@ -697,15 +558,6 @@ services:
       - "traefik.enable=true"
       - "traefik.http.services.mwdiscover.loadbalancer.server.port=80"
 
-      # for http
-      - "traefik.http.routers.mwdiscover_insecure.rule=Host(`discover.mitwelten.org`)"
-      - "traefik.http.routers.mwdiscover_insecure.entrypoints=http"
-
-      # redirect to https
-      - "traefik.http.middlewares.mwdiscover-https.redirectscheme.scheme=https"
-      - "traefik.http.routers.mwdiscover_insecure.middlewares=mwdiscover-https"
-
       # for https
       - "traefik.http.routers.mwdiscover.rule=Host(`discover.mitwelten.org`)"
       - "traefik.http.routers.mwdiscover.entrypoints=https"
-      - "traefik.http.routers.mwdiscover.tls.certresolver=ssl"
