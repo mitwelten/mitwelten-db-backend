@@ -644,7 +644,7 @@ services:
       - "traefik.http.routers.mwcams.tls.certresolver=ssl"
 
   redis_cache:
-    image: redis
+    image: redis:latest
     container_name: redis_cache
     restart: always
     networks:
