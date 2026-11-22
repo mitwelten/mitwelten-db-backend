@@ -1,3 +1,11 @@
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "50m"
+    max-file: "100"
+    compress: "true"
+
 volumes:
   prometheus_data: {}
   grafana_data: {}
@@ -13,6 +21,7 @@ networks:
 
 services:
   traefik:
+    logging: *logging
     image: "traefik:v3.7.19"
     networks:
       - mitwelten
@@ -55,6 +64,7 @@ services:
     restart: always
 
   keycloak:
+    logging: *logging
     container_name: keycloak
     image: quay.io/keycloak/keycloak:26.8.2
     command: start
@@ -91,6 +101,7 @@ services:
       - "traefik.http.routers.kc.tls.certresolver=ssl"
 
   pushprox:
+    logging: *logging
     container_name: pushprox
     image: prom/pushprox:master
     networks:
@@ -115,6 +126,7 @@ services:
       - "traefik.http.routers.pushprox.tls.certresolver=ssl"
 
   labelstudio:
+    logging: *logging
     container_name: labelstudio
     image: heartexlabs/label-studio:latest
     networks:
@@ -152,6 +164,7 @@ services:
       - "traefik.http.routers.ls.tls.certresolver=ssl"
 
   manager-api-v2:
+    logging: *logging
     image: mitwelten-manager:0.1
     networks:
       - mitwelten
@@ -192,6 +205,7 @@ services:
       - traefik.http.middlewares.manager_api_v2_cors.headers.addvaryheader=true
 
   data-api:
+    logging: *logging
     image: cr.gitlab.fhnw.ch/mitwelten/docker-infrastructure/mitwelten-data-api:latest
     networks:
       - mitwelten
@@ -232,6 +246,7 @@ services:
       - traefik.http.middlewares.data_api_v3_cors.headers.addvaryheader=true
 
   deployment-frontend:
+    logging: *logging
     image: nginx:stable-alpine
     networks:
       - mitwelten
@@ -259,6 +274,7 @@ services:
     restart: always
 
   wildcam-tv:
+    logging: *logging
     image: nginx:stable-alpine
     networks:
       - mitwelten
@@ -286,6 +302,7 @@ services:
     restart: always
 
   datawalk-webapp:
+    logging: *logging
     image: nginx:stable-alpine
     networks:
       - mitwelten
@@ -313,6 +330,7 @@ services:
     restart: always
 
   pipeline-frontend:
+    logging: *logging
     image: nginx:stable-alpine
     networks:
       - mitwelten
@@ -340,6 +358,7 @@ services:
     restart: always
 
   batdetect-gui:
+    logging: *logging
     image: cr.gitlab.fhnw.ch/mitwelten/docker-infrastructure/mitwelten-batdetect-gui:1.3
     networks:
       - mitwelten
@@ -371,6 +390,7 @@ services:
     restart: always
 
   geo:
+    logging: *logging
     image: mitwelten-geo:0.1
     networks:
       - mitwelten
@@ -415,6 +435,7 @@ services:
     restart: always
 
   prometheus:
+    logging: *logging
     image: prom/prometheus:latest
     networks:
       - mitwelten
@@ -437,6 +458,7 @@ services:
     restart: unless-stopped
 
   grafana:
+    logging: *logging
     hostname: grafana
     container_name: grafana
     image: grafana/grafana:latest
@@ -468,6 +490,7 @@ services:
       - traefik.http.routers.grafana.tls.certresolver=ssl
 
   alertmanager:
+    logging: *logging
     container_name: alertmanager
     hostname: alertmanager
     image: prom/alertmanager:latest
@@ -506,6 +529,7 @@ services:
       - traefik.http.middlewares.am-stripprefix.stripprefix.prefixes=/alertmanager
 
   prom2teams:
+    logging: *logging
     container_name: prom2teams
     hostname: prom2teams
     image: idealista/prom2teams:4.2.1
@@ -518,6 +542,7 @@ services:
       - 8089
 
   vernemq:
+    logging: *logging
     image: erlio/docker-vernemq:1.10.0-alpine
     networks:
       - mitwelten
@@ -537,6 +562,7 @@ services:
       - "traefik.tcp.services.vernemq.loadbalancer.server.port=1883"
 
   verneauth:
+    logging: *logging
     image: cr.gitlab.fhnw.ch/mitwelten/docker-infrastructure/fhnw-verneauth:1.0
     networks:
       - mitwelten
@@ -546,6 +572,7 @@ services:
       - verneauth_data:/opt/verneauth/data
 
   verneauth-ui:
+    logging: *logging
     image: cr.gitlab.fhnw.ch/mitwelten/docker-infrastructure/mitwelten-verneauth_ui:1.0
     networks:
       - mitwelten
@@ -577,6 +604,7 @@ services:
       - "traefik.http.routers.vaui.tls.certresolver=ssl"
 
   mqtt-relay:
+    logging: *logging
     image: cr.gitlab.fhnw.ch/mitwelten/docker-infrastructure/mitwelten-mqtt-relay:latest
     container_name: mqtt-relay
     restart: always
@@ -586,6 +614,7 @@ services:
       - /opt/mitwelten-db-backend/docker/mqtt_relay_configuration.yaml:/app/configuration.yaml
 
   mitwelten-explore:
+    logging: *logging
     image: cr.gitlab.fhnw.ch/mitwelten/docker-infrastructure/mitwelten-explore:latest
     networks:
       - mitwelten
@@ -616,6 +645,7 @@ services:
       - "traefik.http.routers.mwexplore.tls.certresolver=ssl"
 
   mitwelten-cams:
+    logging: *logging
     image: cr.gitlab.fhnw.ch/mitwelten/docker-infrastructure/mitwelten-cams-dashboard:latest
     networks:
       - mitwelten
@@ -644,6 +674,7 @@ services:
       - "traefik.http.routers.mwcams.tls.certresolver=ssl"
 
   redis_cache:
+    logging: *logging
     image: redis:latest
     container_name: redis_cache
     restart: always
@@ -651,6 +682,7 @@ services:
       - mitwelten
 
   mitwelten-discover:
+    logging: *logging
     image: cr.gitlab.fhnw.ch/mitwelten/docker-infrastructure/mitwelten-discover_app:latest
     networks:
       - mitwelten
