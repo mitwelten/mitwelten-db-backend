@@ -65,6 +65,17 @@
   register: timescale_repo
   tags: install
 
+- name: remove timescale key from legacy global apt keyring
+  become: true
+  shell: |
+    test -f /etc/apt/trusted.gpg || exit 0
+    gpg --no-default-keyring --keyring /etc/apt/trusted.gpg --list-keys {{ timescaledb_legacy_key_fingerprint }} >/dev/null 2>&1 || exit 0
+    gpg --no-default-keyring --keyring /etc/apt/trusted.gpg --batch --yes --delete-keys {{ timescaledb_legacy_key_fingerprint }}
+    echo removed
+  register: timescale_legacy_key
+  changed_when: "'removed' in timescale_legacy_key.stdout"
+  tags: install
+
 - name: udpate apt cache
   become: true
   when: timescale_repo.changed
