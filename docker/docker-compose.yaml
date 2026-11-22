@@ -1,4 +1,9 @@
-version: '3.3'
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "50m"
+    max-file: "100"
+    compress: "true"
 
 volumes:
   prometheus_data: {}
@@ -13,6 +18,7 @@ networks:
 
 services:
   traefik:
+    logging: *logging
     image: "traefik:v3.7.19"
     networks:
       - mitwelten
@@ -55,6 +61,7 @@ services:
     restart: always
 
   keycloak:
+    logging: *logging
     container_name: keycloak
     image: quay.io/keycloak/keycloak:26.8.2
     command: start
@@ -91,6 +98,7 @@ services:
       - "traefik.http.routers.kc.tls.certresolver=ssl"
 
   data-api:
+    logging: *logging
     image: cr.gitlab.fhnw.ch/mitwelten/docker-infrastructure/mitwelten-data-api:latest
     networks:
       - mitwelten
@@ -131,6 +139,7 @@ services:
       - traefik.http.middlewares.data_api_v3_cors.headers.addvaryheader=true
 
   deployment-frontend:
+    logging: *logging
     image: nginx:stable-alpine
     networks:
       - mitwelten
@@ -158,6 +167,7 @@ services:
     restart: always
 
   wildcam-tv:
+    logging: *logging
     image: nginx:stable-alpine
     networks:
       - mitwelten
@@ -185,6 +195,7 @@ services:
     restart: always
 
   datawalk-webapp:
+    logging: *logging
     image: nginx:stable-alpine
     networks:
       - mitwelten
@@ -212,6 +223,7 @@ services:
     restart: always
 
   prometheus:
+    logging: *logging
     image: prom/prometheus:latest
     networks:
       - mitwelten
@@ -234,6 +246,7 @@ services:
     restart: unless-stopped
 
   grafana:
+    logging: *logging
     hostname: grafana
     container_name: grafana
     image: grafana/grafana:latest
@@ -265,6 +278,7 @@ services:
       - traefik.http.routers.grafana.tls.certresolver=ssl
 
   mqtt-relay:
+    logging: *logging
     image: cr.gitlab.fhnw.ch/mitwelten/docker-infrastructure/mitwelten-mqtt-relay:latest
     container_name: mqtt-relay
     restart: always
@@ -274,6 +288,7 @@ services:
       - /opt/mitwelten-db-backend/docker/mqtt_relay_configuration.yaml:/app/configuration.yaml
 
   mitwelten-explore:
+    logging: *logging
     image: cr.gitlab.fhnw.ch/mitwelten/docker-infrastructure/mitwelten-explore:latest
     networks:
       - mitwelten
@@ -305,6 +320,7 @@ services:
 
 
   redis_cache:
+    logging: *logging
     image: redis:latest
     container_name: redis_cache
     restart: always
@@ -312,6 +328,7 @@ services:
       - mitwelten
 
   mitwelten-discover:
+    logging: *logging
     image: cr.gitlab.fhnw.ch/mitwelten/docker-infrastructure/mitwelten-discover_app:latest
     networks:
       - mitwelten
