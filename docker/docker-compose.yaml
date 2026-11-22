@@ -481,8 +481,6 @@ services:
     command:
       - '--config.file=/etc/alertmanager/config.yml'
       - '--storage.path=/alertmanager'
-    ports:
-      - 9093:9093
     restart: unless-stopped
     labels:
       - traefik.enable=true
@@ -501,10 +499,10 @@ services:
       - traefik.http.routers.am.entrypoints=https
       - traefik.http.routers.am.tls.certresolver=ssl
 
-      #  middlewares for https
-      - traefik.http.routers.am.middlewares=am-stripprefix
+      #  middlewares for https (basic auth: reuses the traefik dashboard credentials)
+      - traefik.http.routers.am.middlewares=admin,am-stripprefix
 
-      # strip prefix /api/v3
+      # strip prefix /alertmanager
       - traefik.http.middlewares.am-stripprefix.stripprefix.prefixes=/alertmanager
 
   prom2teams:
